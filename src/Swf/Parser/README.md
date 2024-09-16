@@ -10,7 +10,7 @@ This library is independent of the rest of the library because it's derived from
 The parsing of the whole SWF file is done by the [`Swf`](./Swf.php) class.
 The header is accessible through the `header` property, and the list of tags are accessible through the `tags` property.
 
-> NOTE
+> [!NOTE]
 > The tags from the `tags` property are not parsed. They only store the type and offsets. To parse the tag,
 > you need to call the `Swf::parseTag()` method with the tag as argument.
 > The result will be one an instance of one of the classes from `Arakne\Swf\Parser\Tag` namespace.
