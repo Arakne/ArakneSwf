@@ -1,24 +1,26 @@
 <?php
 
-declare(strict_types=1);
-
 /*
-    SWF.php: Macromedia Flash (SWF) file parser
-    Copyright (C) 2012 Thanos Efraimidis (4real.gr)
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SWF.php: Macromedia Flash (SWF) file parser
+ * Copyright (C) 2012 Thanos Efraimidis (4real.gr)
+ *
+ * Arakne-Swf: derived from SWF.php
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
@@ -36,6 +38,10 @@ use function strpos;
 use function substr;
 use function unpack;
 
+/**
+ * Low-level SWF primitives parser
+ * This class is mutable and stateful, be careful when using it
+ */
 class SwfIO
 {
     public string $b; // Byte array (file contents)
@@ -263,50 +269,6 @@ class SwfIO
         $high = $this->collectBytes(4);
 
         return (float) unpack('e', $high . $low)[1];
-        /* Another option: $float64 = unpack('d', pack('H*', '4455667700112233')); */
-
-        // We have to use bc... functions here
-        /*bcscale(0); // 0 digits precision
-        $w = '0';
-        // Bytes are arranged as: 45670123, where 7 is MSB and 0 is LSB
-        // @todo cache
-        $multipliers = [
-            bcpow('2', '32'), bcpow('2', '40'), bcpow('2', '48'), bcpow('2', '56'),
-            bcpow('1',  '0'), bcpow('2',  '8'), bcpow('2', '16'), bcpow('2', '24'),
-        ];
-
-        for ($i = 0; $i < 8; $i++) {
-            $w = bcadd($w, bcmul($multipliers[$i], sprintf('%d', $this->collectUI8())));
-        }
-
-        $pow2_52 = bcpow('2', '52');
-
-        $signAndExponent = (int) bcdiv($w, $pow2_52);
-        $sign = ($signAndExponent >> 11) & 0x01; // 1 bit
-        $exponent = ($signAndExponent) & 0x7ff; // 11 bits
-        $mantissa = bcmod($w, $pow2_52); // 52 bits
-
-        if ($exponent === 0) {
-            return $sign === 0 ? 0.0 : -0.0;
-        }
-
-        if ($exponent == 2047) {
-            return bccomp($mantissa, '0') != 0 ? NAN : ($sign == 0 ? INF : -INF);
-        }
-
-        bcscale(20); // 20 digits precision
-        $ret = $sign === 0 ? '1.0' : '-1.0';
-
-        if ($exponent > 1023) {
-            $ret = bcmul($ret, bcpow('2', sprintf('%d', ($exponent - 1023))));
-        } else if ($exponent < 1023) {
-            $ret = bcdiv($ret, bcpow('2', sprintf('%d', (1023 - $exponent))));
-        }
-        $ret = bcmul($ret, bcadd('1.0', bcdiv($mantissa, $pow2_52)));
-        $ret = self::removeExtraZero($ret);
-        // echo sprintf("float64: w=[0x%X], sign=[%d], exponent=[%d], mantissa=[%s], return=[%s]\n",
-        // $w, $sign, $exponent, $mantissa, $ret);
-        return (float) $ret;*/
     }
 
     // Integers
@@ -345,18 +307,6 @@ class SwfIO
         }
 
         return $v;
-
-        // @todo unpack ?
-        /*bcscale(0);
-        $ret = '0';
-        $ret = bcadd($ret, $this->collectUI8());
-        $ret = bcadd($ret, bcmul($this->collectUI8(), '256'));
-        $ret = bcadd($ret, bcmul($this->collectUI8(), '65536'));
-        $ret = bcadd($ret, bcmul($this->collectUI8(), '16777216'));
-        if (bccomp($ret, '2147483647') > 0) {
-            $ret = bcsub($ret, '4294967296');
-        }
-        return $ret;*/
     }
 
     public function collectUI32(): int
@@ -364,13 +314,6 @@ class SwfIO
         // @todo test if this is correct
         // Parse int32 as little-endian
         return (int) unpack('V', $this->collectBytes(4))[1];
-        /*bcscale(0);
-        $ret = '0';
-        $ret = bcadd($ret, $this->collectUI8());
-        $ret = bcadd($ret, bcmul($this->collectUI8(), '256'));
-        $ret = bcadd($ret, bcmul($this->collectUI8(), '65536'));
-        $ret = bcadd($ret, bcmul($this->collectUI8(), '16777216'));
-        return $ret;*/
     }
 
     public function collectSI64(): int
@@ -393,16 +336,6 @@ class SwfIO
                 return $ret;
             }
         }
-    }
-
-    private static function removeExtraZero(string $ret): string
-    {
-        // @todo usefull ?
-        // Keep on removing trailing '00' by '0'
-        while (($len = strlen($ret)) > 2 && $ret[$len - 1] == '0' && $ret[$len - 2] == '0') {
-            $ret = substr($ret, 0, $len - 1);
-        }
-        return $ret;
     }
 
     // For debugging

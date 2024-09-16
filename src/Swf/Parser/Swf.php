@@ -1,30 +1,35 @@
 <?php
 
-declare(strict_types=1);
-
 /*
-    SWF.php: Macromedia Flash (SWF) file parser
-    Copyright (C) 2012 Thanos Efraimidis (4real.gr)
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SWF.php: Macromedia Flash (SWF) file parser
+ * Copyright (C) 2012 Thanos Efraimidis (4real.gr)
+ *
+ * Arakne-Swf: derived from SWF.php
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 
+/**
+ * Facade for parse and extract data from a SWF file
+ */
 readonly class Swf
 {
     public SwfHeader $header;
@@ -37,7 +42,7 @@ readonly class Swf
     private SwfIO $io;
     private SwfRec $rec;
     private SwfHdr $hdr;
-    private SwfTag $tag; // SWFtag for tags
+    private SwfTag $tag;
 
     /**
      * @param string $binary The content of the SWF file
@@ -60,7 +65,7 @@ readonly class Swf
      *
      * @see SwfTag::parseTag()
      */
-    public function parseTag(SwfTagPosition $tag): object
+    final public function parseTag(SwfTagPosition $tag): object
     {
         return $this->tag->parseTag($tag);
     }
