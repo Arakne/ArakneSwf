@@ -411,7 +411,7 @@ readonly class SwfTag
             textMatrix: $this->rec->collectMatrix(),
             glyphBits: $glyphBits = $this->io->collectUI8(),
             advanceBits: $advanceBits = $this->io->collectUI8(),
-            textRecords: $this->rec->collectTextRecords($textVersion, $glyphBits, $advanceBits),
+            textRecords: $this->rec->collectTextRecords($glyphBits, $advanceBits, $textVersion),
         );
     }
 

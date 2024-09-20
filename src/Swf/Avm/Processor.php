@@ -2,12 +2,12 @@
 
 namespace Arakne\Swf\Avm;
 
+use Arakne\Swf\Avm\Api\ScriptArray;
+use Arakne\Swf\Avm\Api\ScriptObject;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
-
-use ArrayObject;
 
 use Exception;
 
@@ -15,6 +15,10 @@ use function array_pop;
 use function array_reverse;
 use function array_splice;
 use function count;
+use function is_array;
+use function is_callable;
+use function is_int;
+use function is_object;
 use function method_exists;
 
 /**
@@ -126,7 +130,17 @@ final readonly class Processor
         $propertyName = array_pop($state->stack);
         $scriptObject = array_pop($state->stack);
 
-        $state->stack[] = $scriptObject?->$propertyName ?? null;
+        if ($scriptObject === null) {
+            $state->stack[] = null;
+            return;
+        }
+
+        if (is_array($scriptObject) || ($scriptObject instanceof ScriptArray && is_int($propertyName))) {
+            $state->stack[] = $scriptObject[$propertyName] ?? null;
+            return;
+        }
+
+        $state->stack[] = $scriptObject->$propertyName ?? null;
     }
 
     private function callMethod(State $state): void
@@ -134,19 +148,19 @@ final readonly class Processor
         $methodName = array_pop($state->stack);
         $scriptObject = array_pop($state->stack);
         $argumentCount = array_pop($state->stack);
-        $args = array_splice($state->stack, -$argumentCount);
+        $args = $argumentCount > 0 ? array_splice($state->stack, -$argumentCount) : [];
 
         if (!$this->allowFunctionCall) {
             $state->stack[] = null;
             return;
         }
 
-        if (!$scriptObject) {
+        if (!is_object($scriptObject)) {
             $state->stack[] = null;
             return;
         }
 
-        if (!method_exists($scriptObject, $methodName)) {
+        if (!method_exists($scriptObject, $methodName) && (!$scriptObject instanceof ScriptObject || !isset($scriptObject->$methodName) || !is_callable($scriptObject->$methodName))) {
             $state->stack[] = null;
             return;
         }
@@ -161,9 +175,8 @@ final readonly class Processor
         $args = $argumentCount > 0 ? array_reverse(array_splice($state->stack, -$argumentCount)) : [];
 
         $state->stack[] = match ($type) {
-            // @todo custom ScriptObject?
-            'Object' => new ArrayObject($args, ArrayObject::ARRAY_AS_PROPS),
-            'Array' => new ArrayObject($args),
+            'Object' => new ScriptObject(),
+            'Array' => new ScriptArray(...$args),
             default => throw new Exception('Unknown object type: '.$type),
         };
     }
@@ -172,6 +185,7 @@ final readonly class Processor
     {
         $propertiesCount = array_pop($state->stack);
         $args = $propertiesCount > 0 ? array_splice($state->stack, -$propertiesCount * 2) : [];
+        $properties = [];
 
         for ($i = 2 * $propertiesCount - 2; $i >= 0; $i -= 2) {
             $key = $args[$i];
@@ -180,7 +194,7 @@ final readonly class Processor
             $properties[$key] = $value;
         }
 
-        $state->stack[] = new ArrayObject($properties, ArrayObject::ARRAY_AS_PROPS);
+        $state->stack[] = new ScriptObject($properties);
     }
 
     private function initArray(State $state): void
@@ -203,11 +217,12 @@ final readonly class Processor
             return;
         }
 
-        if ($scriptObject instanceof ArrayObject) {
+        if ($scriptObject instanceof ScriptArray) {
             $scriptObject[$propertyName] = $value;
-        } else {
-            $scriptObject->$propertyName = $value;
+            return;
         }
+
+        $scriptObject->$propertyName = $value;
     }
 
     private function toString(State $state): void
@@ -228,12 +243,26 @@ final readonly class Processor
         $argumentCount = array_pop($state->stack);
         $args = $argumentCount > 0 ? array_reverse(array_splice($state->stack, -$argumentCount)) : [];
 
-        // @todo check for $allowFunctionCall. The following list is always allowed.
         $state->stack[] = match ($functionName) {
             'Boolean' => (bool) $args[0],
             'String' => (string) $args[0],
-            'Number' => (float) $args[0], // @todo int ?
-            default => throw new Exception('Unknown function: '.$functionName),
+            'Number' => (float) $args[0],
+            default => $this->callCustomFunction($state, $functionName, $args),
         };
+    }
+
+    private function callCustomFunction(State $state, string $functionName, array $args): mixed
+    {
+        if (!$this->allowFunctionCall) {
+            return null;
+        }
+
+        $function = $state->functions[$functionName] ?? null;
+
+        if (!$function) {
+            throw new Exception('Unknown function: '.$functionName);
+        }
+
+        return $function(...$args);
     }
 }

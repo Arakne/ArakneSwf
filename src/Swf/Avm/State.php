@@ -27,4 +27,11 @@ final class State
      * @var array<string, mixed>
      */
     public array $variables = [];
+
+    /**
+     * Global functions.
+     *
+     * @var array<string, callable>
+     */
+    public array $functions = [];
 }

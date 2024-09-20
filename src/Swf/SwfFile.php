@@ -5,9 +5,11 @@ namespace Arakne\Swf;
 use Arakne\Swf\Avm\Processor;
 use Arakne\Swf\Avm\State;
 use Arakne\Swf\Parser\Swf;
+use Arakne\Swf\Parser\SwfIO;
 
 use function array_flip;
 use function file_get_contents;
+use function strlen;
 
 /**
  * Facade for extracting information from a SWF file.
@@ -22,6 +24,48 @@ final class SwfFile
          */
         public readonly string $path,
     ) {
+    }
+
+    /**
+     * Check if the given file is a valid SWF file.
+     *
+     * This method will only check for the SWF header, not the whole file.
+     * So the content may be corrupted or incomplete.
+     *
+     * @param int $maxLength The maximum length of the decompressed file in bytes.
+     *
+     * @return bool True if the file is a valid SWF file.
+     */
+    public function valid(int $maxLength = 512_000_000): bool
+    {
+        // Read only the first header part
+        $head = file_get_contents($this->path, false, null, 0, 8);
+
+        if (strlen($head) < 8) {
+            return false;
+        }
+
+        $io = new SwfIO($head);
+        $signature = $io->collectBytes(3);
+
+        if ($signature !== 'CWS' && $signature !== 'FWS') {
+            return false;
+        }
+
+        $version = $io->collectUI8();
+
+        // Last version (2024) is 51, so we can safely assume that any version above 60 is invalid
+        if ($version > 60) {
+            return false;
+        }
+
+        $len = $io->collectUI32();
+
+        if ($len > $maxLength) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -50,14 +94,17 @@ final class SwfFile
      * Execute DoAction tags and return the final state.
      * The method may be dangerous if the SWF file contains malicious code, so call it only if you trust the source.
      *
-     * @param bool $allowFunctionCall Allow to call methods or functions. By default, this is disabled for security reasons.
+     * Note: By default, the function call is disabled. You can enable it by passing a custom Processor with allowFunctionCall set to true.
+     *
+     * @param State|null $state The initial state. If null, a new state is created.
+     * @param Processor|null $processor The execution processor. If null, a new processor is created with default settings.
      *
      * @return State
      */
-    public function execute(bool $allowFunctionCall = false): State
+    public function execute(?State $state = null, ?Processor $processor = null): State
     {
-        $processor = new Processor($allowFunctionCall);
-        $state = new State();
+        $processor ??= new Processor(allowFunctionCall: false);
+        $state ??= new State();
 
         // @todo handle InitActionTag
         foreach ($this->tags(12) as $tag) {
@@ -71,12 +118,15 @@ final class SwfFile
      * Execute DoAction tags and return all global variables.
      * The method may be dangerous if the SWF file contains malicious code, so call it only if you trust the source.
      *
-     * @param bool $allowFunctionCall Allow to call methods or functions. By default, this is disabled for security reasons.
+     * Note: By default, the function call is disabled. You can enable it by passing a custom Processor with allowFunctionCall set to true.
+     *
+     * @param State|null $state The initial state. If null, a new state is created.
+     * @param Processor|null $processor The execution processor. If null, a new processor is created with default settings.
      * @return array<string, mixed>
      */
-    public function variables(bool $allowFunctionCall = false): array
+    public function variables(?State $state = null, ?Processor $processor = null): array
     {
-        return $this->execute($allowFunctionCall)->variables;
+        return $this->execute($state, $processor)->variables;
     }
 
     private function parser(): Swf
