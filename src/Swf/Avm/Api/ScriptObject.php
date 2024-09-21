@@ -4,8 +4,11 @@ namespace Arakne\Swf\Avm\Api;
 
 use ArrayAccess;
 use Closure;
+use IteratorAggregate;
 use JsonSerializable;
 use Override;
+
+use Traversable;
 
 use function is_int;
 use function is_string;
@@ -13,7 +16,7 @@ use function is_string;
 /**
  * Base object class for ActionScript objects.
  */
-class ScriptObject implements ArrayAccess, JsonSerializable
+class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate
 {
     public function __construct(
         /**
@@ -117,6 +120,16 @@ class ScriptObject implements ArrayAccess, JsonSerializable
         }
 
         return $properties;
+    }
+
+    #[Override]
+    public function getIterator(): Traversable
+    {
+        yield from $this->properties;
+
+        foreach ($this->getters as $name => $getter) {
+            yield $name => $getter();
+        }
     }
 
     private function getPropertyValue(mixed $property): mixed

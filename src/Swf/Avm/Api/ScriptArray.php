@@ -4,6 +4,8 @@ namespace Arakne\Swf\Avm\Api;
 
 use Override;
 
+use Traversable;
+
 use function array_fill;
 use function count;
 use function is_float;
@@ -76,6 +78,12 @@ class ScriptArray extends ScriptObject
     {
         // Ignore computed properties
         return $this->values + $this->properties;
+    }
+
+    #[Override]
+    public function getIterator(): Traversable
+    {
+        yield from $this->values;
     }
 
     private function setLength(int $length): void
