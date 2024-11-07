@@ -4,19 +4,21 @@ namespace Arakne\Swf\Avm\Api;
 
 use ArrayAccess;
 use Closure;
+use Countable;
 use IteratorAggregate;
 use JsonSerializable;
 use Override;
 
 use Traversable;
 
+use function count;
 use function is_int;
 use function is_string;
 
 /**
  * Base object class for ActionScript objects.
  */
-class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate
+class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate, Countable
 {
     public function __construct(
         /**
@@ -60,6 +62,12 @@ class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate
         }
 
         return true;
+    }
+
+    #[Override]
+    public function count(): int
+    {
+        return count($this->properties) + count($this->getters);
     }
 
     #[Override]
