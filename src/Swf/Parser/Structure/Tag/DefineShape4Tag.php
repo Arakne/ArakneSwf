@@ -32,6 +32,5 @@ final readonly class DefineShape4Tag
         public bool $usesNonScalingStrokes,
         public bool $usesScalingStrokes,
         public array $shapes,
-    ) {
-    }
+    ) {}
 }

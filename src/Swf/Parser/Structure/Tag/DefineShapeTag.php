@@ -26,8 +26,32 @@ final readonly class DefineShapeTag
     public function __construct(
         public int $version,
         public int $shapeId,
+        /**
+         * @var array{xmin: int, xmax: int, ymin: int, ymax: int}
+         * @todo structure
+         */
         public array $shapeBounds,
+
+        /**
+         * @var list<array{
+         *     fillStyles: list<array{
+         *         type: int,
+         *         color?: array{
+         *             red: int,
+         *             green: int,
+         *             blue: int,
+         *             alpha?: int
+         *         },
+         *         matrix?: array,
+         *         gradient?: array,
+         *         focalGradient?: array,
+         *         bitmapId?: int,
+         *         bitmapMatrix?: array
+         *     }>,
+         *     lineStyles: array,
+         *     shapeRecords: array
+         * }>
+         */
         public array $shapes,
-    ) {
-    }
+    ) {}
 }
