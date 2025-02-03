@@ -21,18 +21,21 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
-use function array_map;
 use function array_pop;
-use function array_push;
-use function array_reverse;
+use function array_shift;
 use function spl_object_id;
 
+/**
+ * Structure for a polygon or line path
+ *
+ * Note: this structure is not immutable, so be careful when using it
+ */
 final class Path
 {
     public function __construct(
         /** @var list<EdgeInterface> */
-        private array $edges = [],
-        public ?PathStyle $style = null,
+        private array $edges,
+        public PathStyle $style,
     ) {}
 
     /**
@@ -45,7 +48,9 @@ final class Path
      */
     public function push(EdgeInterface ...$edges): self
     {
-        array_push($this->edges, ...$edges);
+        foreach ($edges as $edge) {
+            $this->edges[] = $edge;
+        }
 
         return $this;
     }
@@ -57,19 +62,28 @@ final class Path
      * The order of edges will change.
      *
      * This method will not mutate the current object, but return a new one.
+     *
+     * Algorithm:
+     * 1. Create a set of edges (will be used to keep trace of remaining edges)
+     * 2. Pop one edge from the set if not empty
+     * 3. Push this edge to the result
+     * 4. Find the next edge, from the set, that is connected to the current one. An edge is considered as connected if:
+     *    - the `to` point of the current edge is the `from` point of the next edge
+     *    - the `to` point of the current edge is the `to` point of the next edge. In this case the edge is reversed
+     * 5. Push this edge to the result, remove it from the set, define as current edge, and go to step 4
+     * 6. If no edge is found, go to step 2 (handle disconnected paths)
+     * 7. When the set is empty, the algorithm is finished, so return a new instance of Path with the fixed edges
      */
     public function fix(): self
     {
         $edgeSet = [];
 
         foreach ($this->edges as $edge) {
-            // @todo use a better key
             $edgeSet[spl_object_id($edge)] = $edge;
         }
 
         $edges = [];
 
-        // @todo optimize
         while ($edgeSet) {
             $currentEdge = array_pop($edgeSet);
             $edges[] = $currentEdge;
@@ -109,17 +123,6 @@ final class Path
     }
 
     /**
-     * Reverse the path and all its edges
-     */
-    public function reverse(): self
-    {
-        $reversed = clone $this;
-        $reversed->edges = array_map(fn($edge) => $edge->reverse(), array_reverse($this->edges));
-
-        return $reversed;
-    }
-
-    /**
      * Draw the current path
      */
     public function draw(PathDrawerInterface $drawer): void
@@ -128,7 +131,7 @@ final class Path
         $lastY = null;
 
         foreach ($this->edges as $edge) {
-            if (!$edge->matchFrom($lastX, $lastY)) {
+            if ($edge->fromX !== $lastX || $edge->fromY !== $lastY) {
                 $drawer->move($edge->fromX, $edge->fromY);
             }
 

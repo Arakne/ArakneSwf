@@ -1,9 +1,25 @@
 <?php
 
-namespace Arakne\Swf\Extractor\Shape;
+/*
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Arakne-Swf: derived from SWF.php
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
 
-use function array_push;
-use function array_values;
+declare(strict_types=1);
+
+namespace Arakne\Swf\Extractor\Shape;
 
 /**
  * Build paths of a shape
@@ -66,7 +82,9 @@ final class PathsBuilder
      */
     public function close(): void
     {
-        array_push($this->closedPaths, ...array_values($this->openPaths));
+        foreach ($this->openPaths as $path) {
+            $this->closedPaths[] = $path;
+        }
         $this->openPaths = [];
     }
 

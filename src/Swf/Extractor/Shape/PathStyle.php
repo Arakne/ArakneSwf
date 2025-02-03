@@ -1,8 +1,29 @@
 <?php
 
+/*
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Arakne-Swf: derived from SWF.php
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
+
+declare(strict_types=1);
+
 namespace Arakne\Swf\Extractor\Shape;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
+
+use function pack;
 
 /**
  * Define the drawing style of a path
@@ -12,6 +33,8 @@ use Arakne\Swf\Parser\Structure\Record\Color;
  */
 final readonly class PathStyle
 {
+    private string $hash;
+
     public function __construct(
         /**
          * The fill color of the current path
@@ -32,14 +55,24 @@ final readonly class PathStyle
          * This value should be set only if the lineColor is set
          */
         public int $lineWidth = 0,
-    ) {}
+    ) {
+        $this->hash = pack('lll', self::colorHash($this->fillColor), self::colorHash($this->lineColor), $this->lineWidth);
+    }
 
     /**
      * Compute the hash code of the style to be used as key
      */
     public function hash(): string
     {
-        // @todo optimise ?
-        return $this->fillColor . '-' . $this->lineColor . '-' . $this->lineWidth;
+        return $this->hash;
+    }
+
+    private static function colorHash(?Color $color): int
+    {
+        if ($color === null) {
+            return -1;
+        }
+
+        return ($color->red << 24) | ($color->green << 16) | ($color->blue << 8) | ($color->alpha ?? 255);
     }
 }

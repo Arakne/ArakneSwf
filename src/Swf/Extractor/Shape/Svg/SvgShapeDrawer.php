@@ -1,5 +1,24 @@
 <?php
 
+/*
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Arakne-Swf: derived from SWF.php
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
+
+declare(strict_types=1);
+
 namespace Arakne\Swf\Extractor\Shape\Svg;
 
 use Arakne\Swf\Extractor\Shape\Shape;
@@ -31,15 +50,19 @@ final readonly class SvgShapeDrawer
 
         foreach ($shape->paths as $path) {
             $pathElement = $g->addChild('path');
-            $pathElement['fill'] = (string) ($path->style->fillColor ?? 'none');
-            $pathElement['stroke'] = (string) ($path->style->lineColor ?? 'none');
+            $pathElement['fill'] = $path->style->fillColor?->hex() ?? 'none';
+            $pathElement['stroke'] = $path->style->lineColor?->hex() ?? 'none';
 
             if ($path->style->fillColor !== null) {
                 $pathElement['fill-rule'] = 'evenodd';
             }
 
+            if ($path->style->fillColor?->hasTransparency() === true) {
+                $pathElement['fill-opacity'] = $path->style->fillColor->opacity();
+            }
+
             if ($path->style->lineWidth > 0) {
-                $pathElement['stroke-width'] = intdiv($path->style->lineWidth, 20);
+                $pathElement['stroke-width'] = $path->style->lineWidth / 20;
                 $pathElement['stroke-linecap'] = 'round';
                 $pathElement['stroke-linejoin'] = 'round';
             }

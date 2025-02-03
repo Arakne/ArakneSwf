@@ -23,6 +23,12 @@ namespace Arakne\Swf\Parser\Structure\Record;
 
 use function sprintf;
 
+/**
+ * Structure for store color
+ * Alpha channel is optional
+ *
+ * All values are int between 0 and 255
+ */
 final readonly class Color
 {
     public function __construct(
@@ -32,9 +38,37 @@ final readonly class Color
         public ?int $alpha = null,
     ) {}
 
+    /**
+     * Get the color as a hex string, prefixed with #
+     *
+     * Note: this method does not include the alpha channel
+     */
+    public function hex(): string
+    {
+        return sprintf('#%02x%02x%02x', $this->red, $this->green, $this->blue);
+    }
+
+    /**
+     * Get the opacity of the color
+     * If the alpha channel is not set, the opacity is 1.0
+     *
+     * @return float The opacity of the color, between 0.0 and 1.0
+     */
+    public function opacity(): float
+    {
+        return $this->alpha !== null ? $this->alpha / 255 : 1.0;
+    }
+
+    /**
+     * Check if the current color has transparency (i.e. alpha channel is set, and not 255)
+     */
+    public function hasTransparency(): bool
+    {
+        return $this->alpha !== null && $this->alpha < 255;
+    }
+
     public function __toString(): string
     {
-        // @todo handle alpha
-        return sprintf('#%02x%02x%02x', $this->red, $this->green, $this->blue);
+        return $this->hex();
     }
 }

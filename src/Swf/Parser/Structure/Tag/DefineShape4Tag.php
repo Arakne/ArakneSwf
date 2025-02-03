@@ -26,6 +26,8 @@ use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
 
 final readonly class DefineShape4Tag
 {
+    public const int TYPE_V4 = 83;
+
     public function __construct(
         public int $shapeId,
         public Rectangle $shapeBounds,

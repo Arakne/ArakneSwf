@@ -10,11 +10,16 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
+use function chmod;
 use function file_put_contents;
 
 class ShapeToSvgFunctionalTest extends TestCase
 {
-    #[Test, TestWith(['shape.swf', 'shape.svg'])]
+    #[
+        Test,
+        //TestWith(['2.swf', 'shape.svg']),
+        TestWith(['shape.swf', 'shape.svg']),
+    ]
     public function singleShape(string $swf, string $svg): void
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/' . $swf);
@@ -25,6 +30,7 @@ class ShapeToSvgFunctionalTest extends TestCase
         foreach ($swf->tags(2, 22, 32, 83) as $tag) {
             $shape = $converter->convert($tag);
             file_put_contents(__DIR__.'/../Fixtures/test.svg', $shape);
+            chmod(__DIR__.'/../Fixtures/test.svg', 0666);
             break;
         }
 
