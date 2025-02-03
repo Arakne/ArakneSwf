@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
 final readonly class SwfHeader
 {
     public function __construct(
@@ -30,7 +32,7 @@ final readonly class SwfHeader
         public string $signature,
         public int $version,
         public int $fileLength,
-        public array $frameSize,
+        public Rectangle $frameSize,
         public float $frameRate,
         public int $frameCount,
     ) {

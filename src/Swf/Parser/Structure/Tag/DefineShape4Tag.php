@@ -21,16 +21,19 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
+
 final readonly class DefineShape4Tag
 {
     public function __construct(
         public int $shapeId,
-        public array $shapeBounds,
-        public array $edgeBounds,
+        public Rectangle $shapeBounds,
+        public Rectangle $edgeBounds,
         public int $reserved,
         public bool $usesFillWindingRule,
         public bool $usesNonScalingStrokes,
         public bool $usesScalingStrokes,
-        public array $shapes,
+        public ShapeWithStyle $shapes,
     ) {}
 }

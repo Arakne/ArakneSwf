@@ -39,9 +39,9 @@ final class PathsBuilder
     }
 
     /**
-     * Merge the given path to all open paths with the active styles
+     * Merge new edges to all open paths with the active styles
      */
-    public function merge(Path $path): void
+    public function merge(EdgeInterface ...$edges): void
     {
         foreach ($this->activeStyles as $style) {
             if ($style === null) {
@@ -51,9 +51,9 @@ final class PathsBuilder
             $lastPath = $this->openPaths[$style->hash()] ?? null;
 
             if (!$lastPath) {
-                $this->openPaths[$style->hash()] = $path->withStyle($style);
+                $this->openPaths[$style->hash()] = new Path($edges, $style);
             } else {
-                $this->openPaths[$style->hash()] = $lastPath->merge($path);
+                $this->openPaths[$style->hash()] = $lastPath->push(...$edges);
             }
         }
     }

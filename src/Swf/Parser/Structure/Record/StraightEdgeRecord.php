@@ -19,17 +19,14 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
-
-final readonly class DefineShapeTag
+final readonly class StraightEdgeRecord
 {
     public function __construct(
-        public int $version,
-        public int $shapeId,
-        public Rectangle $shapeBounds,
-        public ShapeWithStyle $shapes,
+        public bool $generalLineFlag,
+        public bool $verticalLineFlag,
+        public int $deltaX,
+        public int $deltaY,
     ) {}
 }

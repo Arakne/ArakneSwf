@@ -21,12 +21,14 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
 final readonly class DefineTextTag
 {
     public function __construct(
         public int $version,
         public int $characterId,
-        public array $textBounds,
+        public Rectangle $textBounds,
         public array $textMatrix,
         public int $glyphBits,
         public int $advanceBits,

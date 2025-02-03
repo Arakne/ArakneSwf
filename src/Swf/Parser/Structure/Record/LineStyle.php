@@ -19,17 +19,22 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
-
-final readonly class DefineShapeTag
+final readonly class LineStyle
 {
     public function __construct(
-        public int $version,
-        public int $shapeId,
-        public Rectangle $shapeBounds,
-        public ShapeWithStyle $shapes,
+        public int $width,
+        public ?Color $color = null,
+        public ?int $startCapStyle = null,
+        public ?int $joinStyle = null,
+        public ?bool $hasFillFlag = null,
+        public ?bool $noHScaleFlag = null,
+        public ?bool $noVScaleFlag = null,
+        public ?bool $pixelHintingFlag = null,
+        public ?bool $noClose = null,
+        public ?int $endCapStyle = null,
+        public ?int $miterLimitFactor = null,
+        public ?FillStyle $fillType = null,
     ) {}
 }

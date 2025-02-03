@@ -21,11 +21,14 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
 final readonly class DefineEditTextTag
 {
     public function __construct(
         public int $characterId,
-        public array $bounds,
+        public Rectangle $bounds,
         public bool $wordWrap,
         public bool $multiline,
         public bool $password,
@@ -39,7 +42,7 @@ final readonly class DefineEditTextTag
         public ?int $fontId,
         public ?string $fontClass,
         public ?int $fontHeight,
-        public ?array $textColor,
+        public ?Color $textColor,
         public ?int $maxLength,
         public ?array $layout,
         public string $variableName,

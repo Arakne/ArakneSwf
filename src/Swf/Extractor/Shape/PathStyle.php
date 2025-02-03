@@ -2,6 +2,8 @@
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Parser\Structure\Record\Color;
+
 /**
  * Define the drawing style of a path
  *
@@ -15,13 +17,13 @@ final readonly class PathStyle
          * The fill color of the current path
          * If this value is null, the path should not be filled
          */
-        public ?string $fillColor = null,
+        public ?Color $fillColor = null,
 
         /**
          * The line color of the current path
          * If this value is null, the path should not be stroked
          */
-        public ?string $lineColor = null,
+        public ?Color $lineColor = null,
 
         /**
          * The width of the line in twips

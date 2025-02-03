@@ -21,14 +21,16 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
 final readonly class DefineMorphShape2Tag
 {
     public function __construct(
         public int $characterId,
-        public array $startBounds,
-        public array $endBounds,
-        public array $startEdgeBounds,
-        public array $endEdgeBounds,
+        public Rectangle $startBounds,
+        public Rectangle $endBounds,
+        public Rectangle $startEdgeBounds,
+        public Rectangle $endEdgeBounds,
         public bool $usesNonScalingStrokes,
         public bool $usesScalingStrokes,
         public int $offset,

@@ -19,17 +19,22 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
+use function sprintf;
 
-final readonly class DefineShapeTag
+final readonly class Color
 {
     public function __construct(
-        public int $version,
-        public int $shapeId,
-        public Rectangle $shapeBounds,
-        public ShapeWithStyle $shapes,
+        public int $red,
+        public int $green,
+        public int $blue,
+        public ?int $alpha = null,
     ) {}
+
+    public function __toString(): string
+    {
+        // @todo handle alpha
+        return sprintf('#%02x%02x%02x', $this->red, $this->green, $this->blue);
+    }
 }

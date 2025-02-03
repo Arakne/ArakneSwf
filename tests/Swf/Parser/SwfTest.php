@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Parser;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\SetBackgroundColorTag;
@@ -24,12 +25,12 @@ class SwfTest extends TestCase
         $this->assertSame('CWS', $swf->header->signature);
         $this->assertSame(50.0, $swf->header->frameRate);
         $this->assertSame(1, $swf->header->frameCount);
-        $this->assertSame([
-            'xmin' => 0,
-            'xmax' => 20,
-            'ymin' => 0,
-            'ymax' => 20,
-        ], $swf->header->frameSize);
+        $this->assertEquals(new Rectangle(
+            xmin: 0,
+            xmax: 20,
+            ymin: 0,
+            ymax: 20,
+        ), $swf->header->frameSize);
 
         $this->assertCount(4, $swf->tags);
         $this->assertSame(9, $swf->tags[0]->type);

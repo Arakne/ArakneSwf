@@ -8,6 +8,30 @@ namespace Arakne\Swf\Extractor\Shape;
 interface EdgeInterface
 {
     /**
+     * The X coordinate of the starting point
+     * This value is in twips (1/20th of a pixel)
+     */
+    public int $fromX { get; }
+
+    /**
+     * The Y coordinate of the starting point
+     * This value is in twips (1/20th of a pixel)
+     */
+    public int $fromY { get; }
+
+    /**
+     * The X coordinate of the ending point
+     * This value is in twips (1/20th of a pixel)
+     */
+    public int $toX { get; }
+
+    /**
+     * The Y coordinate of the ending point
+     * This value is in twips (1/20th of a pixel)
+     */
+    public int $toY { get; }
+
+    /**
      * Reverse the edge and return the new instance
      */
     public function reverse(): static;

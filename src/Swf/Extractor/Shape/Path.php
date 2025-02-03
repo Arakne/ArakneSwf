@@ -1,5 +1,24 @@
 <?php
 
+/*
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Arakne-Swf: derived from SWF.php
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
+
+declare(strict_types=1);
+
 namespace Arakne\Swf\Extractor\Shape;
 
 use function array_map;
@@ -11,25 +30,33 @@ use function spl_object_id;
 final class Path
 {
     public function __construct(
-        public array $edges = [],
+        /** @var list<EdgeInterface> */
+        private array $edges = [],
         public ?PathStyle $style = null,
     ) {}
 
-    public function merge(Path $other): self
+    /**
+     * Push new edges at the end of the path
+     *
+     * Note: this method will mutate the current object, so do not use outside the builder context
+     *
+     * @param EdgeInterface ...$edges The edges to push
+     * @return $this The current object
+     */
+    public function push(EdgeInterface ...$edges): self
     {
-        array_push($this->edges, ...$other->edges);
+        array_push($this->edges, ...$edges);
 
         return $this;
-    }
-
-    public function withStyle(PathStyle $style): self
-    {
-        return new Path($this->edges, $style);
     }
 
     /**
      * Try to reconnect edges that are not connected
      * Flash seems to allow this, but SVG does not
+     *
+     * The order of edges will change.
+     *
+     * This method will not mutate the current object, but return a new one.
      */
     public function fix(): self
     {
@@ -81,6 +108,9 @@ final class Path
         return $fixed;
     }
 
+    /**
+     * Reverse the path and all its edges
+     */
     public function reverse(): self
     {
         $reversed = clone $this;
@@ -89,33 +119,9 @@ final class Path
         return $reversed;
     }
 
-    public function export(): string
-    {
-        $str = '';
-        $lastX = null;
-        $lastY = null;
-
-        foreach ($this->edges as $edge) {
-            if ($str) {
-                $str .= ' ';
-            }
-
-            if (!$edge->matchFrom($lastX, $lastY)) {
-                $str .= 'M'.($edge->fromX/20).' '.($edge->fromY/20);
-            }
-
-            if ($str) {
-                $str .= ' ';
-            }
-
-            $str .= $edge->export();
-            $lastX = $edge->toX;
-            $lastY = $edge->toY;
-        }
-
-        return $str;
-    }
-
+    /**
+     * Draw the current path
+     */
     public function draw(PathDrawerInterface $drawer): void
     {
         $lastX = null;
@@ -128,7 +134,6 @@ final class Path
 
             $edge->draw($drawer);
 
-            //$str .= $edge->export();
             $lastX = $edge->toX;
             $lastY = $edge->toY;
         }

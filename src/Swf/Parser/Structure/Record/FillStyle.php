@@ -19,17 +19,26 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
-
-final readonly class DefineShapeTag
+final readonly class FillStyle
 {
+    public const int SOLID = 0x00;
+    public const int LINEAR_GRADIENT = 0x10;
+    public const int RADIAL_GRADIENT = 0x12;
+    public const int FOCAL_GRADIENT = 0x13;
+    public const int REPEATING_BITMAP = 0x40;
+    public const int CLIPPED_BITMAP = 0x41;
+    public const int NON_SMOOTHED_REPEATING_BITMAP = 0x42;
+    public const int NON_SMOOTHED_CLIPPED_BITMAP = 0x43;
+
     public function __construct(
-        public int $version,
-        public int $shapeId,
-        public Rectangle $shapeBounds,
-        public ShapeWithStyle $shapes,
+        public int $type,
+        public ?Color $color = null,
+        public ?array $matrix = null,
+        public ?array $gradient = null,
+        public ?array $focalGradient = null,
+        public ?int $bitmapId = null,
+        public ?array $bitmapMatrix = null,
     ) {}
 }

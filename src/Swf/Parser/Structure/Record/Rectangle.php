@@ -19,17 +19,28 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
-
-final readonly class DefineShapeTag
+/**
+ * Structure representing a rectangle (two points)
+ * Coordinates are in twips (1/20th of a pixel), and can be negative
+ */
+final readonly class Rectangle
 {
     public function __construct(
-        public int $version,
-        public int $shapeId,
-        public Rectangle $shapeBounds,
-        public ShapeWithStyle $shapes,
+        public int $xmin,
+        public int $xmax,
+        public int $ymin,
+        public int $ymax,
     ) {}
+
+    public function width(): int
+    {
+        return $this->xmax - $this->xmin;
+    }
+
+    public function height(): int
+    {
+        return $this->ymax - $this->ymin;
+    }
 }

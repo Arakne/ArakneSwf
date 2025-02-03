@@ -21,11 +21,13 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
 final readonly class DefineScalingGridTag
 {
     public function __construct(
         public int $characterId,
-        public array $splitter,
+        public Rectangle $splitter,
     ) {
     }
 }

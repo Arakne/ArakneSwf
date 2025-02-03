@@ -2,10 +2,13 @@
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
+use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
-
-use function sprintf;
+use InvalidArgumentException;
 
 /**
  * Process define shape action tags to create shape objects
@@ -14,8 +17,22 @@ final class ShapeProcessor
 {
     public function process(DefineShapeTag|DefineShape4Tag $tag): Shape
     {
-        $fillStyles = $tag->shapes['fillStyles'];
-        $lineStyles = $tag->shapes['lineStyles'];
+        return new Shape(
+            width: $tag->shapeBounds->width(),
+            height: $tag->shapeBounds->height(),
+            xOffset: -$tag->shapeBounds->xmin,
+            yOffset: -$tag->shapeBounds->ymin,
+            paths: $this->processPaths($tag),
+        );
+    }
+
+    /**
+     * @return list<Path>
+     */
+    private function processPaths(DefineShapeTag|DefineShape4Tag $tag): array
+    {
+        $fillStyles = $tag->shapes->fillStyles;
+        $lineStyles = $tag->shapes->lineStyles;
 
         $x = 0;
         $y = 0;
@@ -30,47 +47,47 @@ final class ShapeProcessor
         $lineStyle = null;
 
         $builder = new PathsBuilder();
-        $currentPath = new Path();
+        $edges = [];
 
-        foreach ($tag->shapes['shapeRecords'] as $shape) {
-            switch ($shape['type']) {
-                case 'StyleChangeRecord':
-                    $builder->merge($currentPath);
-                    $currentPath = new Path();
+        foreach ($tag->shapes->shapeRecords as $shape) {
+            switch (true) {
+                case $shape instanceof StyleChangeRecord:
+                    $builder->merge(...$edges);
+                    $edges = [];
 
-                    if ($shape['stateNewStyles']) {
+                    if ($shape->stateNewStyles) {
                         // Reset styles to ensure that we don't use old styles
                         $builder->close();
 
-                        $fillStyles = $shape['fillStyles'];
-                        $lineStyles = $shape['lineStyles'];
+                        $fillStyles = $shape->fillStyles;
+                        $lineStyles = $shape->lineStyles;
                     }
 
-                    if ($shape['stateLineStyle']) {
-                        $colorArr = $lineStyles[$shape['lineStyle'] - 1]['color'] ?? null;
-                        if ($colorArr !== null) {
+                    if ($shape->stateLineStyle) {
+                        $style = $lineStyles[$shape->lineStyle - 1] ?? null;
+                        if ($style !== null) {
                             $lineStyle = new PathStyle(
-                                lineColor: sprintf('#%02x%02x%02x', $colorArr['red'], $colorArr['green'], $colorArr['blue']),
-                                lineWidth: $lineStyles[$shape['lineStyle'] - 1]['width'] ?? 0,
+                                lineColor: $style->color,
+                                lineWidth: $style->width,
                             );
                         } else {
                             $lineStyle = null;
                         }
                     }
 
-                    if ($shape['stateFillStyle0']) {
-                        $colorArr = $fillStyles[$shape['fillStyle0'] - 1]['color'] ?? null;
-                        if ($colorArr !== null) {
-                            $fillStyle0 = new PathStyle(fillColor: sprintf('#%02x%02x%02x', $colorArr['red'], $colorArr['green'], $colorArr['blue']));
+                    if ($shape->stateFillStyle0) {
+                        $style = $fillStyles[$shape->fillStyle0 - 1] ?? null;
+                        if ($style !== null) {
+                            $fillStyle0 = new PathStyle(fillColor: $style->color);
                         } else {
                             $fillStyle0 = null;
                         }
                     }
 
-                    if ($shape['stateFillStyle1']) {
-                        $colorArr = $fillStyles[$shape['fillStyle1'] - 1]['color'] ?? null;
-                        if ($colorArr !== null) {
-                            $fillStyle1 = new PathStyle(fillColor: sprintf('#%02x%02x%02x', $colorArr['red'], $colorArr['green'], $colorArr['blue']));
+                    if ($shape->stateFillStyle1) {
+                        $style = $fillStyles[$shape->fillStyle1 - 1] ?? null;
+                        if ($style !== null) {
+                            $fillStyle1 = new PathStyle(fillColor: $style->color);
                         } else {
                             $fillStyle1 = null;
                         }
@@ -78,68 +95,45 @@ final class ShapeProcessor
 
                     $builder->setActiveStyles($fillStyle0, $fillStyle1, $lineStyle);
 
-                    if ($shape['stateMoveTo']) {
-                        $x = $shape['moveDeltaX'];
-                        $y = $shape['moveDeltaY'];
-                    }
-
-                    // @todo compléter
-
-                    break;
-
-                case 'StraightEdgeRecord':
-                    if ($shape['generalLineFlag']) {
-                        $toX = $x + $shape['deltaX'];
-                        $toY = $y + $shape['deltaY'];
-
-                        $currentPath->edges[] = new StraightEdge($x, $y, $toX, $toY);
-
-                        $x = $toX;
-                        $y = $toY;
-                    } elseif (!empty($shape['vertLineFlag'])) {
-                        $toY = $y + $shape['deltaY'];
-
-                        $currentPath->edges[] = new StraightEdge($x, $y, $x, $toY);
-
-                        $y = $toY;
-                    } else {
-                        $toX = $x + $shape['deltaX'];
-
-                        $currentPath->edges[] = new StraightEdge($x, $y, $toX, $y);
-
-                        $x = $toX;
+                    if ($shape->stateMoveTo) {
+                        $x = $shape->moveDeltaX;
+                        $y = $shape->moveDeltaY;
                     }
                     break;
 
-                case 'CurvedEdgeRecord':
-                    $fromX = $x;
-                    $fromY = $y;
-                    $controlX = $x + $shape['controlDeltaX'];
-                    $controlY = $y + $shape['controlDeltaY'];
-                    $toX = $x + $shape['controlDeltaX'] + $shape['anchorDeltaX'];
-                    $toY = $y + $shape['controlDeltaY'] + $shape['anchorDeltaY'];
+                case $shape instanceof StraightEdgeRecord:
+                    $toX = $x + $shape->deltaX;
+                    $toY = $y + $shape->deltaY;
 
-                    $currentPath->edges[] = new CurvedEdge($fromX, $fromY, $controlX, $controlY, $toX, $toY);
+                    $edges[] = new StraightEdge($x, $y, $toX, $toY);
 
                     $x = $toX;
                     $y = $toY;
                     break;
 
-                case 'EndShapeRecord':
-                    $builder->merge($currentPath);
-                    break 2;
+                case $shape instanceof CurvedEdgeRecord:
+                    $fromX = $x;
+                    $fromY = $y;
+                    $controlX = $x + $shape->controlDeltaX;
+                    $controlY = $y + $shape->controlDeltaY;
+                    $toX = $x + $shape->controlDeltaX + $shape->anchorDeltaX;
+                    $toY = $y + $shape->controlDeltaY + $shape->anchorDeltaY;
+
+                    $edges[] = new CurvedEdge($fromX, $fromY, $controlX, $controlY, $toX, $toY);
+
+                    $x = $toX;
+                    $y = $toY;
+                    break;
+
+                case $shape instanceof EndShapeRecord:
+                    $builder->merge(...$edges);
+                    return $builder->export();
 
                 default:
-                    throw new \Exception('Unknown shape type: '.$shape['type']);
+                    throw new InvalidArgumentException('Unknown shape type: '.$shape::class);
             }
         }
 
-        return new Shape(
-            width: ($tag->shapeBounds['xmax'] - $tag->shapeBounds['xmin']),
-            height: ($tag->shapeBounds['ymax'] - $tag->shapeBounds['ymin']),
-            xOffset: -$tag->shapeBounds['xmin'],
-            yOffset: -$tag->shapeBounds['ymin'],
-            paths: $builder->export(),
-        );
+        return $builder->export();
     }
 }

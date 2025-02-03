@@ -34,6 +34,15 @@ use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Action\WaitForFrameData;
 use Arakne\Swf\Parser\Structure\Action\GetURLData;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
+use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
+use Arakne\Swf\Parser\Structure\Record\FillStyle;
+use Arakne\Swf\Parser\Structure\Record\LineStyle;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
+use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Exception;
 
 use function sprintf;
@@ -47,35 +56,35 @@ readonly class SwfRec
         private SwfIO $io,
     ) {}
 
-    public function collectRGB(): array
+    public function collectRGB(): Color
     {
-        return [
-            'red' => $this->io->collectUI8(),
-            'green' => $this->io->collectUI8(),
-            'blue' => $this->io->collectUI8(),
-        ];
+        return new Color(
+            $this->io->collectUI8(),
+            $this->io->collectUI8(),
+            $this->io->collectUI8(),
+        );
     }
 
-    public function collectRGBA(): array
+    public function collectRGBA(): Color
     {
-        return [
-            'red' => $this->io->collectUI8(),
-            'green' => $this->io->collectUI8(),
-            'blue' => $this->io->collectUI8(),
-            'alpha' => $this->io->collectUI8(),
-        ];
+        return new Color(
+            $this->io->collectUI8(),
+            $this->io->collectUI8(),
+            $this->io->collectUI8(),
+            $this->io->collectUI8(),
+        );
     }
 
-    public function collectRect(): array
+    public function collectRect(): Rectangle
     {
         $nbits = $this->io->collectUB(5);
 
-        $ret = [
-            'xmin' => $this->io->collectSB($nbits),
-            'xmax' => $this->io->collectSB($nbits),
-            'ymin' => $this->io->collectSB($nbits),
-            'ymax' => $this->io->collectSB($nbits),
-        ];
+        $ret = new Rectangle(
+            $this->io->collectSB($nbits),
+            $this->io->collectSB($nbits),
+            $this->io->collectSB($nbits),
+            $this->io->collectSB($nbits),
+        );
 
         $this->io->byteAlign();
 
@@ -345,21 +354,28 @@ readonly class SwfRec
         return $this->collectShapeRecords($shapeVersion, null, null, $numFillBits, $numLineBits);
     }
 
-    public function collectShapeWithStyle(int $shapeVersion): array
+    public function collectShapeWithStyle(int $shapeVersion): ShapeWithStyle
     {
-        $ret = [
-            'fillStyles' => $this->collectFillStyleArray($shapeVersion),
-            'lineStyles' => $this->collectLineStyleArray($shapeVersion),
-        ];
+        $fillStyles = $this->collectFillStyleArray($shapeVersion);
+        $lineStyles = $this->collectLineStyleArray($shapeVersion);
 
         $numFillBits = $this->io->collectUB(4);
         $numLineBits = $this->io->collectUB(4);
 
-        $ret['shapeRecords'] = $this->collectShapeRecords($shapeVersion, $ret['fillStyles'], $ret['lineStyles'], $numFillBits, $numLineBits);
+        $shapeRecords = $this->collectShapeRecords($shapeVersion, $fillStyles, $lineStyles, $numFillBits, $numLineBits);
 
-        return $ret;
+        return new ShapeWithStyle($fillStyles, $lineStyles, $shapeRecords);
     }
 
+    /**
+     * @param int $shapeVersion
+     * @param array|null $fillStyles
+     * @param array|null $lineStyles
+     * @param int $numFillBits
+     * @param int $numLineBits
+     * @return list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>
+     * @throws Exception
+     */
     public function collectShapeRecords(int $shapeVersion, ?array $fillStyles, ?array $lineStyles, int $numFillBits, int $numLineBits): array
     {
         $shapeRecords = [];
@@ -367,76 +383,90 @@ readonly class SwfRec
         for (;;) {
             $typeFlag = $this->io->collectUB(1);
             if ($typeFlag == 0) {
-                $stateNewStyles = $this->io->collectUB(1);
-                $stateLineStyle = $this->io->collectUB(1);
-                $stateFillStyle1 = $this->io->collectUB(1);
-                $stateFillStyle0 = $this->io->collectUB(1);
-                $stateMoveTo = $this->io->collectUB(1);
-                if ($stateNewStyles == 0 && $stateLineStyle == 0 && $stateFillStyle1 == 0 && $stateFillStyle0 == 0 && $stateMoveTo == 0) {
+                $stateNewStyles = (bool) $this->io->collectUB(1);
+                $stateLineStyle = (bool) $this->io->collectUB(1);
+                $stateFillStyle1 = (bool) $this->io->collectUB(1);
+                $stateFillStyle0 = (bool) $this->io->collectUB(1);
+                $stateMoveTo = (bool) $this->io->collectUB(1);
+                if (!$stateNewStyles && !$stateLineStyle && !$stateFillStyle1 && !$stateFillStyle0 && !$stateMoveTo) {
                     // EndShapeRecord
-                    $shapeRecords[] = array('type' => 'EndShapeRecord');
+                    $shapeRecords[] = new EndShapeRecord();
                     break;
                 } else {
                     // StyleChangeRecord
-                    $shapeRecord = array();
-                    $shapeRecord['type'] = 'StyleChangeRecord';
-                    $shapeRecord['stateNewStyles'] = $stateNewStyles;
-                    $shapeRecord['stateLineStyle'] = $stateLineStyle;
-                    $shapeRecord['stateFillStyle1'] = $stateFillStyle1;
-                    $shapeRecord['stateFillStyle0'] = $stateFillStyle0;
-                    $shapeRecord['stateMoveTo'] = $stateMoveTo;
-
-                    if ($shapeRecord['stateMoveTo'] != 0) {
+                    if ($stateMoveTo) {
                         $moveBits = $this->io->collectUB(5);
-                        $shapeRecord['moveDeltaX'] = $this->io->collectSB($moveBits);
-                        $shapeRecord['moveDeltaY'] = $this->io->collectSB($moveBits);
+                        $moveDeltaX = $this->io->collectSB($moveBits);
+                        $moveDeltaY = $this->io->collectSB($moveBits);
+                    } else {
+                        $moveDeltaX = 0;
+                        $moveDeltaY = 0;
                     }
-                    if ($shapeRecord['stateFillStyle0'] != 0) {
-                        $shapeRecord['fillStyle0'] = $this->io->collectUB($numFillBits);
+
+                    if ($stateFillStyle0) {
+                        $fillStyle0 = $this->io->collectUB($numFillBits);
+                    } else {
+                        $fillStyle0 = 0;
                     }
-                    if ($shapeRecord['stateFillStyle1'] != 0) {
-                        $shapeRecord['fillStyle1'] = $this->io->collectUB($numFillBits);
+
+                    if ($stateFillStyle1) {
+                        $fillStyle1 = $this->io->collectUB($numFillBits);
+                    } else {
+                        $fillStyle1 = 0;
                     }
-                    if ($shapeRecord['stateLineStyle'] != 0) {
-                        $shapeRecord['lineStyle'] = $this->io->collectUB($numLineBits);
+
+                    if ($stateLineStyle) {
+                        $lineStyle = $this->io->collectUB($numLineBits);
+                    } else {
+                        $lineStyle = 0;
                     }
-                    if ($shapeRecord['stateNewStyles'] != 0 && ($shapeVersion == 2 || $shapeVersion == 3 || $shapeVersion == 4)) { // XXX shapeVersion 4 not in spec
+
+                    if ($stateNewStyles && ($shapeVersion == 2 || $shapeVersion == 3 || $shapeVersion == 4)) { // XXX shapeVersion 4 not in spec
                         $this->io->byteAlign();
-                        $shapeRecord['fillStyles'] = $fillStyles = $this->collectFillStyleArray($shapeVersion);
-                        $shapeRecord['lineStyles'] = $lineStyles = $this->collectLineStyleArray($shapeVersion);
+                        $newFillStyles = $fillStyles = $this->collectFillStyleArray($shapeVersion);
+                        $newLineStyles = $lineStyles = $this->collectLineStyleArray($shapeVersion);
                         $numFillBits = $this->io->collectUB(4);
                         $numLineBits = $this->io->collectUB(4);
+                    } else {
+                        $newFillStyles = [];
+                        $newLineStyles = [];
                     }
-                    $shapeRecords[] = $shapeRecord;
+
+                    $shapeRecords[] = new StyleChangeRecord(
+                        $stateNewStyles,
+                        $stateLineStyle,
+                        $stateFillStyle0,
+                        $stateFillStyle1,
+                        $stateMoveTo,
+                        $moveDeltaX,
+                        $moveDeltaY,
+                        $fillStyle0,
+                        $fillStyle1,
+                        $lineStyle,
+                        $newFillStyles,
+                        $newLineStyles,
+                    );
                 }
             } else {
                 $straightFlag = $this->io->collectUB(1);
+                $numBits = $this->io->collectUB(4);
+
                 if ($straightFlag == 1) {
                     // StraightEdgeRecord
-                    $shapeRecord = array();
-                    $shapeRecord['type'] = 'StraightEdgeRecord';
-                    $numBits = $this->io->collectUB(4);
-                    $shapeRecord['generalLineFlag'] = $this->io->collectUB(1);
-                    if ($shapeRecord['generalLineFlag'] == 0) {
-                        $shapeRecord['vertLineFlag'] = $this->io->collectUB(1);
-                    }
-                    if ($shapeRecord['generalLineFlag'] == 1 || $shapeRecord['vertLineFlag'] == 0) {
-                        $shapeRecord['deltaX'] = $this->io->collectSB($numBits + 2);
-                    }
-                    if ($shapeRecord['generalLineFlag'] == 1 || $shapeRecord['vertLineFlag'] == 1) {
-                        $shapeRecord['deltaY'] = $this->io->collectSB($numBits + 2);
-                    }
-                    $shapeRecords[] = $shapeRecord;
+                    $generalLineFlag = (bool) $this->io->collectUB(1);
+                    $vertLineFlag = !$generalLineFlag && (bool) $this->io->collectUB(1);
+                    $deltaX = $generalLineFlag || !$vertLineFlag ? $this->io->collectSB($numBits + 2) : 0;
+                    $deltaY = $generalLineFlag || $vertLineFlag ? $this->io->collectSB($numBits + 2) : 0;
+
+                    $shapeRecords[] = new StraightEdgeRecord($generalLineFlag, $vertLineFlag, $deltaX, $deltaY);
                 } else {
                     // CurvedEdgeRecord
-                    $shapeRecord = array();
-                    $shapeRecord['type'] = 'CurvedEdgeRecord';
-                    $numBits = $this->io->collectUB(4);
-                    $shapeRecord['controlDeltaX'] = $this->io->collectSB($numBits + 2);
-                    $shapeRecord['controlDeltaY'] = $this->io->collectSB($numBits + 2);
-                    $shapeRecord['anchorDeltaX'] = $this->io->collectSB($numBits + 2);
-                    $shapeRecord['anchorDeltaY'] = $this->io->collectSB($numBits + 2);
-                    $shapeRecords[] = $shapeRecord;
+                    $shapeRecords[] = new CurvedEdgeRecord(
+                        $this->io->collectSB($numBits + 2),
+                        $this->io->collectSB($numBits + 2),
+                        $this->io->collectSB($numBits + 2),
+                        $this->io->collectSB($numBits + 2),
+                    );
                 }
             }
         }
@@ -961,6 +991,10 @@ readonly class SwfRec
         return $textRecords;
     }
 
+    /**
+     * @param int $shapeVersion
+     * @return list<FillStyle>
+     */
     public function collectFillStyleArray(int $shapeVersion): array
     {
         $fillStyleCount = $this->io->collectUI8();
@@ -969,52 +1003,71 @@ readonly class SwfRec
                 $fillStyleCount = $this->io->collectUI16(); // Extended
             }
         }
-        $fillStyleArray = array();
+        $fillStyleArray = [];
         for ($i = 0; $i < $fillStyleCount; $i++) {
             $fillStyleArray[] = $this->collectFillStyle($shapeVersion);
         }
         return $fillStyleArray;
     }
 
+    /**
+     * @param int $shapeVersion
+     * @return list<LineStyle>
+     */
     public function collectLineStyleArray(int $shapeVersion): array
     {
-        $lineStyleArray = array();
+        $lineStyleArray = [];
         $lineStyleCount = $this->io->collectUI8();
         if ($lineStyleCount == 0xff) {
             $lineStyleCount = $this->io->collectUI16(); // Extended
         }
         if ($shapeVersion == 1 || $shapeVersion == 2 || $shapeVersion == 3) {
             for ($i = 0; $i < $lineStyleCount; $i++) {
-                $lineStyle = array();
-                $lineStyle['width'] = $this->io->collectUI16();
-                $lineStyle['color'] = $shapeVersion == 1 || $shapeVersion == 2 ? $this->collectRGB() : $this->collectRGBA();
-                $lineStyleArray[] = $lineStyle;
+                $lineStyleArray[] = new LineStyle(
+                    width: $this->io->collectUI16(),
+                    color: $shapeVersion == 1 || $shapeVersion == 2 ? $this->collectRGB() : $this->collectRGBA(),
+                );
             }
         } else if ($shapeVersion == 4) {
             for ($i = 0; $i < $lineStyleCount; $i++) {
-                $lineStyle = array();
-                $lineStyle['width'] = $this->io->collectUI16();
+                $width = $this->io->collectUI16();
 
-                $lineStyle['startCapStyle'] = $this->io->collectUB(2);
-                $lineStyle['joinStyle'] = $this->io->collectUB(2);
-                $lineStyle['hasFillFlag'] = $this->io->collectUB(1);
-                $lineStyle['noHScaleFlag'] = $this->io->collectUB(1);
-                $lineStyle['noVScaleFlag'] = $this->io->collectUB(1);
-                $lineStyle['pixelHintingFlag'] = $this->io->collectUB(1);
+                $flags = $this->io->collectUI16();
 
-                $this->io->collectUB(5); // Reserved, must be 0
-                $lineStyle['noClose'] = $this->io->collectUB(1);
-                $lineStyle['endCapStyle'] = $this->io->collectUB(2);
+                $startCapStyle = $flags & 0b11;
+                $joinStyle = ($flags >> 2) & 0b11;
+                $hasFillFlag = ($flags & 0b10000) !== 0;
+                $noHScaleFlag = ($flags & 0b100000) !== 0;
+                $noVScaleFlag = ($flags & 0b1000000) !== 0;
+                $pixelHintingFlag = ($flags & 0b10000000) !== 0;
+                // Skip 5 bits
+                $noClose = ($flags & 0b10000000000000) !== 0;
+                $endCapStyle = ($flags >> 15) & 0b11;
 
-                if ($lineStyle['joinStyle'] == 2) {
-                    $lineStyle['miterLimitFactor'] = $this->io->collectUI16();
-                }
-                if ($lineStyle['hasFillFlag'] == 0) {
-                    $lineStyle['color'] = $this->collectRGBA();
+                $miterLimitFactor = $joinStyle === 2 ? $this->io->collectUI16() : null;
+
+                if (!$hasFillFlag) {
+                    $color = $this->collectRGBA();
+                    $fillType = null;
                 } else {
-                    $lineStyle['fillType'] = $this->collectFillStyle($shapeVersion);
+                    $fillType = $this->collectFillStyle($shapeVersion);
+                    $color = null;
                 }
-                $lineStyleArray[] = $lineStyle;
+
+                $lineStyleArray[] = new LineStyle(
+                    width: $width,
+                    color: $color,
+                    startCapStyle: $startCapStyle,
+                    joinStyle: $joinStyle,
+                    hasFillFlag: $hasFillFlag,
+                    noHScaleFlag: $noHScaleFlag,
+                    noVScaleFlag: $noVScaleFlag,
+                    pixelHintingFlag: $pixelHintingFlag,
+                    noClose: $noClose,
+                    endCapStyle: $endCapStyle,
+                    miterLimitFactor: $miterLimitFactor,
+                    fillType: $fillType,
+                );
             }
         } else {
             throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion));
@@ -1022,42 +1075,36 @@ readonly class SwfRec
         return $lineStyleArray;
     }
 
-    public function collectFillStyle(int $shapeVersion): array
+    public function collectFillStyle(int $shapeVersion): FillStyle
     {
-        $fillStyle = array();
-        $fillStyle['type'] = $this->io->collectUI8();
-        switch ($fillStyle['type']) {
-            case 0x00: // Solid fill
-                if ($shapeVersion == 1 || $shapeVersion == 2) {
-                    $fillStyle['color'] = $this->collectRGB();
-                } else if ($shapeVersion == 3 || $shapeVersion == 4) { //XXX shapeVersion 4 not in spec
-                    $fillStyle['color'] = $this->collectRGBA();
-                } else {
-                    throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion));
-                }
-                break;
-            case 0x10: // Linear gradient fill
-            case 0x12: // Radial gradient fill
-            case 0x13: // Focal gradient fill
-                $fillStyle['matrix'] = $this->collectMatrix();
-                if ($fillStyle['type'] == 0x10 || $fillStyle['type'] == 0x12) {
-                    $fillStyle['gradient'] = $this->collectGradient($shapeVersion);
-                } else if ($fillStyle['type'] == 0x13) {
-                    $fillStyle['focalGradient'] = $this->collectFocalGradient($shapeVersion);
-                }
-                break;
-            case 0x40: // Repeating bitmap fill
-            case 0x41: // Clipped bitmap fill
-            case 0x42: // Non-smoothed repeating bitmap
-            case 0x43: // Non-smoothed clipped bitmap
-                $fillStyle['bitmapId'] = $this->io->collectUI16();
-                $fillStyle['bitmapMatrix'] = $this->collectMatrix();
-                break;
-            default:
-                throw new Exception(sprintf('Internal error: fillStyleType=%d', $fillStyle['type']));
-        }
+        $type = $this->io->collectUI8();
+
+        $style = match ($type) {
+            FillStyle::SOLID => match ($shapeVersion) {
+                1, 2 => new FillStyle($type, color: $this->collectRGB()),
+                3, 4 => new FillStyle($type, color: $this->collectRGBA()), //XXX shapeVersion 4 not in spec
+                default => throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion)),
+            },
+            FillStyle::LINEAR_GRADIENT, FillStyle::RADIAL_GRADIENT => new FillStyle(
+                $type,
+                matrix: $this->collectMatrix(),
+                gradient: $this->collectGradient($shapeVersion)
+            ),
+            FillStyle::FOCAL_GRADIENT => new FillStyle(
+                $type,
+                matrix: $this->collectMatrix(),
+                focalGradient: $this->collectFocalGradient($shapeVersion),
+            ),
+            FillStyle::REPEATING_BITMAP, FillStyle::CLIPPED_BITMAP, FillStyle::NON_SMOOTHED_REPEATING_BITMAP, FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new FillStyle(
+                $type,
+                bitmapId: $this->io->collectUI16(),
+                bitmapMatrix: $this->collectMatrix(),
+            ),
+            default => throw new Exception(sprintf('Internal error: fillStyleType=%d', $type)),
+        };
+
         $this->io->byteAlign();
-        return $fillStyle;
+        return $style;
     }
 
     public function collectZoneTable(int $bytePosEnd): array

@@ -31,8 +31,8 @@ final readonly class SvgShapeDrawer
 
         foreach ($shape->paths as $path) {
             $pathElement = $g->addChild('path');
-            $pathElement['fill'] = $path->style->fillColor ?? 'none';
-            $pathElement['stroke'] = $path->style->lineColor ?? 'none';
+            $pathElement['fill'] = (string) ($path->style->fillColor ?? 'none');
+            $pathElement['stroke'] = (string) ($path->style->lineColor ?? 'none');
 
             if ($path->style->fillColor !== null) {
                 $pathElement['fill-rule'] = 'evenodd';
