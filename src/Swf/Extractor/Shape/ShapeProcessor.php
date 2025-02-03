@@ -100,7 +100,7 @@ final class ShapeProcessor
                     if ($shape->stateFillStyle0) {
                         $style = $fillStyles[$shape->fillStyle0 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle0 = new PathStyle(fillColor: $style->color);
+                            $fillStyle0 = new PathStyle(fillColor: $style->color, reverse: true);
                         } else {
                             $fillStyle0 = null;
                         }

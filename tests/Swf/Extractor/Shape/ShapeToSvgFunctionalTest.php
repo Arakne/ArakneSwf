@@ -17,8 +17,8 @@ class ShapeToSvgFunctionalTest extends TestCase
 {
     #[
         Test,
-        //TestWith(['2.swf', 'shape.svg']),
         TestWith(['shape.swf', 'shape.svg']),
+        TestWith(['2.swf', '2.svg']),
     ]
     public function singleShape(string $swf, string $svg): void
     {

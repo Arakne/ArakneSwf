@@ -38,8 +38,8 @@ final readonly class SvgShapeDrawer
     {
         $xml = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
 
-        $xml->addAttribute('width', intdiv($shape->width, 20).'px');
-        $xml->addAttribute('height', intdiv($shape->height, 20).'px');
+        $xml->addAttribute('width', ($shape->width / 20).'px');
+        $xml->addAttribute('height', ($shape->height / 20).'px');
 
         $g = $xml->addChild('g');
         $g->addAttribute('transform', sprintf(

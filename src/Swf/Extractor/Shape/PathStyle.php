@@ -55,6 +55,14 @@ final readonly class PathStyle
          * This value should be set only if the lineColor is set
          */
         public int $lineWidth = 0,
+
+        /**
+         * Does the edges should be added in reverse order?
+         * This value should be true for style0 fill paths
+         *
+         * Note: this value is not used in the hash code, and its applied only on path building
+         */
+        public bool $reverse = false,
     ) {
         $this->hash = pack('lll', self::colorHash($this->fillColor), self::colorHash($this->lineColor), $this->lineWidth);
     }

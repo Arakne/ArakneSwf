@@ -21,8 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
-use function array_pop;
-use function array_shift;
+use function array_key_first;
 use function spl_object_id;
 
 /**
@@ -65,7 +64,7 @@ final class Path
      *
      * Algorithm:
      * 1. Create a set of edges (will be used to keep trace of remaining edges)
-     * 2. Pop one edge from the set if not empty
+     * 2. Pop the first edge from the set if not empty
      * 3. Push this edge to the result
      * 4. Find the next edge, from the set, that is connected to the current one. An edge is considered as connected if:
      *    - the `to` point of the current edge is the `from` point of the next edge
@@ -85,7 +84,9 @@ final class Path
         $edges = [];
 
         while ($edgeSet) {
-            $currentEdge = array_pop($edgeSet);
+            $currentEdgeKey = array_key_first($edgeSet);
+            $currentEdge = $edgeSet[$currentEdgeKey];
+            unset($edgeSet[$currentEdgeKey]);
             $edges[] = $currentEdge;
 
             while ($currentEdge) {

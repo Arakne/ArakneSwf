@@ -21,6 +21,9 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use function array_map;
+use function array_reverse;
+
 /**
  * Build paths of a shape
  * This builder will associate styles to paths and merge them when possible
@@ -64,12 +67,13 @@ final class PathsBuilder
                 continue;
             }
 
+            $toPush = $style->reverse ? $this->reserveEdges($edges) : $edges;
             $lastPath = $this->openPaths[$style->hash()] ?? null;
 
             if (!$lastPath) {
-                $this->openPaths[$style->hash()] = new Path($edges, $style);
+                $this->openPaths[$style->hash()] = new Path($toPush, $style);
             } else {
-                $this->openPaths[$style->hash()] = $lastPath->push(...$edges);
+                $this->openPaths[$style->hash()] = $lastPath->push(...$toPush);
             }
         }
     }
@@ -104,5 +108,22 @@ final class PathsBuilder
         }
 
         return $paths;
+    }
+
+    /**
+     * Reverse edges, and reverse the order
+     *
+     * @param list<EdgeInterface> $edges
+     * @return list<EdgeInterface>
+     */
+    private function reserveEdges(array $edges): array
+    {
+        $reversed = [];
+
+        foreach (array_reverse($edges) as $edge) {
+            $reversed[] = $edge->reverse();
+        }
+
+        return $reversed;
     }
 }

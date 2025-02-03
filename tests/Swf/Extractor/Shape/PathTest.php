@@ -132,11 +132,11 @@ class PathTest extends TestCase
         $fixed->draw($this->stubDrawer);
 
         $this->assertSame([
-            ['move', 0, 0],
-            ['line', 10, 15],
-            ['line', 20, 20],
+            ['move', 20, 20],
             ['curve', 15, 15, 10, 10],
             ['line', 0, 0],
+            ['line', 10, 15],
+            ['line', 20, 20],
         ], $this->stubDrawer->commands);
     }
 
@@ -160,11 +160,11 @@ class PathTest extends TestCase
         $fixed->draw($this->stubDrawer);
 
         $this->assertSame([
-            ['move', 10, 10],
-            ['line', 0, 0],
+            ['move', 0, 0],
             ['line', 10, 15],
             ['line', 20, 20],
             ['curve', 15, 15, 10, 10],
+            ['line', 0, 0],
         ], $this->stubDrawer->commands);
     }
 
@@ -188,15 +188,15 @@ class PathTest extends TestCase
         $fixed->draw($this->stubDrawer);
 
         $this->assertSame([
-            ['move', 30, 30],
-            ['line', 30, 25],
-            ['line', 20, 20],
-            ['line', 30, 30],
-
-            ['move', 10, 10],
-            ['line', 10, 15],
+            ['move', 10, 15],
             ['line', 0, 0],
             ['line', 10, 10],
+            ['line', 10, 15],
+
+            ['move', 30, 25],
+            ['line', 20, 20],
+            ['line', 30, 30],
+            ['line', 30, 25],
         ], $this->stubDrawer->commands);
     }
 }
