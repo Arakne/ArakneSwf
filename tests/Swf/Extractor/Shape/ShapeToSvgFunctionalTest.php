@@ -3,7 +3,8 @@
 namespace Arakne\Tests\Swf\Extractor\Shape;
 
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
-use Arakne\Swf\Extractor\Shape\ShapeToSvg;
+use Arakne\Swf\Extractor\Shape\ShapeProcessor;
+use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
@@ -25,12 +26,15 @@ class ShapeToSvgFunctionalTest extends TestCase
     public function singleShape(string $swf, string $svg): void
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/' . $swf);
-
-        $converter = new ShapeToSvg();
+        $processor = new ShapeProcessor();
 
         /** @var DefineShapeTag|DefineShape4Tag $tag */
         foreach ($swf->tags(2, 22, 32, 83) as $tag) {
-            $shape = $converter->convert($tag);
+            $shape = $processor->process($tag);
+            $canvas = new SvgCanvas($tag->shapeBounds);
+            $canvas->shape($shape);
+
+            $shape = $canvas->toXml();
             break;
         }
 

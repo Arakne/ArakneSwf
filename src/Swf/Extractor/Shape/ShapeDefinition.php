@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
-use Arakne\Swf\Extractor\Shape\Svg\SvgShapeDrawer;
+use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
@@ -29,6 +29,8 @@ use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 
 /**
  * Store a single shape extracted from a SWF file
+ *
+ * @todo drawable interface
  */
 final class ShapeDefinition
 {
@@ -60,6 +62,21 @@ final class ShapeDefinition
         public readonly DefineShapeTag|DefineShape4Tag $tag,
     ) {}
 
+    public function draw(SvgCanvas $canvas): SvgCanvas
+    {
+        $canvas->shape($this->shape);
+
+        return $canvas;
+    }
+
+    /**
+     * Convert the shape to an SVG string
+     */
+    public function toSvg(): string
+    {
+        return $this->draw(new SvgCanvas($this->bounds))->toXml();
+    }
+
     // @todo object
     public function transformColors(array $colorTransform): self
     {
@@ -69,15 +86,5 @@ final class ShapeDefinition
         $self->shape = $shape;
 
         return $self;
-    }
-
-    /**
-     * Convert the shape to an SVG string
-     */
-    public function toSvg(): string
-    {
-        $drawer = new SvgShapeDrawer();
-
-        return $drawer->draw($this->shape);
     }
 }

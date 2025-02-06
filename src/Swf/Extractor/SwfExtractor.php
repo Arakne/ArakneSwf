@@ -36,6 +36,8 @@ use Arakne\Swf\SwfFile;
  */
 final class SwfExtractor
 {
+    private ?array $characters = null;
+
     public function __construct(
         private readonly SwfFile $file,
     ) {}
@@ -88,7 +90,11 @@ final class SwfExtractor
 
     public function character(int $characterId): ShapeDefinition|SpriteDefinition|null
     {
+        $this->characters ??= ($this->shapes() + $this->sprites());
+
+        return $this->characters[$characterId] ?? null;
+
         // @todo cache
-        return ($this->shapes() + $this->sprites())[$characterId] ?? null;
+        //return ($this->shapes() + $this->sprites())[$characterId] ?? null;
     }
 }

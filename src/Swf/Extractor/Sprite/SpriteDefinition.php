@@ -21,15 +21,9 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Sprite;
 
-use Arakne\Swf\Extractor\Shape\ShapeDefinition;
+use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
-use Dom\Element;
-use Dom\XMLDocument;
-use SimpleXMLElement;
-
-use function Dom\import_simplexml;
-use function sprintf;
 
 final class SpriteDefinition
 {
@@ -67,70 +61,22 @@ final class SpriteDefinition
         return $self;
     }
 
-    public function toSvg(?string $idPrefix = null): string
+    public function draw(SvgCanvas $canvas): SvgCanvas
     {
-        $dom = XMLDocument::createEmpty();
-        $svg = $dom->createElement('svg');
-        $dom->append($svg);
+        $canvas->bounds($this->bounds);
 
-        $svg->setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        $svg->setAttribute('width', $this->bounds->width() / 20 . 'px');
-        $svg->setAttribute('height', $this->bounds->height() / 20 . 'px');
-
-        $g = $dom->createElement('g');
-        $defs = $dom->createElement('defs');
-        $svg->append($g, $defs);
-
-        $g->setAttribute('transform', sprintf('matrix(1.0, 0.0, 0.0, 1.0, %f, %f)', -$this->bounds->xmin / 20, -$this->bounds->ymin / 20));
-
-        foreach ($this->sprite->objects as $index => $object) {
-            $use = $dom->createElement('use');
-            $id = $object->object instanceof SpriteDefinition ? $idPrefix . 'sprite-' . $index : $idPrefix . 'shape-' . $index;
-            $use->setAttribute('href', '#' . $id);
-            $use->setAttribute('width', (string) ($object->object->bounds->width() / 20));
-            $use->setAttribute('height', (string) ($object->object->bounds->height() / 20));
-
-            $use->setAttribute('transform', $object->matrix->toSvgTransformation());
-
-            $g->append($use);
-
-            $this->processDeps($defs, $id, $object->object);
+        foreach ($this->sprite->objects as $object) {
+            $canvas->include($object->object, $object->matrix);
         }
 
-        return $dom->saveXML();
+        return $canvas;
     }
 
-    private function processDeps(Element $defs, string $id, SpriteDefinition|ShapeDefinition $object): void
+    /**
+     * Convert the sprite to SVG string
+     */
+    public function toSvg(): string
     {
-        // Dependency already processed
-        if ($defs->ownerDocument->getElementById($id)) {
-            return;
-        }
-
-        $other = new SimpleXMLElement($object->toSvg($id . '-'));
-
-        $g = $other->g;
-        $g['id'] = $id;
-
-        $defs->append($defs->ownerDocument->importNode(import_simplexml($g), true));
-
-        foreach ($other->linearGradient as $e) {
-            $defs->append($defs->ownerDocument->importNode(import_simplexml($e), true));
-        }
-
-        foreach ($other->radialGradient as $e) {
-            $defs->append($defs->ownerDocument->importNode(import_simplexml($e), true));
-        }
-
-        if ($object instanceof SpriteDefinition) {
-            foreach ($object->sprite->objects as $index => $object) {
-                $subId = $object->object instanceof SpriteDefinition ? $id . '-' . 'sprite-' . $index : $id . '-' . 'shape-' . $index;
-                $this->processDeps(
-                    $defs,
-                    $subId,
-                    $object->object
-                );
-            }
-        }
+        return $this->draw(new SvgCanvas($this->bounds))->toXml();
     }
 }

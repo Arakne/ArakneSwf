@@ -54,6 +54,8 @@ class SwfExtractorTest extends TestCase
         $sprites = $extractor->sprites();
 
         foreach ($sprites as $sprite) {
+            file_put_contents(__DIR__.'/Fixtures/test.svg', $sprite->toSvg());
+            chmod(__DIR__.'/Fixtures/test.svg', 0666);
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/sprite-'.$sprite->id.'.svg', $sprite->toSvg());
         }
     }
