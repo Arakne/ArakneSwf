@@ -21,9 +21,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
+use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
+use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Parser\Structure\Record\Color;
-
-use function pack;
+use Arakne\Swf\Parser\Structure\Record\FillStyle;
+use InvalidArgumentException;
 
 /**
  * Define the drawing style of a path
@@ -37,10 +40,10 @@ final readonly class PathStyle
 
     public function __construct(
         /**
-         * The fill color of the current path
+         * The fill style and color of the current path
          * If this value is null, the path should not be filled
          */
-        public ?Color $fillColor = null,
+        public Solid|LinearGradient|RadialGradient|null $fill = null,
 
         /**
          * The line color of the current path
@@ -64,7 +67,7 @@ final readonly class PathStyle
          */
         public bool $reverse = false,
     ) {
-        $this->hash = pack('lll', self::colorHash($this->fillColor), self::colorHash($this->lineColor), $this->lineWidth);
+        $this->hash = $this->fill?->hash() . '-' . self::colorHash($this->lineColor) . '-' . $this->lineWidth;
     }
 
     /**
@@ -75,12 +78,39 @@ final readonly class PathStyle
         return $this->hash;
     }
 
-    private static function colorHash(?Color $color): int
+    public static function fromFillStyle(FillStyle $style, bool $reverse = false): self
+    {
+        return new self(
+            match ($style->type) {
+                FillStyle::SOLID => new Solid($style->color),
+                FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix, $style->gradient),
+                FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix, $style->gradient),
+                default => null,
+                //default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
+            },
+            reverse: $reverse
+        );
+    }
+
+    private static function colorHash(Color|null $color): int
     {
         if ($color === null) {
             return -1;
         }
 
         return ($color->red << 24) | ($color->green << 16) | ($color->blue << 8) | ($color->alpha ?? 255);
+    }
+
+    public function transformColors(array $colorTransform)
+    {
+        $fill = $this->fill?->transformColors($colorTransform);
+        $lineColor = $this->lineColor?->transform($colorTransform);
+
+        return new self(
+            $fill,
+            $lineColor,
+            $this->lineWidth,
+            $this->reverse
+        );
     }
 }

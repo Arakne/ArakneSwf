@@ -21,13 +21,15 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Matrix;
+
 final readonly class PlaceObject2Tag
 {
     public function __construct(
         public bool $placeFlagMove,
         public int $depth,
         public ?int $characterId,
-        public ?array $matrix,
+        public ?Matrix $matrix,
         public ?array $colorTransform,
         public ?int $ratio,
         public ?string $name,

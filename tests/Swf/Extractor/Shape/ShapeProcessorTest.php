@@ -18,7 +18,7 @@ class ShapeProcessorTest extends TestCase
     {
         $processor = new ShapeProcessor();
         $swf = new SwfFile(__DIR__.'/../Fixtures/shape.swf');
-        $tag = iterator_to_array($swf->tags(DefineShapeTag::TYPE_V2))[0];
+        $tag = iterator_to_array($swf->tags(DefineShapeTag::TYPE_V2), false)[0];
 
         $shape = $processor->process($tag);
 

@@ -36,8 +36,29 @@ final readonly class Shape
         public int $yOffset,
 
         /**
+         * Path to draw, ordered by drawing order
+         *
+         * Note: line paths should be drawn after fill paths
+         *
          * @var list<Path>
          */
         public array $paths,
     ) {}
+
+    public function transformColors(array $colorTransform)
+    {
+        $newPaths = [];
+
+        foreach ($this->paths as $path) {
+            $newPaths[] = $path->transformColors($colorTransform);
+        }
+
+        return new self(
+            $this->width,
+            $this->height,
+            $this->xOffset,
+            $this->yOffset,
+            $newPaths,
+        );
+    }
 }

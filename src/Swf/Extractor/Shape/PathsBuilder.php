@@ -101,13 +101,21 @@ final class PathsBuilder
     {
         $this->close();
 
-        $paths = [];
+        $fillPaths = [];
+        $linePaths = [];
 
         foreach ($this->closedPaths as $path) {
-            $paths[] = $path->fix();
+            $fixedPath = $path->fix();
+
+            if ($fixedPath->style->lineColor !== null) {
+                $linePaths[] = $fixedPath;
+            } else {
+                $fillPaths[] = $fixedPath;
+            }
         }
 
-        return $paths;
+        // Line paths should be drawn after fill paths
+        return [...$fillPaths, ...$linePaths];
     }
 
     /**

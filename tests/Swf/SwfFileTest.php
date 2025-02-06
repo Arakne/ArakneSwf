@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf;
 
 use Arakne\Swf\Avm\Api\ScriptArray;
 use Arakne\Swf\Avm\Api\ScriptObject;
+use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\FileAttributesTag;
@@ -100,7 +101,7 @@ class SwfFileTest extends TestCase
     {
         $file = new SwfFile(__DIR__.'/Fixtures/lang_fr_801.swf');
 
-        $tags = iterator_to_array($file->tags());
+        $tags = iterator_to_array($file->tags(), false);
         $this->assertCount(5, $tags);
         $this->assertInstanceOf(FileAttributesTag::class, $tags[0]);
         $this->assertInstanceOf(SetBackgroundColorTag::class, $tags[1]);
@@ -108,14 +109,26 @@ class SwfFileTest extends TestCase
         $this->assertInstanceOf(ShowFrameTag::class, $tags[3]);
         $this->assertInstanceOf(EndTag::class, $tags[4]);
 
-        $tags = iterator_to_array($file->tags(12));
+        $tags = iterator_to_array($file->tags(12), false);
         $this->assertCount(1, $tags);
         $this->assertInstanceOf(DoActionTag::class, $tags[0]);
 
-        $tags = iterator_to_array($file->tags(12, 9));
+        $tags = iterator_to_array($file->tags(12, 9), false);
         $this->assertCount(2, $tags);
         $this->assertInstanceOf(SetBackgroundColorTag::class, $tags[0]);
         $this->assertInstanceOf(DoActionTag::class, $tags[1]);
+
+        $tags = [];
+
+        foreach($file->tags(12, 9) as $pos => $tag) {
+            $tags[] = [$pos, $tag];
+        }
+
+        $this->assertCount(2, $tags);
+        $this->assertEquals(new SwfTagPosition(9, 29, 3), $tags[0][0]);
+        $this->assertInstanceOf(SetBackgroundColorTag::class, $tags[0][1]);
+        $this->assertEquals(new SwfTagPosition(12, 38, 168338), $tags[1][0]);
+        $this->assertInstanceOf(DoActionTag::class, $tags[1][1]);
     }
 
     #[Test]

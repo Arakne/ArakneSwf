@@ -19,17 +19,36 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Matrix;
-
-final readonly class PlaceObjectTag
+final readonly class Gradient
 {
+    public const int SPREAD_MODE_PAD = 0;
+    public const int SPREAD_MODE_REFLECT = 1;
+    public const int SPREAD_MODE_REPEAT = 2;
+
+    public const int INTERPOLATION_MODE_NORMAL = 0;
+    public const int INTERPOLATION_MODE_LINEAR = 1;
+
     public function __construct(
-        public int $characterId,
-        public int $depth,
-        public Matrix $matrix,
-        public ?array $colorTransform,
-    ) {
+        public int $spreadMode,
+        public int $interpolationMode,
+        /** @var list<GradientRecord> */
+        public array $records,
+    ) {}
+
+    public function transformColors(array $colorTransform): self
+    {
+        $records = [];
+
+        foreach ($this->records as $record) {
+            $records[] = $record->transformColors($colorTransform);
+        }
+
+        return new self(
+            $this->spreadMode,
+            $this->interpolationMode,
+            $records,
+        );
     }
 }

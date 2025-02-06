@@ -43,4 +43,98 @@ final readonly class Rectangle
     {
         return $this->ymax - $this->ymin;
     }
+
+    /**
+     * Apply a transformation matrix to the rectangle and return the new rectangle
+     *
+     * The matrix will be applied to the 4 corners of the rectangle,
+     * and the new rectangle will be the bounding box of the 4 new points
+     *
+     * @return self The new rectangle
+     */
+    public function transform(Matrix $matrix): self
+    {
+        $xmin = PHP_INT_MAX;
+        $xmax = PHP_INT_MIN;
+        $ymin = PHP_INT_MAX;
+        $ymax = PHP_INT_MIN;
+
+        $x = $matrix->transformX($this->xmin, $this->ymin);
+        $y = $matrix->transformY($this->xmin, $this->ymin);
+
+        if ($x < $xmin) {
+            $xmin = $x;
+        }
+
+        if ($x > $xmax) {
+            $xmax = $x;
+        }
+
+        if ($y < $ymin) {
+            $ymin = $y;
+        }
+
+        if ($y > $ymax) {
+            $ymax = $y;
+        }
+
+        $x = $matrix->transformX($this->xmax, $this->ymin);
+        $y = $matrix->transformY($this->xmax, $this->ymin);
+
+        if ($x < $xmin) {
+            $xmin = $x;
+        }
+
+        if ($x > $xmax) {
+            $xmax = $x;
+        }
+
+        if ($y < $ymin) {
+            $ymin = $y;
+        }
+
+        if ($y > $ymax) {
+            $ymax = $y;
+        }
+
+        $x = $matrix->transformX($this->xmin, $this->ymax);
+        $y = $matrix->transformY($this->xmin, $this->ymax);
+
+        if ($x < $xmin) {
+            $xmin = $x;
+        }
+
+        if ($x > $xmax) {
+            $xmax = $x;
+        }
+
+        if ($y < $ymin) {
+            $ymin = $y;
+        }
+
+        if ($y > $ymax) {
+            $ymax = $y;
+        }
+
+        $x = $matrix->transformX($this->xmax, $this->ymax);
+        $y = $matrix->transformY($this->xmax, $this->ymax);
+
+        if ($x < $xmin) {
+            $xmin = $x;
+        }
+
+        if ($x > $xmax) {
+            $xmax = $x;
+        }
+
+        if ($y < $ymin) {
+            $ymin = $y;
+        }
+
+        if ($y > $ymax) {
+            $ymax = $y;
+        }
+
+        return new self($xmin, $xmax, $ymin, $ymax);
+    }
 }

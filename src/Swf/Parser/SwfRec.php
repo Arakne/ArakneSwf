@@ -38,7 +38,10 @@ use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\FillStyle;
+use Arakne\Swf\Parser\Structure\Record\Gradient;
+use Arakne\Swf\Parser\Structure\Record\GradientRecord;
 use Arakne\Swf\Parser\Structure\Record\LineStyle;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
 use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
@@ -91,30 +94,35 @@ readonly class SwfRec
         return $ret;
     }
 
-    public function collectMatrix(): array
+    public function collectMatrix(): Matrix
     {
-        $ret = [];
+        $scaleX = 1.0;
+        $scaleY = 1.0;
+        $rotateSkew0 = 0.0;
+        $rotateSkew1 = 0.0;
+        $translateX = 0;
+        $translateY = 0;
 
         if (($hasScale = $this->io->collectUB(1)) != 0) {
             $nScaleBits = $this->io->collectUB(5);
-            $ret['scaleX'] = $this->io->collectFB($nScaleBits);
-            $ret['scaleY'] = $this->io->collectFB($nScaleBits);
+            $scaleX = $this->io->collectFB($nScaleBits);
+            $scaleY = $this->io->collectFB($nScaleBits);
         }
 
         if (($hasRotate = $this->io->collectUB(1)) != 0) {
             $nRotateBits = $this->io->collectUB(5);
-            $ret['rotateSkew0'] = $this->io->collectFB($nRotateBits);
-            $ret['rotateSkew1'] = $this->io->collectFB($nRotateBits);
+            $rotateSkew0 = $this->io->collectFB($nRotateBits);
+            $rotateSkew1 = $this->io->collectFB($nRotateBits);
         }
 
         if (($nTranslateBits = $this->io->collectUB(5)) != 0) {
-            $ret['translateX'] = $this->io->collectSB($nTranslateBits);
-            $ret['translateY'] = $this->io->collectSB($nTranslateBits);
+            $translateX = $this->io->collectSB($nTranslateBits);
+            $translateY = $this->io->collectSB($nTranslateBits);
         }
 
         $this->io->byteAlign();
 
-        return $ret;
+        return new Matrix($scaleX, $scaleY, $rotateSkew0, $rotateSkew1, $translateX, $translateY);
     }
 
     public function collectColorTransform(bool $withAlpha): array
@@ -607,14 +615,13 @@ readonly class SwfRec
         return $morphLineStyle2;
     }
 
-    public function collectGradient(int $shapeVersion): array
+    public function collectGradient(int $shapeVersion): Gradient
     {
-        $gradient = [];
-        $gradient['spreadMode'] = $this->io->collectUB(2);
-        $gradient['interpolationMode'] = $this->io->collectUB(2);
-        $numGradientRecords = $this->io->collectUB(4);
-        $gradient['gradientRecords'] = $this->collectGradientRecords($numGradientRecords, $shapeVersion);
-        return $gradient;
+        return new Gradient(
+            spreadMode: $this->io->collectUB(2),
+            interpolationMode: $this->io->collectUB(2),
+            records: $this->collectGradientRecords($this->io->collectUB(4), $shapeVersion),
+        );
     }
 
     // shapeVersion must be 4
@@ -925,21 +932,27 @@ readonly class SwfRec
         return $ret;
     }
 
+    /**
+     * @param int $numGradientRecords
+     * @param int $shapeVersion
+     * @return list<GradientRecord>
+     * @throws Exception
+     */
     public function collectGradientRecords(int $numGradientRecords, int $shapeVersion): array
     {
         $gradientRecords = [];
+
         for ($i = 0; $i < $numGradientRecords; $i++) {
-            $gradientRecord = array();
-            $gradientRecord['ratio'] = $this->io->collectUI8();
-            if ($shapeVersion === 1 || $shapeVersion === 2) {
-                $gradientRecord['color'] = $this->collectRGB();
-            } else if ($shapeVersion === 3 || $shapeVersion === 4) { //XXX shapeVersion 4 not in spec
-                $gradientRecord['color'] = $this->collectRGBA();
-            } else {
-                throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion));
-            }
-            $gradientRecords[] = $gradientRecord;
+            $gradientRecords[] = new GradientRecord(
+                $this->io->collectUI8(),
+                match ($shapeVersion) {
+                    1, 2 => $this->collectRGB(),
+                    3, 4 => $this->collectRGBA(),
+                    default => throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion)),
+                }
+            );
         }
+
         return $gradientRecords;
     }
 

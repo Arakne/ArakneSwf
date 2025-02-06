@@ -27,7 +27,10 @@ use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
+use Exception;
 use InvalidArgumentException;
+
+use function var_dump;
 
 /**
  * Process define shape action tags to create shape objects
@@ -100,7 +103,7 @@ final class ShapeProcessor
                     if ($shape->stateFillStyle0) {
                         $style = $fillStyles[$shape->fillStyle0 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle0 = new PathStyle(fillColor: $style->color, reverse: true);
+                            $fillStyle0 = PathStyle::fromFillStyle($style, reverse: true);
                         } else {
                             $fillStyle0 = null;
                         }
@@ -109,7 +112,7 @@ final class ShapeProcessor
                     if ($shape->stateFillStyle1) {
                         $style = $fillStyles[$shape->fillStyle1 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle1 = new PathStyle(fillColor: $style->color);
+                            $fillStyle1 = PathStyle::fromFillStyle($style);
                         } else {
                             $fillStyle1 = null;
                         }

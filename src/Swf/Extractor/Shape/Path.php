@@ -142,4 +142,12 @@ final class Path
             $lastY = $edge->toY;
         }
     }
+
+    public function transformColors(array $colorTransform)
+    {
+        return new self(
+            $this->edges,
+            $this->style->transformColors($colorTransform),
+        );
+    }
 }

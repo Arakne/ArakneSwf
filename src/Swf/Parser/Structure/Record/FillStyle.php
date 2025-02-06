@@ -35,10 +35,10 @@ final readonly class FillStyle
     public function __construct(
         public int $type,
         public ?Color $color = null,
-        public ?array $matrix = null,
-        public ?array $gradient = null,
+        public ?Matrix $matrix = null,
+        public ?Gradient $gradient = null,
         public ?array $focalGradient = null,
         public ?int $bitmapId = null,
-        public ?array $bitmapMatrix = null,
+        public ?Matrix $bitmapMatrix = null,
     ) {}
 }

@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
 final readonly class DefineTextTag
@@ -29,7 +30,7 @@ final readonly class DefineTextTag
         public int $version,
         public int $characterId,
         public Rectangle $textBounds,
-        public array $textMatrix,
+        public Matrix $textMatrix,
         public int $glyphBits,
         public int $advanceBits,
         public array $textRecords,

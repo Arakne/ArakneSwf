@@ -4,6 +4,7 @@ namespace Arakne\Swf;
 
 use Arakne\Swf\Avm\Processor;
 use Arakne\Swf\Avm\State;
+use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Swf;
 use Arakne\Swf\Parser\SwfIO;
 
@@ -70,10 +71,12 @@ final class SwfFile
 
     /**
      * Extract and parse tags from the SWF file.
+     * 
+     * The key of the result is the tag position and id, and the value is the parsed tag.
      *
      * @param int ...$tagIds The tag IDs to extract. If empty, all tags are extracted.
      *
-     * @return iterable<object>
+     * @return iterable<SwfTagPosition, object>
      */
     public function tags(int ...$tagIds): iterable
     {
@@ -85,7 +88,7 @@ final class SwfFile
 
         foreach ($parser->tags as $tag) {
             if (!$tagIds || isset($tagIds[$tag->type])) {
-                yield $parser->parseTag($tag);
+                yield $tag => $parser->parseTag($tag);
             }
         }
     }

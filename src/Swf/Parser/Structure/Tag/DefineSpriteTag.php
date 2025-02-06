@@ -23,6 +23,8 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class DefineSpriteTag
 {
+    public const int TYPE = 39;
+
     public function __construct(
         public int $spriteId,
         public int $frameCount,

@@ -19,17 +19,24 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Structure\Record\Matrix;
-
-final readonly class PlaceObjectTag
+final readonly class GradientRecord
 {
     public function __construct(
-        public int $characterId,
-        public int $depth,
-        public Matrix $matrix,
-        public ?array $colorTransform,
-    ) {
+        /**
+         * The "distance" from the start of the gradient box.
+         * 0 means the start of the gradient box, 255 means the end of the gradient box.
+         */
+        public int $ratio,
+        public Color $color,
+    ) {}
+
+    public function transformColors(array $colorTransform): self
+    {
+        return new self(
+            $this->ratio,
+            $this->color->transform($colorTransform),
+        );
     }
 }

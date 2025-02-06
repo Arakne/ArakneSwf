@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\Matrix;
+
 final readonly class PlaceObject3Tag
 {
     public function __construct(
@@ -29,7 +31,7 @@ final readonly class PlaceObject3Tag
         public int $depth,
         public ?string $className,
         public ?int $characterId,
-        public ?array $matrix,
+        public ?Matrix $matrix,
         public ?array $colorTransform,
         public ?int $ratio,
         public ?string $name,

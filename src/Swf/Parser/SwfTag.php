@@ -221,7 +221,7 @@ readonly class SwfTag
             35 => $this->parseDefineBitsJPEGTag($bytePosEnd, 3),
             36 => $this->parseDefineBitsLosslessTag($bytePosEnd, 2),
             37 => $this->parseDefineEditTextTag($bytePosEnd),
-            39 => $this->parseDefineSpriteTag($bytePosEnd),
+            DefineSpriteTag::TYPE => $this->parseDefineSpriteTag($bytePosEnd),
             41 => $this->parseProductInfoTag($bytePosEnd),
             43 => $this->parseFrameLabelTag($bytePosEnd),
             45 => $this->parseSoundStreamHeadTag($bytePosEnd, 2),

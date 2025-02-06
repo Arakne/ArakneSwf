@@ -1,0 +1,33 @@
+<?php
+
+namespace Arakne\Swf\Extractor\Shape\FillType;
+
+use Arakne\Swf\Parser\Structure\Record\Gradient;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Override;
+
+use function hash;
+use function json_encode;
+
+final readonly class LinearGradient implements FillTypeInterface
+{
+    public function __construct(
+        public Matrix $matrix,
+        public Gradient $gradient,
+    ) {}
+
+    #[Override]
+    public function transformColors(array $colorTransform): static
+    {
+        return new self(
+            $this->matrix,
+            $this->gradient->transformColors($colorTransform),
+        );
+    }
+
+    #[Override]
+    public function hash(): string
+    {
+        return 'L' . hash('xxh128', json_encode($this));
+    }
+}
