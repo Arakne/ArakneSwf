@@ -85,9 +85,12 @@ use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Structure\Tag\VideoFrameTag;
 use Exception;
 
+use function bin2hex;
 use function ord;
 use function sprintf;
 use function strlen;
+use function substr;
+use function var_dump;
 
 /**
  * Parse SWF tags
@@ -270,7 +273,10 @@ readonly class SwfTag
                 $sb .= sprintf(" %02x", ord($this->io->b[$o]));
             }
 
-            throw new Exception($sb);
+            var_dump($ret, $sb);
+
+            //throw new Exception($sb); // @todo handle error
+            $this->io->bytePos = $tagOffset + $tagLength;
         }
 
         return $ret;
@@ -740,7 +746,17 @@ readonly class SwfTag
 
     private function parseFrameLabelTag(int $bytePosEnd): FrameLabelTag
     {
-        return new FrameLabelTag($this->io->collectString());
+        // Parse null-terminated string
+        $label = $this->io->collectString();
+
+        // Since SWF 6, the flag namedAnchor is present to create a named anchor
+        // So we need to check if there is still data to read, and if so, read the flag
+        $hasMoreData = $this->io->bytePos < $bytePosEnd;
+
+        return new FrameLabelTag(
+            $label,
+            $hasMoreData && $this->io->collectUI8() === 1,
+        );
     }
 
     private function parseDefineMorphShapeTag(int $bytePosEnd, int $version): DefineMorphShapeTag|DefineMorphShape2Tag
@@ -1028,7 +1044,7 @@ readonly class SwfTag
             move: $placeFlagMove,
             hasImage: $placeFlagHasImage,
             depth: $this->io->collectUI16(),
-            className: $placeFlagHasClassName || $placeFlagHasImage || $placeFlagHasCharacter ? $this->io->collectString() : null,
+            className: $placeFlagHasClassName || ($placeFlagHasImage && $placeFlagHasCharacter) ? $this->io->collectString() : null,
             characterId: $placeFlagHasCharacter ? $this->io->collectUI16() : null,
             matrix: $placeFlagHasMatrix ? $this->rec->collectMatrix() : null,
             colorTransform: $placeFlagHasColorTransform ? $this->rec->collectColorTransform(true) : null,

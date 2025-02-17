@@ -27,10 +27,7 @@ use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
-use Exception;
 use InvalidArgumentException;
-
-use function var_dump;
 
 /**
  * Process define shape action tags to create shape objects

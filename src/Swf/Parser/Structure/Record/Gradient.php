@@ -37,7 +37,7 @@ final readonly class Gradient
         public array $records,
     ) {}
 
-    public function transformColors(array $colorTransform): self
+    public function transformColors(ColorTransform $colorTransform): self
     {
         $records = [];
 

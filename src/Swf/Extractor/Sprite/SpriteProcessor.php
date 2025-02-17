@@ -50,23 +50,18 @@ final readonly class SpriteProcessor
             }
 
             $object = $this->extractor->character($placeObjectTag->characterId);
-
-            // @todo error ?
-            if (!$object) {
-                continue;
-            }
+            $currentObjectBounds = $object->bounds();
 
             if ($placeObjectTag->matrix) {
                 // Because the origin shape has already an offset, we need to apply the transformation to the offset
                 // And apply the new matrix to the shape
-                $newMatrix = $placeObjectTag->matrix->translate($object->bounds->xmin, $object->bounds->ymin);
-                $currentObjectBounds = $object->bounds->transform($placeObjectTag->matrix);
+                $newMatrix = $placeObjectTag->matrix->translate($currentObjectBounds->xmin, $currentObjectBounds->ymin);
+                $currentObjectBounds = $currentObjectBounds->transform($placeObjectTag->matrix);
             } else {
                 $newMatrix = new Matrix(
-                    translateX: $object->bounds->xmin,
-                    translateY: $object->bounds->ymin,
+                    translateX: $currentObjectBounds->xmin,
+                    translateY: $currentObjectBounds->ymin,
                 );
-                $currentObjectBounds = $object->bounds;
             }
 
             if ($placeObjectTag->colorTransform) {
@@ -101,7 +96,7 @@ final readonly class SpriteProcessor
         ksort($objectsByDepth);
 
         return new Sprite(
-            new Rectangle($xmin, $xmax, $ymin, $ymax),
+            $objectsByDepth ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0), // Empty sprite, use empty bounds
             ...$objectsByDepth
         );
     }

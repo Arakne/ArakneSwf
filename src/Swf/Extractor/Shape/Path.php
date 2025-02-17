@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+
 use function array_key_first;
 use function spl_object_id;
 
@@ -143,7 +145,7 @@ final class Path
         }
     }
 
-    public function transformColors(array $colorTransform)
+    public function transformColors(ColorTransform $colorTransform)
     {
         return new self(
             $this->edges,

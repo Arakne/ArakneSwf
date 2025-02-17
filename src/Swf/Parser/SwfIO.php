@@ -34,9 +34,11 @@ use function bcpow;
 use function bcscale;
 use function gzuncompress;
 use function ord;
+use function strlen;
 use function strpos;
 use function substr;
 use function unpack;
+use function var_dump;
 
 /**
  * Low-level SWF primitives parser
@@ -44,7 +46,7 @@ use function unpack;
  */
 class SwfIO
 {
-    public string $b; // Byte array (file contents)
+    public private(set) string $b; // Byte array (file contents)
     public int $bytePos; // Byte position
     public int $bitPos; // Bit position
 
@@ -55,9 +57,10 @@ class SwfIO
         $this->bitPos = 0;
     }
 
-    public function doUncompress(): void
+    public function doUncompress(int $len): void
     {
-        $this->b = substr($this->b, 0, 8) . gzuncompress(substr($this->b, 8));
+        $compressedMaxLen = $len - 8;
+        $this->b = substr($this->b, 0, 8) . substr(gzuncompress(substr($this->b, 8), $compressedMaxLen), 0, $compressedMaxLen);
     }
 
     public function byteAlign(): void

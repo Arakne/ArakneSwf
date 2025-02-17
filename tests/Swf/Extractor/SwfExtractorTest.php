@@ -2,7 +2,9 @@
 
 namespace Arakne\Tests\Swf\Extractor;
 
+use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
+use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\SwfFile;
@@ -43,8 +45,8 @@ class SwfExtractorTest extends TestCase
             $shapes[2]->toSvg()
         );
 
-        $this->assertSame($shapes[1]->shape, $shapes[1]->shape);
-        $this->assertSame($shapes[2]->shape, $shapes[2]->shape);
+        $this->assertSame($shapes[1]->shape(), $shapes[1]->shape());
+        $this->assertSame($shapes[2]->shape(), $shapes[2]->shape());
     }
 
     #[Test]
@@ -58,5 +60,22 @@ class SwfExtractorTest extends TestCase
             chmod(__DIR__.'/Fixtures/test.svg', 0666);
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/sprite-'.$sprite->id.'.svg', $sprite->toSvg());
         }
+    }
+
+    #[Test]
+    public function characterNotFound()
+    {
+
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/complex_sprite.swf'));
+
+        $this->assertInstanceOf(MissingCharacter::class, $extractor->character(10000));
+
+        $drawer = new SvgCanvas();
+        $this->assertSame($drawer, $extractor->character(10000)->draw($drawer));
+
+        $this->assertXmlStringEqualsXmlString(<<<'SVG'
+        <?xml version="1.0"?>
+        <svg xmlns="http://www.w3.org/2000/svg"><g/></svg>
+        SVG, $drawer->render());
     }
 }

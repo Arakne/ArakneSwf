@@ -32,11 +32,11 @@ final readonly class GradientRecord
         public Color $color,
     ) {}
 
-    public function transformColors(array $colorTransform): self
+    public function transformColors(ColorTransform $colorTransform): self
     {
         return new self(
             $this->ratio,
-            $this->color->transform($colorTransform),
+            $colorTransform->transform($this->color),
         );
     }
 }

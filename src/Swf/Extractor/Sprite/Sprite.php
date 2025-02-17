@@ -2,6 +2,7 @@
 
 namespace Arakne\Swf\Extractor\Sprite;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
 final readonly class Sprite
@@ -22,7 +23,7 @@ final readonly class Sprite
         $this->objects = $objects;
     }
 
-    public function transformColors(array $colorTransform)
+    public function transformColors(ColorTransform $colorTransform)
     {
         $objects = [];
 

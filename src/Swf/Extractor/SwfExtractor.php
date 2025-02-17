@@ -88,13 +88,10 @@ final class SwfExtractor
         return $sprites;
     }
 
-    public function character(int $characterId): ShapeDefinition|SpriteDefinition|null
+    public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter
     {
         $this->characters ??= ($this->shapes() + $this->sprites());
 
-        return $this->characters[$characterId] ?? null;
-
-        // @todo cache
-        //return ($this->shapes() + $this->sprites())[$characterId] ?? null;
+        return $this->characters[$characterId] ?? new MissingCharacter($characterId);
     }
 }

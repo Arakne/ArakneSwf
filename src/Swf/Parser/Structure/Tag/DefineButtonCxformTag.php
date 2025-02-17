@@ -21,11 +21,13 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+
 final readonly class DefineButtonCxformTag
 {
     public function __construct(
         public int $buttonId,
-        public array $colorTransform,
+        public ColorTransform $colorTransform,
     ) {
     }
 }

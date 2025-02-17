@@ -26,6 +26,8 @@ namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Parser\Structure\SwfHeader;
 
+use function var_dump;
+
 /**
  * SWF file header parser
  */
@@ -51,7 +53,7 @@ readonly class SwfHdr
         $fileLength = $this->io->collectUI32();
 
         if ($compressed) {
-            $this->io->doUncompress();
+            $this->io->doUncompress($fileLength);
         }
 
         $frameSize = $this->rec->collectRect();

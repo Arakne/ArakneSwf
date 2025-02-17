@@ -35,6 +35,7 @@ use Arakne\Swf\Parser\Structure\Action\WaitForFrameData;
 use Arakne\Swf\Parser\Structure\Action\GetURLData;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\FillStyle;
@@ -48,7 +49,9 @@ use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Exception;
 
+use function dechex;
 use function sprintf;
+use function var_dump;
 
 /**
  * Parse SWF structures
@@ -125,35 +128,51 @@ readonly class SwfRec
         return new Matrix($scaleX, $scaleY, $rotateSkew0, $rotateSkew1, $translateX, $translateY);
     }
 
-    public function collectColorTransform(bool $withAlpha): array
+    public function collectColorTransform(bool $withAlpha): ColorTransform
     {
-        $colorTransform = array();
-
         $hasAddTerms = $this->io->collectUB(1);
         $hasMultTerms = $this->io->collectUB(1);
         $nbits = $this->io->collectUB(4);
 
+        $redMultTerm = 256;
+        $greenMultTerm = 256;
+        $blueMultTerm = 256;
+        $alphaMultTerm = 256;
+        $redAddTerm = 0;
+        $greenAddTerm = 0;
+        $blueAddTerm = 0;
+        $alphaAddTerm = 0;
+
         if ($hasMultTerms != 0) {
-            $colorTransform['redMultTerm'] = $this->io->collectSB($nbits);
-            $colorTransform['greenMultTerm'] = $this->io->collectSB($nbits);
-            $colorTransform['blueMultTerm'] = $this->io->collectSB($nbits);
+            $redMultTerm = $this->io->collectSB($nbits);
+            $greenMultTerm = $this->io->collectSB($nbits);
+            $blueMultTerm = $this->io->collectSB($nbits);
             if ($withAlpha) {
-                $colorTransform['alphaMultTerm'] = $this->io->collectSB($nbits);
+                $alphaMultTerm = $this->io->collectSB($nbits);
             }
         }
 
         if ($hasAddTerms != 0) {
-            $colorTransform['redAddTerm'] = $this->io->collectSB($nbits);
-            $colorTransform['greenAddTerm'] = $this->io->collectSB($nbits);
-            $colorTransform['blueAddTerm'] = $this->io->collectSB($nbits);
+            $redAddTerm = $this->io->collectSB($nbits);
+            $greenAddTerm = $this->io->collectSB($nbits);
+            $blueAddTerm = $this->io->collectSB($nbits);
             if ($withAlpha) {
-                $colorTransform['alphaAddTerm'] = $this->io->collectSB($nbits);
+                $alphaAddTerm = $this->io->collectSB($nbits);
             }
         }
 
         $this->io->byteAlign();
 
-        return $colorTransform;
+        return new ColorTransform(
+            $redMultTerm,
+            $greenMultTerm,
+            $blueMultTerm,
+            $alphaMultTerm,
+            $redAddTerm,
+            $greenAddTerm,
+            $blueAddTerm,
+            $alphaAddTerm,
+        );
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -1045,17 +1064,18 @@ readonly class SwfRec
             for ($i = 0; $i < $lineStyleCount; $i++) {
                 $width = $this->io->collectUI16();
 
-                $flags = $this->io->collectUI16();
+                $flags = $this->io->collectUI8();
+                $startCapStyle = ($flags >> 6) & 0b11; // 2bits
+                $joinStyle = ($flags >> 4) & 0b11; // 4bits
+                $hasFillFlag = ($flags & 0b1000) !== 0; // 5bits
+                $noHScaleFlag = ($flags & 0b100) !== 0; // 6bits
+                $noVScaleFlag = ($flags & 0b10) !== 0; // 7 bits
+                $pixelHintingFlag = ($flags & 0b1) !== 0; // 8 bits
 
-                $startCapStyle = $flags & 0b11;
-                $joinStyle = ($flags >> 2) & 0b11;
-                $hasFillFlag = ($flags & 0b10000) !== 0;
-                $noHScaleFlag = ($flags & 0b100000) !== 0;
-                $noVScaleFlag = ($flags & 0b1000000) !== 0;
-                $pixelHintingFlag = ($flags & 0b10000000) !== 0;
-                // Skip 5 bits
-                $noClose = ($flags & 0b10000000000000) !== 0;
-                $endCapStyle = ($flags >> 15) & 0b11;
+                $flags = $this->io->collectUI8();
+                // 5bits skipped
+                $noClose = ($flags & 0b100) !== 0; // 6bits
+                $endCapStyle = $flags & 0b11; // 8bits
 
                 $miterLimitFactor = $joinStyle === 2 ? $this->io->collectUI16() : null;
 

@@ -22,7 +22,6 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Record;
 
 use function sprintf;
-use function var_dump;
 
 /**
  * Structure for store color
@@ -73,21 +72,8 @@ final readonly class Color
         return $this->hex();
     }
 
-    public function transform(array $colorTransform): self
+    public function transform(ColorTransform $colorTransform): self
     {
-        $colorTransform += [
-            'redMultTern' => 256,
-            'greenMultTerm' => 256,
-            'blueMultTerm' => 256,
-            'alphaMultTerm' => 256,
-        ];
-
-        // @todo handle min/max
-        return new self(
-            red: (int)($this->red * $colorTransform['redMultTerm'] / 256),
-            green: (int)($this->green * $colorTransform['greenMultTerm'] / 256),
-            blue: (int)($this->blue * $colorTransform['blueMultTerm'] / 256),
-            alpha: (int)(($this->alpha ?? 255) * $colorTransform['alphaMultTerm'] / 256),
-        );
+        return $colorTransform->transform($this);
     }
 }

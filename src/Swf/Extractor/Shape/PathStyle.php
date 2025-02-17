@@ -25,6 +25,7 @@ use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\FillStyle;
 use InvalidArgumentException;
 
@@ -101,7 +102,7 @@ final readonly class PathStyle
         return ($color->red << 24) | ($color->green << 16) | ($color->blue << 8) | ($color->alpha ?? 255);
     }
 
-    public function transformColors(array $colorTransform)
+    public function transformColors(ColorTransform $colorTransform)
     {
         $fill = $this->fill?->transformColors($colorTransform);
         $lineColor = $this->lineColor?->transform($colorTransform);

@@ -25,6 +25,6 @@ final readonly class FrameLabelTag
 {
     public function __construct(
         public string $label,
-    ) {
-    }
+        public bool $namedAnchor = false,
+    ) {}
 }

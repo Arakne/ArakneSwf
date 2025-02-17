@@ -10,6 +10,7 @@ use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\Shape;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use BadMethodCallException;
 use InvalidArgumentException;
 use Override;
 use SimpleXMLElement;
@@ -19,31 +20,21 @@ use function sprintf;
 // @todo interface
 // @todo move to new package
 // @todo improve side effects
-final class SvgCanvas implements DrawerInterface
+final class IncludedSvgCanvas implements DrawerInterface
 {
-    private SimpleXMLElement $root;
-    private SimpleXMLElement $g;
-    public ?SimpleXMLElement $defs = null;
-    public bool $isDep = false;
-    public int $lastId = 0;
-    private ?string $id = null;
-    private ?SimpleXMLElement $currentG = null;
+    public readonly string $id;
+    private readonly SvgCanvas $root;
+    private readonly SimpleXMLElement $defs;
+    private ?SimpleXMLElement $g = null;
 
-    public function __construct(?Rectangle $bounds = null)
+    /**
+     * @param SimpleXMLElement $defs
+     */
+    public function __construct(string $id, SvgCanvas $root, SimpleXMLElement $defs)
     {
-        $this->root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
-        $this->g = $this->root->addChild('g');
-
-        if ($bounds !== null) {
-            $this->root['width'] = ($bounds->width() / 20) . 'px';
-            $this->root['height'] = ($bounds->height() / 20) . 'px';
-
-            $this->g['transform'] = sprintf(
-                'matrix(1, 0, 0, 1, %h, %h)',
-                -$bounds->xmin / 20,
-                -$bounds->ymin / 20,
-            );
-        }
+        $this->id = $id;
+        $this->root = $root;
+        $this->defs = $defs;
     }
 
     #[Override]
@@ -69,34 +60,36 @@ final class SvgCanvas implements DrawerInterface
         );
 
         foreach ($shape->paths as $path) {
-            $this->path($path, $g);
+            $this->path($path);
         }
     }
 
+    #[Override]
     public function include(DrawableInterface $object, Matrix $matrix): void
     {
         $included = new IncludedSvgCanvas(
-            'object-' . $this->lastId++,
-            $this,
-            ($this->defs ??= $this->root->addChild('defs')),
+            'object-' . $this->root->lastId++,
+            $this->root,
+            $this->defs,
         );
 
         $object->draw($included);
+        $bounds = $object->bounds();
 
         $use = $this->g()->addChild('use');
         $use['href'] = '#'. $included->id;
-        $use['width'] = $object->bounds()->width() / 20;
-        $use['height'] = $object->bounds()->height() / 20;
+        $use['width'] = $bounds->width() / 20;
+        $use['height'] = $bounds->height() / 20;
         $use['transform'] = $matrix->toSvgTransformation();
     }
 
     #[Override]
-    public function path(Path $path, ?SimpleXMLElement $g = null): void
+    public function path(Path $path): void
     {
-        $g ??= $this->g();
+        $g = $this->g();
         $pathElement = $g->addChild('path');
 
-        $this->applyFillStyle($this->isDep ? $this->defs : $this->root, $pathElement, $path->style->fill);
+        $this->applyFillStyle($this->defs, $pathElement, $path->style->fill);
         $pathElement['stroke'] = $path->style->lineColor?->hex() ?? 'none';
 
         if ($path->style->lineColor?->hasTransparency() === true) {
@@ -115,16 +108,18 @@ final class SvgCanvas implements DrawerInterface
     #[Override]
     public function render(): string
     {
-        return $this->toXml();
-    }
-
-    public function toXml(): string
-    {
-        return $this->root->asXML();
+        throw new BadMethodCallException('This is an internal implementation, rendering is performed by the root canvas');
     }
 
     private function g(): SimpleXMLElement
     {
+        if ($this->g) {
+            return $this->g;
+        }
+
+        $this->g = $this->defs->addChild('g');
+        $this->g['id'] = $this->id;
+
         return $this->g;
     }
 

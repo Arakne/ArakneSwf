@@ -2,6 +2,7 @@
 
 namespace Arakne\Swf\Extractor\Shape\FillType;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Override;
@@ -17,7 +18,7 @@ final readonly class RadialGradient implements FillTypeInterface
     ) {}
 
     #[Override]
-    public function transformColors(array $colorTransform): static
+    public function transformColors(ColorTransform $colorTransform): static
     {
         return new self(
             $this->matrix,

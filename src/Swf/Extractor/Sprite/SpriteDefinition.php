@@ -21,22 +21,25 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Sprite;
 
+use Arakne\Swf\Extractor\DrawableInterface;
+use Arakne\Swf\Extractor\Shape\Svg\DrawerInterface;
 use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
+use Override;
 
-final class SpriteDefinition
+/**
+ * Store an SWF sprite character
+ *
+ * @see DefineSpriteTag
+ */
+final class SpriteDefinition implements DrawableInterface
 {
-    public private(set) Sprite $sprite {
-        get => $this->sprite ??= $this->processor->process($this->tag);
-    }
-
-    public Rectangle $bounds {
-        get => $this->sprite->bounds;
-    }
+    private ?Sprite $sprite = null;
 
     public function __construct(
-        private readonly SpriteProcessor $processor,
+        private SpriteProcessor $processor,
 
         /**
          * The character ID of the sprite
@@ -51,9 +54,30 @@ final class SpriteDefinition
         public readonly DefineSpriteTag $tag,
     ) {}
 
-    public function transformColors(array $colorTransform): self
+    /**
+     * Get the sprite object
+     * The sprite is processed only once and cached
+     */
+    public function sprite(): Sprite
     {
-        $sprite = $this->sprite->transformColors($colorTransform);
+        if (!$this->sprite) {
+            $this->sprite = $this->processor->process($this->tag);
+            unset($this->processor); // Remove the processor to remove cyclic reference
+        }
+
+        return $this->sprite;
+    }
+
+    #[Override]
+    public function bounds(): Rectangle
+    {
+        return $this->sprite()->bounds;
+    }
+
+    #[Override]
+    public function transformColors(ColorTransform $colorTransform): static
+    {
+        $sprite = $this->sprite()->transformColors($colorTransform);
 
         $self = clone $this;
         $self->sprite = $sprite;
@@ -61,15 +85,16 @@ final class SpriteDefinition
         return $self;
     }
 
-    public function draw(SvgCanvas $canvas): SvgCanvas
+    #[Override]
+    public function draw(DrawerInterface $drawer): DrawerInterface
     {
-        $canvas->bounds($this->bounds);
+        $drawer->bounds($this->bounds());
 
-        foreach ($this->sprite->objects as $object) {
-            $canvas->include($object->object, $object->matrix);
+        foreach ($this->sprite()->objects as $object) {
+            $drawer->include($object->object, $object->matrix);
         }
 
-        return $canvas;
+        return $drawer;
     }
 
     /**
@@ -77,6 +102,6 @@ final class SpriteDefinition
      */
     public function toSvg(): string
     {
-        return $this->draw(new SvgCanvas($this->bounds))->toXml();
+        return $this->draw(new SvgCanvas($this->bounds()))->render();
     }
 }

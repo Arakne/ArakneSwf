@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+
 /**
  * Shape extracted from a SWF file
  * A shapes contains multiple paths, has a size, and a position (offset)
@@ -45,7 +47,7 @@ final readonly class Shape
         public array $paths,
     ) {}
 
-    public function transformColors(array $colorTransform)
+    public function transformColors(ColorTransform $colorTransform)
     {
         $newPaths = [];
 

@@ -21,33 +21,28 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\DrawableInterface;
+use Arakne\Swf\Extractor\Shape\Svg\DrawerInterface;
 use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
+use Override;
 
 /**
  * Store a single shape extracted from a SWF file
  *
- * @todo drawable interface
+ * @see DefineShapeTag
+ * @see DefineShape4Tag
  */
-final class ShapeDefinition
+final class ShapeDefinition implements DrawableInterface
 {
-    /**
-     * The parsed shape
-     * This is a computed property, and the shape will be processed only when requested
-     */
-    public private(set) Shape $shape {
-        get => $this->shape ??= $this->processor->process($this->tag);
-    }
-
-    public Rectangle $bounds {
-        get => $this->tag->shapeBounds;
-    }
+    private ?Shape $shape = null;
 
     public function __construct(
-        private readonly ShapeProcessor $processor,
+        private ShapeProcessor $processor,
 
         /**
          * The character id of the shape
@@ -62,11 +57,32 @@ final class ShapeDefinition
         public readonly DefineShapeTag|DefineShape4Tag $tag,
     ) {}
 
-    public function draw(SvgCanvas $canvas): SvgCanvas
+    /**
+     * Get the shape object
+     * The shape is processed at first call and cached
+     */
+    public function shape(): Shape
     {
-        $canvas->shape($this->shape);
+        if (!$this->shape) {
+            $this->shape = $this->processor->process($this->tag);
+            unset($this->processor); // Remove the processor to free memory
+        }
 
-        return $canvas;
+        return $this->shape;
+    }
+
+    #[Override]
+    public function bounds(): Rectangle
+    {
+        return $this->tag->shapeBounds;
+    }
+
+    #[Override]
+    public function draw(DrawerInterface $drawer): DrawerInterface
+    {
+        $drawer->shape($this->shape());
+
+        return $drawer;
     }
 
     /**
@@ -74,13 +90,13 @@ final class ShapeDefinition
      */
     public function toSvg(): string
     {
-        return $this->draw(new SvgCanvas($this->bounds))->toXml();
+        return $this->draw(new SvgCanvas($this->bounds()))->render();
     }
 
-    // @todo object
-    public function transformColors(array $colorTransform): self
+    #[Override]
+    public function transformColors(ColorTransform $colorTransform): static
     {
-        $shape = $this->shape->transformColors($colorTransform);
+        $shape = $this->shape()->transformColors($colorTransform);
 
         $self = clone $this;
         $self->shape = $shape;

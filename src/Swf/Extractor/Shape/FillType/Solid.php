@@ -3,6 +3,7 @@
 namespace Arakne\Swf\Extractor\Shape\FillType;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Override;
 
 final readonly class Solid implements FillTypeInterface
@@ -12,9 +13,9 @@ final readonly class Solid implements FillTypeInterface
     ) {}
 
     #[Override]
-    public function transformColors(array $colorTransform): static
+    public function transformColors(ColorTransform $colorTransform): static
     {
-        return new self($this->color->transform($colorTransform));
+        return new self($colorTransform->transform($this->color));
     }
 
     #[Override]
