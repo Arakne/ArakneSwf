@@ -2,10 +2,11 @@
 
 namespace Arakne\Tests\Swf\Extractor;
 
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
-use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
@@ -37,7 +38,7 @@ class SwfExtractorTest extends TestCase
             <<<'SVG'
             <?xml version="1.0"?>
             <svg xmlns="http://www.w3.org/2000/svg" width="25.3px" height="4.8px">
-                <g transform="matrix(1.0, 0.0, 0.0, 1, -0.05, 0)">
+                <g transform="matrix(1, 0, 0, 1, -0.05, 0)">
                     <path fill="#000000" stroke="none" fill-rule="evenodd" d="M25.35 2.4Q25.3 3.4 21.6 4.1L12.7 4.8L3.75 4.1Q0 3.4 0.05 2.4Q0 1.4 3.75 0.7L12.7 0L21.6 0.7Q25.3 1.4 25.35 2.4"/>
                 </g>
             </svg>
@@ -65,17 +66,16 @@ class SwfExtractorTest extends TestCase
     #[Test]
     public function characterNotFound()
     {
-
         $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/complex_sprite.swf'));
 
         $this->assertInstanceOf(MissingCharacter::class, $extractor->character(10000));
 
-        $drawer = new SvgCanvas();
+        $drawer = new SvgCanvas(new Rectangle(0, 0, 0, 0));
         $this->assertSame($drawer, $extractor->character(10000)->draw($drawer));
 
         $this->assertXmlStringEqualsXmlString(<<<'SVG'
         <?xml version="1.0"?>
-        <svg xmlns="http://www.w3.org/2000/svg"><g/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" height="0px" width="0px"/>
         SVG, $drawer->render());
     }
 }

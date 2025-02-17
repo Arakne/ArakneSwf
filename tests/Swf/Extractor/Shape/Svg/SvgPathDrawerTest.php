@@ -2,7 +2,7 @@
 
 namespace Arakne\Tests\Swf\Extractor\Shape\Svg;
 
-use Arakne\Swf\Extractor\Shape\Svg\SvgPathDrawer;
+use Arakne\Swf\Extractor\Drawer\Svg\SvgPathDrawer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use SimpleXMLElement;

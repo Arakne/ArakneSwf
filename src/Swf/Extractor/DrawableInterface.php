@@ -2,7 +2,7 @@
 
 namespace Arakne\Swf\Extractor;
 
-use Arakne\Swf\Extractor\Shape\Svg\DrawerInterface;
+use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 

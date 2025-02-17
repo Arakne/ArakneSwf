@@ -19,7 +19,7 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Extractor\Shape\Svg;
+namespace Arakne\Swf\Extractor\Drawer\Svg;
 
 use Arakne\Swf\Extractor\Shape\PathDrawerInterface;
 use Override;

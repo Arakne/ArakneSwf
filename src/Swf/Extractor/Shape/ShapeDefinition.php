@@ -22,8 +22,8 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\Shape;
 
 use Arakne\Swf\Extractor\DrawableInterface;
-use Arakne\Swf\Extractor\Shape\Svg\DrawerInterface;
-use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
+use Arakne\Swf\Extractor\Drawer\DrawerInterface;
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;

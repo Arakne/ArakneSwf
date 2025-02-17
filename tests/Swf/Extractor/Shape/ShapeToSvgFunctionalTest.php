@@ -2,9 +2,9 @@
 
 namespace Arakne\Tests\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeProcessor;
-use Arakne\Swf\Extractor\Shape\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
