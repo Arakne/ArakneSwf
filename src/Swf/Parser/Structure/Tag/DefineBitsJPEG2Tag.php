@@ -21,11 +21,20 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-final readonly class DefineBitsJPEG2Tag
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
+
+final readonly class DefineBitsJPEG2Tag implements DefineBitsJPEGTagInterface
 {
+    public const int ID = 21;
+
+    public ImageDataType $type;
+    public ?string $alphaData;
+
     public function __construct(
         public int $characterId,
         public string $imageData,
     ) {
+        $this->type = ImageDataType::resolve($this->imageData);
+        $this->alphaData = null;
     }
 }

@@ -23,8 +23,9 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class JPEGTablesTag
 {
+    public const int ID = 8;
+
     public function __construct(
         public string $data,
-    ) {
-    }
+    ) {}
 }

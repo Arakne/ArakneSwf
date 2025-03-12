@@ -3,6 +3,9 @@
 namespace Arakne\Tests\Swf\Extractor;
 
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
+use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
+use Arakne\Swf\Extractor\Image\JpegImageDefinition;
+use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
@@ -16,7 +19,7 @@ use function array_keys;
 use function chmod;
 use function file_put_contents;
 
-class SwfExtractorTest extends TestCase
+class SwfExtractorTest extends ImageTestCase
 {
     #[Test]
     public function shapes()
@@ -77,5 +80,27 @@ class SwfExtractorTest extends TestCase
         <?xml version="1.0"?>
         <svg xmlns="http://www.w3.org/2000/svg" height="0px" width="0px"/>
         SVG, $drawer->render());
+    }
+
+    #[Test]
+    public function images()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/maps/0.swf'));
+
+        $images = $extractor->images();
+        $types = [];
+
+        $this->assertCount(72, $images);
+
+        foreach ($images as $img) {
+            $types[$img::class] = $img::class;
+        }
+
+        $this->assertContains(ImageBitsDefinition::class, $types);
+        $this->assertContains(JpegImageDefinition::class, $types);
+        $this->assertContains(LosslessImageDefinition::class, $types);
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/Fixtures/maps/jpeg-507.png', $images[507]->toPng());
+        $this->assertImageStringEqualsImageFile(__DIR__.'/Fixtures/maps/jpeg-525.jpg', $images[525]->toJpeg());
     }
 }

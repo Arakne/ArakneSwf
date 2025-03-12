@@ -21,12 +21,32 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-final readonly class DefineBitsJPEG3Tag
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
+
+final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
 {
+    public const int ID = 35;
+
+    public ImageDataType $type;
+
     public function __construct(
         public int $characterId,
+
+        /**
+         * Raw image data.
+         * Can be JPEG, PNG, or GIF89.
+         */
         public string $imageData,
+
+        /**
+         * Uncompressed alpha data as byte array.
+         * Each byte is the opacity of the corresponding pixel in the {@see $imageData}.
+         * The length of this array must be equal to the decoded image width * height.
+         *
+         * Note: this field is only present if the {@see $imageData} is a JPEG image.
+         */
         public string $alphaData,
     ) {
+        $this->type = ImageDataType::resolve($this->imageData);
     }
 }

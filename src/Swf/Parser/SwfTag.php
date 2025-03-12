@@ -342,7 +342,7 @@ readonly class SwfTag
     {
         return new DefineBitsTag(
             characterId: $this->io->collectUI16(),
-            data: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+            imageData: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
         );
     }
 

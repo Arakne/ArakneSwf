@@ -23,9 +23,10 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class DefineBitsTag
 {
+    public const int ID = 6;
+
     public function __construct(
         public int $characterId,
-        public string $data,
-    ) {
-    }
+        public string $imageData,
+    ) {}
 }

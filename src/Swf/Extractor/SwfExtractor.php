@@ -21,14 +21,23 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor;
 
+use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
+use Arakne\Swf\Extractor\Image\JpegImageDefinition;
+use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteProcessor;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
+use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
+use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
+use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
+use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
+use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
 
 /**
@@ -69,6 +78,21 @@ final class SwfExtractor
     }
 
     /**
+     * Extract all raster images from the SWF file.
+     *
+     * The result array will be indexed by the character ID (i.e. {@see SwfTagPosition::$id}).
+     *
+     * @return array<int, LosslessImageDefinition|JpegImageDefinition|ImageBitsDefinition>
+     */
+    public function images(): array
+    {
+        return $this->extractLosslessImages()
+            + $this->extractJpeg()
+            + $this->extractDefineBits()
+        ;
+    }
+
+    /**
      * @return array<string, SpriteDefinition>
      */
     public function sprites(): array
@@ -90,8 +114,65 @@ final class SwfExtractor
 
     public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter
     {
-        $this->characters ??= ($this->shapes() + $this->sprites());
+        $this->characters ??= ($this->shapes() + $this->sprites() + $this->images());
 
         return $this->characters[$characterId] ?? new MissingCharacter($characterId);
+    }
+
+    /**
+     * @return array<int, LosslessImageDefinition>
+     */
+    private function extractLosslessImages(): array
+    {
+        $images = [];
+
+        foreach ($this->file->tags(DefineBitsLosslessTag::V1_ID, DefineBitsLosslessTag::V2_ID) as $pos => $tag) {
+            if (($id = $pos->id) === null) {
+                continue;
+            }
+
+            $images[$id] = new LosslessImageDefinition($tag);
+        }
+
+        return $images;
+    }
+
+    /**
+     * @return array<int, ImageBitsDefinition>
+     */
+    private function extractDefineBits(): array
+    {
+        $images = [];
+        $jpegTables = null;
+
+        /** @var JPEGTablesTag|DefineBitsTag $tag */
+        foreach ($this->file->tags(JPEGTablesTag::ID, DefineBitsTag::ID) as $tag) {
+            if ($tag instanceof JPEGTablesTag) {
+                $jpegTables = $tag;
+                continue;
+            }
+
+            $images[$tag->characterId] = new ImageBitsDefinition($tag, $jpegTables);
+        }
+
+        return $images;
+    }
+
+    /**
+     * @return array<int, JpegImageDefinition>
+     */
+    private function extractJpeg(): array
+    {
+        $images = [];
+
+        foreach ($this->file->tags(DefineBitsJPEG2Tag::ID, DefineBitsJPEG3Tag::ID, DefineBitsJPEG4Tag::ID) as $pos => $tag) {
+            if (($id = $pos->id) === null) {
+                continue;
+            }
+
+            $images[$id] = new JpegImageDefinition($tag);
+        }
+
+        return $images;
     }
 }
