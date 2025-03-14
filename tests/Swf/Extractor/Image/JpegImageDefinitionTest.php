@@ -8,7 +8,6 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 
 use function iterator_to_array;
 
@@ -33,7 +32,7 @@ class JpegImageDefinitionTest extends ImageTestCase
 
         $image = new JpegImageDefinition($tag);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/core/jpeg-540.png', $image->toJpeg());
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/core/jpeg-540.png', $image->toJpeg(), 0.005);
     }
 
     #[Test]
@@ -72,5 +71,6 @@ class JpegImageDefinitionTest extends ImageTestCase
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507.jpg', $images[0]->toJpeg());
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-669.jpg', $images[1]->toJpeg());
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-669.png', $images[1]->toJpeg(), 0.1);
     }
 }

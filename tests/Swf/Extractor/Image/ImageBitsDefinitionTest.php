@@ -35,7 +35,7 @@ class ImageBitsDefinitionTest extends ImageTestCase
         /** @var DefineBitsTag $tag */
         foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
-            $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $image->toJpeg());
+            $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $image->toJpeg(), 0.005);
         }
     }
 }

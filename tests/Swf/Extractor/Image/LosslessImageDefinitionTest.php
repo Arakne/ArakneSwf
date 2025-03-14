@@ -35,6 +35,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $image = new LosslessImageDefinition($tag);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-24bits.jpg', $image->toJpeg(100));
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-24bits.png', $image->toJpeg(100), 0.005);
     }
 
     #[Test]
@@ -57,6 +58,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $image = new LosslessImageDefinition($tag);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.jpg', $image->toJpeg(100));
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.png', $image->toJpeg(100), 0.01);
     }
 
     #[Test]
@@ -83,6 +85,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
             if ($tag->type() === ImageBitmapType::Opaque8Bit) {
                 $image = new LosslessImageDefinition($tag);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.jpg', $image->toJpeg(100));
+                $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.png', $image->toJpeg(100), 0.005);
             }
         }
     }
@@ -97,6 +100,20 @@ class LosslessImageDefinitionTest extends ImageTestCase
             if ($tag->type() === ImageBitmapType::Transparent8Bit) {
                 $image = new LosslessImageDefinition($tag);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-alpha-'.$tag->characterId.'.png', $image->toPng());
+            }
+        }
+    }
+
+    #[Test]
+    public function toJpeg8BitsWithAlpha()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/homestuck/00004.swf');
+
+        /** @var DefineBitsLosslessTag $tag */
+        foreach ($swf->tags(DefineBitsLosslessTag::V2_ID) as $tag) {
+            if ($tag->type() === ImageBitmapType::Transparent8Bit) {
+                $image = new LosslessImageDefinition($tag);
+                $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-alpha-'.$tag->characterId.'.png', $image->toJpeg(100), 0.2);
             }
         }
     }
