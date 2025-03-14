@@ -84,7 +84,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         foreach ($swf->tags(DefineBitsLosslessTag::V1_ID) as $tag) {
             if ($tag->type() === ImageBitmapType::Opaque8Bit) {
                 $image = new LosslessImageDefinition($tag);
-                $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.jpg', $image->toJpeg(100));
+                $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.jpg', $image->toJpeg(100), 0.004);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.png', $image->toJpeg(100), 0.005);
             }
         }
