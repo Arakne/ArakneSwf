@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Drawer\Svg;
 
+use Arakne\Swf\Extractor\Shape\FillType\ClippedBitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
@@ -90,7 +91,7 @@ final class SvgBuilder
         return $pathElement;
     }
 
-    public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|null $style): void
+    public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|ClippedBitmap|null $style): void
     {
         if ($style === null) {
             $path['fill'] = 'none';
@@ -103,6 +104,7 @@ final class SvgBuilder
             $style instanceof Solid => self::applyFillSolid($path, $style),
             $style instanceof LinearGradient => self::applyFillLinearGradient($path, $style),
             $style instanceof RadialGradient => self::applyFillRadialGradient($path, $style),
+            $style instanceof ClippedBitmap => self::applyFillClippedBitmap($path, $style),
         };
     }
 
@@ -175,5 +177,23 @@ final class SvgBuilder
                 $stop['stop-opacity'] = $record->color->opacity();
             }
         }
+    }
+
+    public function applyFillClippedBitmap(SimpleXMLElement $path, ClippedBitmap $style): void
+    {
+        $pattern = $this->svg->addChild('pattern');
+
+        $pattern['id'] = 'pattern-'.$style->hash();
+        $pattern['overflow'] = 'visible';
+        $pattern['patternUnits'] = 'userSpaceOnUse';
+        $pattern['width'] = $style->bitmap->bounds()->width() / 20;
+        $pattern['height'] = $style->bitmap->bounds()->height() / 20;
+        $pattern['viewBox'] = sprintf('0 0 %h %h', $style->bitmap->bounds()->width() / 20, $style->bitmap->bounds()->height() / 20);
+        $pattern['patternTransform'] = $style->matrix->toSvgTransformation(undoTwipScale: true);
+
+        $image = $pattern->addChild('image');
+        $image['href'] = $style->bitmap->toBase64Data();
+
+        $path['fill'] = 'url(#'.$pattern['id'].')';
     }
 }

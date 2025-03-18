@@ -64,7 +64,7 @@ final class SwfExtractor
     {
         // @todo cache
         $shapes = [];
-        $processor = new ShapeProcessor();
+        $processor = new ShapeProcessor($this);
 
         foreach ($this->file->tags(DefineShapeTag::TYPE_V1, DefineShapeTag::TYPE_V2, DefineShapeTag::TYPE_V3, DefineShape4Tag::TYPE_V4) as $pos => $tag) {
             if (($id = $pos->id) === null) {
@@ -112,7 +112,7 @@ final class SwfExtractor
         return $sprites;
     }
 
-    public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter
+    public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $this->characters ??= ($this->shapes() + $this->sprites() + $this->images());
 

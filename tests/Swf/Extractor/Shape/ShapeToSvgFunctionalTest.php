@@ -26,7 +26,7 @@ class ShapeToSvgFunctionalTest extends TestCase
     public function singleShape(string $swf, string $svg): void
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/' . $swf);
-        $processor = new ShapeProcessor();
+        $processor = new ShapeProcessor(new SwfExtractor($swf));
 
         /** @var DefineShapeTag|DefineShape4Tag $tag */
         foreach ($swf->tags(2, 22, 32, 83) as $tag) {
@@ -66,6 +66,15 @@ class ShapeToSvgFunctionalTest extends TestCase
         $shape = (new SwfExtractor($swf))->character(8);
 
         $this->assertSvg(__DIR__.'/../Fixtures/shape_with_complex_fill.svg', $shape->toSvg());
+    }
+
+    #[Test]
+    public function withBitmapFill()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/mob-leponge/mob-leponge.swf');
+        $shape = (new SwfExtractor($swf))->character(2);
+
+        $this->assertSvg(__DIR__.'/../Fixtures/mob-leponge/shadow.svg', $shape);
     }
 
     private function assertSvg(string $expectedFile, string|ShapeDefinition $shape)

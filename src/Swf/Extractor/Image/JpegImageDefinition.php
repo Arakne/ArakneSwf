@@ -4,6 +4,7 @@ namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\Util\GD;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
@@ -11,6 +12,8 @@ use BadMethodCallException;
 
 use Override;
 
+use function base64_encode;
+use function getimagesizefromstring;
 use function ord;
 
 /**
@@ -21,9 +24,42 @@ use function ord;
  */
 final class JpegImageDefinition implements ImageCharacterInterface
 {
+    public readonly int $characterId;
+    private ?Rectangle $bounds = null;
+
     public function __construct(
         public readonly DefineBitsJPEG2Tag|DefineBitsJPEG3Tag|DefineBitsJPEG4Tag $tag,
-    ) {}
+    ) {
+        $this->characterId = $tag->characterId;
+    }
+
+    #[Override]
+    public function bounds(): Rectangle
+    {
+        if ($this->bounds) {
+            return $this->bounds;
+        }
+
+        $data = $this->tag->imageData;
+
+        if ($this->tag->type === ImageDataType::Jpeg) {
+            $data = GD::fixJpegData($data);
+        }
+
+        [$width, $height] = getimagesizefromstring($data);
+
+        return $this->bounds = new Rectangle(0, $width * 20, 0, $height * 20);
+    }
+
+    #[Override]
+    public function toBase64Data(): string
+    {
+        if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
+            return 'data:image/jpeg;base64,' . base64_encode(GD::fixJpegData($this->tag->imageData));
+        }
+
+        return 'data:image/png;base64,' . base64_encode($this->toPng());
+    }
 
     #[Override]
     public function toPng(): string
@@ -36,13 +72,13 @@ final class JpegImageDefinition implements ImageCharacterInterface
     }
 
     #[Override]
-    public function toJpeg(): string
+    public function toJpeg(int $quality = -1): string
     {
         if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
             return GD::fixJpegData($this->tag->imageData);
         }
 
-        return $this->toGD()->toJpeg();
+        return $this->toGD()->toJpeg($quality);
     }
 
     private function toGD(): GD

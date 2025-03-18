@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
@@ -11,10 +12,35 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function array_find;
+use function base64_decode;
 use function iterator_to_array;
+use function substr;
 
 class LosslessImageDefinitionTest extends ImageTestCase
 {
+    #[Test]
+    public function characterId()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $image = new LosslessImageDefinition($tag);
+
+        $this->assertSame(534, $image->characterId);
+    }
+
+    #[Test]
+    public function bounds()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $image = new LosslessImageDefinition($tag);
+
+        $this->assertEquals(new Rectangle(0, 12000, 0, 6900), $image->bounds());
+        $this->assertSame($image->bounds(), $image->bounds());
+    }
+
     #[Test]
     public function toPngFullColorWithoutAlpha()
     {
@@ -116,5 +142,19 @@ class LosslessImageDefinitionTest extends ImageTestCase
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-alpha-'.$tag->characterId.'.png', $image->toJpeg(100), 0.2);
             }
         }
+    }
+
+    #[Test]
+    public function toBase64Data()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $image = new LosslessImageDefinition($tag);
+
+        $data = $image->toBase64Data();
+
+        $this->assertStringStartsWith('data:image/png;base64,', $data);
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.png', base64_decode(substr($data, 22)));
     }
 }

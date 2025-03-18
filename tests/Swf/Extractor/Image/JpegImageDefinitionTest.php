@@ -3,16 +3,42 @@
 namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+use function base64_decode;
 use function iterator_to_array;
+use function substr;
 
 class JpegImageDefinitionTest extends ImageTestCase
 {
+    #[Test]
+    public function characterId()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+
+        $image = new JpegImageDefinition($tag);
+        
+        $this->assertSame(540, $image->characterId);
+    }
+
+    #[Test]
+    public function bounds()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+
+        $image = new JpegImageDefinition($tag);
+
+        $this->assertEquals(new Rectangle(0, 12000, 0, 2020), $image->bounds());
+        $this->assertSame($image->bounds(), $image->bounds());
+    }
+
     #[Test]
     public function toPngOpaqueJpeg()
     {
@@ -36,6 +62,21 @@ class JpegImageDefinitionTest extends ImageTestCase
     }
 
     #[Test]
+    public function toBase64DataJpeg()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+
+        $image = new JpegImageDefinition($tag);
+
+        $data = $image->toBase64Data();
+
+        $this->assertStringStartsWith('data:image/jpeg;base64,', $data);
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/core/jpeg-540.png', base64_decode(substr($data, 23)), 0.005);
+    }
+
+    #[Test]
     public function toPngAlphaJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
@@ -52,6 +93,27 @@ class JpegImageDefinitionTest extends ImageTestCase
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507.png', $images[0]->toPng());
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-669.png', $images[1]->toPng());
+    }
+
+    #[Test]
+    public function toBase64DataAlphaJpeg()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+        $image = null;
+
+        /** @var DefineBitsJPEG3Tag $tag */
+        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+            if ($tag->characterId === 507) {
+                $image = new JpegImageDefinition($tag);
+                break;
+            }
+        }
+
+        $data = $image->toBase64Data();
+
+        $this->assertStringStartsWith('data:image/png;base64,', $data);
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507.png', base64_decode(substr($data, 22)));
     }
 
     #[Test]

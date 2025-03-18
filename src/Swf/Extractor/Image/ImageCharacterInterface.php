@@ -2,6 +2,9 @@
 
 namespace Arakne\Swf\Extractor\Image;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\SwfTagPosition;
+
 /**
  * Interface for all raster image characters defined in a SWF file.
  *
@@ -9,6 +12,28 @@ namespace Arakne\Swf\Extractor\Image;
  */
 interface ImageCharacterInterface
 {
+    /**
+     * The character id of the image in the SWF file.
+     *
+     * @see SwfTagPosition::$id
+     */
+    public int $characterId { get; }
+
+    /**
+     * Size of the image in twips.
+     * Because raster images have no offset, the bounds are always (0, 0, width, height).
+     */
+    //#[Override]
+    public function bounds(): Rectangle;
+
+    /**
+     * Get the URL base64 data of the image.
+     *
+     * The returned value will start with "data:image/png;base64," or "data:image/jpeg;base64,".
+     * The image type will be determined by the best format for the current image data.
+     */
+    public function toBase64Data(): string;
+
     /**
      * Render the image as PNG.
      */
@@ -18,6 +43,9 @@ interface ImageCharacterInterface
      * Render the image as JPEG.
      *
      * Note: If the image has an alpha channel, it will be lost.
+     *
+     * @param int $quality The image quality from 0 (worst quality) to 100 (best quality). If -1 is passed, the default quality will be used.
+     *                     This parameter is ignored if the image is already a JPEG.
      */
-    public function toJpeg(): string;
+    public function toJpeg(int $quality = -1): string;
 }

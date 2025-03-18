@@ -21,13 +21,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\Shape\FillType\ClippedBitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\FillStyle;
-use InvalidArgumentException;
 
 /**
  * Define the drawing style of a path
@@ -44,7 +43,7 @@ final readonly class PathStyle
          * The fill style and color of the current path
          * If this value is null, the path should not be filled
          */
-        public Solid|LinearGradient|RadialGradient|null $fill = null,
+        public Solid|LinearGradient|RadialGradient|ClippedBitmap|null $fill = null,
 
         /**
          * The line color of the current path
@@ -77,20 +76,6 @@ final readonly class PathStyle
     public function hash(): string
     {
         return $this->hash;
-    }
-
-    public static function fromFillStyle(FillStyle $style, bool $reverse = false): self
-    {
-        return new self(
-            match ($style->type) {
-                FillStyle::SOLID => new Solid($style->color),
-                FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix, $style->gradient),
-                FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix, $style->gradient),
-                default => null,
-                //default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
-            },
-            reverse: $reverse
-        );
     }
 
     private static function colorHash(Color|null $color): int

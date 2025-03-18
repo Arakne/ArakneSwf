@@ -3,9 +3,13 @@
 namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\Util\GD;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Override;
+
+use function base64_encode;
+use function getimagesizefromstring;
 
 /**
  * Store a raw image, extracted from a DefineBits tag.
@@ -13,10 +17,34 @@ use Override;
  */
 final class ImageBitsDefinition implements ImageCharacterInterface
 {
+    public readonly int $characterId;
+    private ?Rectangle $bounds = null;
+    private ?string $fixedJpegData = null;
+
     public function __construct(
         public readonly DefineBitsTag $tag,
         public readonly JPEGTablesTag $jpegTables,
-    ) {}
+    ) {
+        $this->characterId = $tag->characterId;
+    }
+
+    #[Override]
+    public function bounds(): Rectangle
+    {
+        if ($this->bounds) {
+            return $this->bounds;
+        }
+
+        [$width, $height] = getimagesizefromstring($this->toJpeg());
+
+        return $this->bounds = new Rectangle(0, $width * 20, 0, $height * 20);
+    }
+
+    #[Override]
+    public function toBase64Data(): string
+    {
+        return 'data:image/jpeg;base64,' . base64_encode($this->toJpeg());
+    }
 
     #[Override]
     public function toPng(): string
@@ -25,8 +53,8 @@ final class ImageBitsDefinition implements ImageCharacterInterface
     }
 
     #[Override]
-    public function toJpeg(): string
+    public function toJpeg(int $quality = -1): string
     {
-        return GD::fixJpegData($this->jpegTables->data . $this->tag->imageData);
+        return $this->fixedJpegData ??= GD::fixJpegData($this->jpegTables->data . $this->tag->imageData);
     }
 }

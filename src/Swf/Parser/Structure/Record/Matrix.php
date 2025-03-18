@@ -111,9 +111,19 @@ final readonly class Matrix
 
     /**
      * Get the SVG matrix representation
+     *
+     * @param bool $undoTwipScale If true, scaling factors will be divided by 20 (to remove conversion to twips)
      */
-    public function toSvgTransformation(): string
+    public function toSvgTransformation(bool $undoTwipScale = false): string
     {
-        return 'matrix(' . round($this->scaleX, 4) . ', ' . round($this->rotateSkew0, 4) . ', ' . round($this->rotateSkew1, 4) . ', ' . round($this->scaleY, 4) . ', ' . round($this->translateX / 20, 4) . ', ' . round($this->translateY / 20, 4) . ')';
+        $scaleX = $this->scaleX;
+        $scaleY = $this->scaleY;
+
+        if ($undoTwipScale) {
+            $scaleX /= 20;
+            $scaleY /= 20;
+        }
+
+        return 'matrix(' . round($scaleX, 4) . ', ' . round($this->rotateSkew0, 4) . ', ' . round($this->rotateSkew1, 4) . ', ' . round($scaleY, 4) . ', ' . round($this->translateX / 20, 4) . ', ' . round($this->translateY / 20, 4) . ')';
     }
 }

@@ -3,16 +3,45 @@
 namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+use function base64_decode;
 use function iterator_to_array;
+use function substr;
 
 class ImageBitsDefinitionTest extends ImageTestCase
 {
+    #[Test]
+    public function characterId()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+        $image = new ImageBitsDefinition($tag, $jpegTables);
+
+        $this->assertSame(244, $image->characterId);
+    }
+
+    #[Test]
+    public function bounds()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+
+        $image = new ImageBitsDefinition($tag, $jpegTables);
+
+        $this->assertEquals(
+            new Rectangle(0, 15200, 0, 9100),
+            $image->bounds()
+        );
+
+        $this->assertSame($image->bounds(), $image->bounds());
+    }
+
     #[Test]
     public function toPng()
     {
@@ -23,6 +52,23 @@ class ImageBitsDefinitionTest extends ImageTestCase
         foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $image->toPng());
+        }
+    }
+
+    #[Test]
+    public function toBase64Data()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+
+        /** @var DefineBitsTag $tag */
+        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+            $image = new ImageBitsDefinition($tag, $jpegTables);
+            $data = $image->toBase64Data();
+
+            $this->assertStringStartsWith('data:image/jpeg;base64,', $data);
+
+            $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', base64_decode(substr($data, 23)), 0.005);
         }
     }
 

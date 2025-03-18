@@ -21,8 +21,14 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\Shape\FillType\ClippedBitmap;
+use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
+use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
+use Arakne\Swf\Extractor\Shape\FillType\Solid;
+use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
+use Arakne\Swf\Parser\Structure\Record\FillStyle;
 use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
@@ -32,8 +38,12 @@ use InvalidArgumentException;
 /**
  * Process define shape action tags to create shape objects
  */
-final class ShapeProcessor
+final readonly class ShapeProcessor
 {
+    public function __construct(
+        private SwfExtractor $extractor,
+    ) {}
+
     /**
      * Transform a DefineShapeTag or DefineShape4Tag into a Shape object
      */
@@ -100,7 +110,7 @@ final class ShapeProcessor
                     if ($shape->stateFillStyle0) {
                         $style = $fillStyles[$shape->fillStyle0 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle0 = PathStyle::fromFillStyle($style, reverse: true);
+                            $fillStyle0 = new PathStyle(fill: $this->createFillType($style), reverse: true);
                         } else {
                             $fillStyle0 = null;
                         }
@@ -109,7 +119,7 @@ final class ShapeProcessor
                     if ($shape->stateFillStyle1) {
                         $style = $fillStyles[$shape->fillStyle1 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle1 = PathStyle::fromFillStyle($style);
+                            $fillStyle1 = new PathStyle(fill: $this->createFillType($style));
                         } else {
                             $fillStyle1 = null;
                         }
@@ -157,5 +167,19 @@ final class ShapeProcessor
         }
 
         return $builder->export();
+    }
+
+    private function createFillType(FillStyle $style): Solid|LinearGradient|RadialGradient|ClippedBitmap
+    {
+        return match ($style->type) {
+            FillStyle::SOLID => new Solid($style->color),
+            FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix, $style->gradient),
+            FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix, $style->gradient),
+            FillStyle::CLIPPED_BITMAP => new ClippedBitmap(
+                $this->extractor->character($style->bitmapId),
+                $style->bitmapMatrix
+            ),
+            default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
+        };
     }
 }

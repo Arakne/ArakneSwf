@@ -102,5 +102,16 @@ class SwfExtractorTest extends ImageTestCase
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/Fixtures/maps/jpeg-507.png', $images[507]->toPng());
         $this->assertImageStringEqualsImageFile(__DIR__.'/Fixtures/maps/jpeg-525.jpg', $images[525]->toJpeg());
+        $this->assertImageStringEqualsImageFile(__DIR__.'/Fixtures/maps/jpeg-525.jpg', $extractor->character(525)->toJpeg());
+    }
+
+    #[Test]
+    public function spriteWithRasterImage()
+    {
+        // @todo test 1047: raster image + color matrix
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/mob-leponge/mob-leponge.swf'));
+        $sprite = $extractor->character(29);
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mob-leponge/sprite-29.svg', $sprite->toSvg());
     }
 }

@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
 
+use function assert;
+
 /**
  * Structure representing a rectangle (two points)
  * Coordinates are in twips (1/20th of a pixel), and can be negative
@@ -32,7 +34,10 @@ final readonly class Rectangle
         public int $xmax,
         public int $ymin,
         public int $ymax,
-    ) {}
+    ) {
+        assert($this->xmin <= $this->xmax);
+        assert($this->ymin <= $this->ymax);
+    }
 
     public function width(): int
     {

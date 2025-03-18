@@ -4,12 +4,14 @@ namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\Util\GD;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use BadMethodCallException;
 use GdImage;
 
 use Override;
 
+use function base64_encode;
 use function imagecolorallocate;
 use function imagecolorallocatealpha;
 use function imagesetpixel;
@@ -27,9 +29,26 @@ use function strlen;
  */
 final class LosslessImageDefinition implements ImageCharacterInterface
 {
+    public readonly int $characterId;
+    private ?Rectangle $bounds = null;
+
     public function __construct(
         public readonly DefineBitsLosslessTag $tag,
-    ) {}
+    ) {
+        $this->characterId = $tag->characterId;
+    }
+
+    #[Override]
+    public function bounds(): Rectangle
+    {
+        return $this->bounds ??= new Rectangle(0, $this->tag->bitmapWidth * 20, 0, $this->tag->bitmapHeight * 20);
+    }
+
+    #[Override]
+    public function toBase64Data(): string
+    {
+        return 'data:image/png;base64,' . base64_encode($this->toPng());
+    }
 
     #[Override]
     public function toPng(): string
