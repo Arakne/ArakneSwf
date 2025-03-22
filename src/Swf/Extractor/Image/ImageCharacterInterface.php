@@ -2,6 +2,7 @@
 
 namespace Arakne\Swf\Extractor\Image;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 
@@ -25,6 +26,17 @@ interface ImageCharacterInterface
      */
     //#[Override]
     public function bounds(): Rectangle;
+
+    /**
+     * Transform the colors of the raster image
+     * A new object is returned, the current instance will not be modified.
+     *
+     * Note: the returned type will be different from the original type, and will directly store the transformed image.
+     *
+     * @param ColorTransform $colorTransform
+     * @return self The transformed character
+     */
+    public function transformColors(ColorTransform $colorTransform): self;
 
     /**
      * Get the URL base64 data of the image.

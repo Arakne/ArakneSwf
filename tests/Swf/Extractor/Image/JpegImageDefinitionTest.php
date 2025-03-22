@@ -3,6 +3,7 @@
 namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
@@ -11,6 +12,7 @@ use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 use function base64_decode;
+use function in_array;
 use function iterator_to_array;
 use function substr;
 
@@ -134,5 +136,23 @@ class JpegImageDefinitionTest extends ImageTestCase
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507.jpg', $images[0]->toJpeg());
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-669.jpg', $images[1]->toJpeg());
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-669.png', $images[1]->toJpeg(), 0.1);
+    }
+
+    #[Test]
+    public function transformColors()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        /** @var DefineBitsJPEG3Tag $tag */
+        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+            if ($tag->characterId === 507) {
+                $image = new JpegImageDefinition($tag);
+                break;
+            }
+        }
+
+        $transformed = $image->transformColors(new ColorTransform(redMult: 0, blueMult: 0));
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507-green.png', $transformed->toPng());
     }
 }

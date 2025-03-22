@@ -1,0 +1,117 @@
+<?php
+
+namespace Arakne\Tests\Swf\Extractor\Image;
+
+use Arakne\Swf\Extractor\Image\TransformedImage;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Tests\Swf\Extractor\ImageTestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
+use PHPUnit\Framework\TestCase;
+
+use function base64_decode;
+use function file_get_contents;
+use function substr;
+
+class TransformedImageTest extends ImageTestCase
+{
+    public const string BASE_IMAGE_PNG = __DIR__.'/../Fixtures/g2/bits-283.png';
+    public const int BASE_IMAGE_WIDTH = 800;
+    public const int BASE_IMAGE_HEIGHT = 600;
+
+    #[
+        Test,
+        TestWith([new ColorTransform(), self::BASE_IMAGE_PNG]),
+        TestWith([new ColorTransform(redMult: 0), __DIR__.'/../Fixtures/g2/bits-283-no-red.png']),
+        TestWith([new ColorTransform(greenMult: 0), __DIR__.'/../Fixtures/g2/bits-283-no-green.png']),
+        TestWith([new ColorTransform(blueMult: 0), __DIR__.'/../Fixtures/g2/bits-283-no-blue.png']),
+        TestWith([new ColorTransform(alphaMult: 128), __DIR__.'/../Fixtures/g2/bits-283-alpha50.png']),
+        TestWith([new ColorTransform(alphaMult: 64), __DIR__.'/../Fixtures/g2/bits-283-alpha25.png']),
+        TestWith([new ColorTransform(alphaMult: 192), __DIR__.'/../Fixtures/g2/bits-283-alpha75.png']),
+        TestWith([new ColorTransform(redMult: 128, greenMult: 128, blueMult: 128), __DIR__.'/../Fixtures/g2/bits-283-darken50.png']),
+        TestWith([new ColorTransform(
+            redMult: 200,
+            greenMult: 75,
+            blueMult: 256,
+            redAdd: 50,
+            greenAdd: -50,
+            blueAdd: 100,
+        ), __DIR__.'/../Fixtures/g2/bits-283-complex-matrix.png']),
+    ]
+    public function fromPng(ColorTransform $colorTransform, string $expectedFile)
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            $colorTransform,
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+
+        $this->assertImageStringEqualsImageFile($expectedFile, $image->toPng());
+        $this->assertSame(1, $image->characterId);
+        $this->assertEquals(new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT), $image->bounds());
+    }
+
+    #[
+        Test,
+        TestWith([new ColorTransform(), __DIR__.'/../Fixtures/maps/jpeg-525.jpg']),
+        TestWith([new ColorTransform(redMult: 0), __DIR__.'/../Fixtures/maps/jpeg-525-no-red.png']),
+        TestWith([new ColorTransform(alphaMult: 128), __DIR__.'/../Fixtures/maps/jpeg-525-alpha50.png']),
+    ]
+    public function fromJpeg(ColorTransform $colorTransform, string $expectedFile)
+    {
+        $image = TransformedImage::createFromJpeg(
+            1,
+            new Rectangle(0, 600, 0, 345),
+            $colorTransform,
+            file_get_contents(__DIR__.'/../Fixtures/maps/jpeg-525.jpg')
+        );
+
+        $this->assertImageStringEqualsImageFile($expectedFile, $image->toPng());
+        $this->assertSame(1, $image->characterId);
+        $this->assertEquals(new Rectangle(0, 600, 0, 345), $image->bounds());
+    }
+
+    #[Test]
+    public function toBase64Data()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            new ColorTransform(redMult: 0),
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+
+        $this->assertStringStartsWith('data:image/png;base64,', $image->toBase64Data());
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-283-no-red.png', base64_decode(substr($image->toBase64Data(), 22)));
+    }
+
+    #[Test]
+    public function toJpeg()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            new ColorTransform(redMult: 0),
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-283-no-red.png', $image->toJpeg(100), .016);
+    }
+
+    #[Test]
+    public function transformColors()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            new ColorTransform(redMult: 0),
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+
+        $transformed = $image->transformColors(new ColorTransform(alphaMult: 128));
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-283-no-red-alpha50.png', $transformed->toPng());
+    }
+}

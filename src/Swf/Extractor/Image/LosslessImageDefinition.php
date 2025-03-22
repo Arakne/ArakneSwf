@@ -3,6 +3,7 @@
 namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\Util\GD;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
@@ -42,6 +43,12 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     public function bounds(): Rectangle
     {
         return $this->bounds ??= new Rectangle(0, $this->tag->bitmapWidth * 20, 0, $this->tag->bitmapHeight * 20);
+    }
+
+    #[Override]
+    public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
+    {
+        return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, $this->toGD());
     }
 
     #[Override]

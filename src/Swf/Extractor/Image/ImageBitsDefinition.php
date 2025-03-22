@@ -3,6 +3,7 @@
 namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\Util\GD;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
@@ -38,6 +39,12 @@ final class ImageBitsDefinition implements ImageCharacterInterface
         [$width, $height] = getimagesizefromstring($this->toJpeg());
 
         return $this->bounds = new Rectangle(0, $width * 20, 0, $height * 20);
+    }
+
+    #[Override]
+    public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
+    {
+        return TransformedImage::createFromJpeg($this->characterId, $this->bounds(), $colorTransform, $this->toJpeg());
     }
 
     #[Override]

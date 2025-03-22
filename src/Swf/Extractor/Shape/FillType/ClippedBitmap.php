@@ -3,9 +3,9 @@
 namespace Arakne\Swf\Extractor\Shape\FillType;
 
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
+use Arakne\Swf\Extractor\Image\TransformedImage;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
-use BadMethodCallException;
 use Override;
 
 use function crc32;
@@ -18,7 +18,7 @@ final readonly class ClippedBitmap implements FillTypeInterface
         public ImageCharacterInterface $bitmap,
         public Matrix $matrix,
     ) {
-        $this->hash = 'CB'.$this->bitmap->characterId.'-'.crc32($this->matrix->toSvgTransformation());
+        $this->hash = self::computeHash($bitmap, $matrix);
     }
 
     #[Override]
@@ -30,6 +30,21 @@ final readonly class ClippedBitmap implements FillTypeInterface
     #[Override]
     public function transformColors(ColorTransform $colorTransform): static
     {
-        throw new BadMethodCallException('Not implemented yet');
+        return new self(
+            $this->bitmap->transformColors($colorTransform),
+            $this->matrix,
+        );
+    }
+
+    private static function computeHash(ImageCharacterInterface $bitmap, Matrix $matrix): string
+    {
+        $imgHash = $bitmap->characterId;
+
+        // When a color transform is applied, make sure that the hash is different
+        if ($bitmap instanceof TransformedImage) {
+            $imgHash .= '-' . crc32($bitmap->toPng());
+        }
+
+        return 'CB'.$imgHash.'-'.crc32($matrix->toSvgTransformation());
     }
 }

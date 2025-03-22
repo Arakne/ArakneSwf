@@ -3,6 +3,7 @@
 namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\Util\GD;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
@@ -49,6 +50,16 @@ final class JpegImageDefinition implements ImageCharacterInterface
         [$width, $height] = getimagesizefromstring($data);
 
         return $this->bounds = new Rectangle(0, $width * 20, 0, $height * 20);
+    }
+
+    #[Override]
+    public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
+    {
+        if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
+            return TransformedImage::createFromJpeg($this->characterId, $this->bounds(), $colorTransform, $this->tag->imageData);
+        }
+
+        return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, $this->toGD());
     }
 
     #[Override]

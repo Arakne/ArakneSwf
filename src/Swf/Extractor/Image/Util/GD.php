@@ -2,10 +2,12 @@
 
 namespace Arakne\Swf\Extractor\Image\Util;
 
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use BadMethodCallException;
 use GdImage;
 use InvalidArgumentException;
 
+use function assert;
 use function error_get_last;
 use function extension_loaded;
 use function fclose;
@@ -14,16 +16,19 @@ use function imagealphablending;
 use function imagecolorallocate;
 use function imagecolorallocatealpha;
 use function imagecolorat;
+use function imagecolorstotal;
 use function imagecreate;
 use function imagecreatefromstring;
 use function imagecreatetruecolor;
 use function imagedestroy;
 use function imagejpeg;
+use function imagepalettetotruecolor;
 use function imagepng;
 use function imagesavealpha;
 use function imagesetpixel;
 use function imagesx;
 use function imagesy;
+use function is_int;
 use function min;
 use function ord;
 use function rewind;
@@ -31,6 +36,7 @@ use function stream_get_contents;
 use function strlen;
 use function strpos;
 use function substr;
+use function var_dump;
 
 /**
  * Wrapper for GD functions.
@@ -121,6 +127,64 @@ final class GD
     }
 
     /**
+     * Apply the color transform matrix to each pixel of the image.
+     */
+    public function transformColors(ColorTransform $matrix): void
+    {
+        $height = $this->height;
+        $width = $this->width;
+        $img = $this->image;
+
+        // Ensure that the image is in true color mode
+        // to allow usage of bitwise operations on colors
+        imagepalettetotruecolor($img);
+        imagealphablending($img, false);
+        imagesavealpha($img, true);
+
+        $redMult = $matrix->redMult / 256;
+        $redAdd = $matrix->redAdd;
+        $greenMult = $matrix->greenMult / 256;
+        $greenAdd = $matrix->greenAdd;
+        $blueMult = $matrix->blueMult / 256;
+        $blueAdd = $matrix->blueAdd;
+        $alphaMult = $matrix->alphaMult / 256;
+        $alphaAdd = $matrix->alphaAdd;
+
+        for ($y = 0; $y < $height; ++$y) {
+            for ($x = 0; $x < $width; ++$x) {
+                $color = imagecolorat($img, $x, $y);
+
+                assert(is_int($color));
+
+                $a = 127 - (($color >> 24) & 0x7F);
+                $r = ($color >> 16) & 0xFF;
+                $g = ($color >> 8) & 0xFF;
+                $b = $color & 0xFF;
+
+                $r = (int) ($r * $redMult + $redAdd);
+                $g = (int) ($g * $greenMult + $greenAdd);
+                $b = (int) ($b * $blueMult + $blueAdd);
+                $a = (int) ($a * $alphaMult + $alphaAdd);
+
+                // Do not use min and max for performance reasons
+                $r = $r > 255 ? 255 : $r;
+                $r = $r < 0 ? 0 : $r;
+                $g = $g > 255 ? 255 : $g;
+                $g = $g < 0 ? 0 : $g;
+                $b = $b > 255 ? 255 : $b;
+                $b = $b < 0 ? 0 : $b;
+                $a = $a > 127 ? 127 : $a;
+                $a = $a < 0 ? 0 : $a;
+                $a = 127 - $a;
+
+                $newColor = ($a << 24) | ($r << 16) | ($g << 8) | $b;
+
+                imagesetpixel($img, $x, $y, $newColor);
+            }
+        }
+    }
+
+    /**
      * Render the image as a PNG.
      *
      * @param int $compression Compression level from 0 to 9, -1 for default.
@@ -137,6 +201,12 @@ final class GD
         return $content;
     }
 
+    /**
+     * Export the image to JPEG format.
+     *
+     * @param int $quality The image quality from 0 (worst quality) to 100 (best quality). If -1 is passed, the default quality will be used.
+     * @return string
+     */
     public function toJpeg(int $quality = -1): string
     {
         $stream = fopen('php://memory','r+');

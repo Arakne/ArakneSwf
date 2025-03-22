@@ -3,6 +3,7 @@
 namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
@@ -83,5 +84,20 @@ class ImageBitsDefinitionTest extends ImageTestCase
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $image->toJpeg(), 0.005);
         }
+    }
+
+    #[Test]
+    public function transformColors()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+
+        $image = new ImageBitsDefinition($tag, $jpegTables);
+        $transformed = $image->transformColors(new ColorTransform(greenMult: 0, blueMult: 0));
+
+        $this->assertSame($image->bounds(), $transformed->bounds());
+        $this->assertSame($image->characterId, $transformed->characterId);
+
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-244-red.png', $transformed->toPng());
     }
 }
