@@ -17,8 +17,9 @@ final readonly class ClippedBitmap implements FillTypeInterface
     public function __construct(
         public ImageCharacterInterface $bitmap,
         public Matrix $matrix,
+        public bool $smoothed = true,
     ) {
-        $this->hash = self::computeHash($bitmap, $matrix);
+        $this->hash = self::computeHash($bitmap, $matrix, $smoothed);
     }
 
     #[Override]
@@ -36,7 +37,7 @@ final readonly class ClippedBitmap implements FillTypeInterface
         );
     }
 
-    private static function computeHash(ImageCharacterInterface $bitmap, Matrix $matrix): string
+    private static function computeHash(ImageCharacterInterface $bitmap, Matrix $matrix, bool $smoothed): string
     {
         $imgHash = $bitmap->characterId;
 
@@ -45,6 +46,12 @@ final readonly class ClippedBitmap implements FillTypeInterface
             $imgHash .= '-' . crc32($bitmap->toPng());
         }
 
-        return 'CB'.$imgHash.'-'.crc32($matrix->toSvgTransformation());
+        $prefix = 'CB';
+
+        if (!$smoothed) {
+            $prefix .= 'N';
+        }
+
+        return $prefix.$imgHash.'-'.crc32($matrix->toSvgTransformation());
     }
 }

@@ -191,6 +191,10 @@ final class SvgBuilder
         $pattern['viewBox'] = sprintf('0 0 %h %h', $style->bitmap->bounds()->width() / 20, $style->bitmap->bounds()->height() / 20);
         $pattern['patternTransform'] = $style->matrix->toSvgTransformation(undoTwipScale: true);
 
+        if (!$style->smoothed) {
+            $pattern['image-rendering'] = 'optimizeSpeed';
+        }
+
         $image = $pattern->addChild('image');
         $image['href'] = $style->bitmap->toBase64Data();
 

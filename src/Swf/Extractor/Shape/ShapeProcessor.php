@@ -179,6 +179,11 @@ final readonly class ShapeProcessor
                 $this->extractor->character($style->bitmapId),
                 $style->bitmapMatrix
             ),
+            FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new ClippedBitmap(
+                $this->extractor->character($style->bitmapId),
+                $style->bitmapMatrix,
+                smoothed: false,
+            ),
             default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
         };
     }

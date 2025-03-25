@@ -73,8 +73,11 @@ class ShapeToSvgFunctionalTest extends TestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/mob-leponge/mob-leponge.swf');
         $shape = (new SwfExtractor($swf))->character(2);
-
         $this->assertSvg(__DIR__.'/../Fixtures/mob-leponge/shadow.svg', $shape);
+
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1597/1597.swf');
+        $shape = (new SwfExtractor($swf))->character(2);
+        $this->assertSvg(__DIR__.'/../Fixtures/1597/shadow.svg', $shape);
     }
 
     private function assertSvg(string $expectedFile, string|ShapeDefinition $shape)
