@@ -21,7 +21,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
 
-final readonly class Gradient
+use JsonSerializable;
+use Override;
+
+final readonly class Gradient implements JsonSerializable
 {
     public const int SPREAD_MODE_PAD = 0;
     public const int SPREAD_MODE_REFLECT = 1;
@@ -35,7 +38,24 @@ final readonly class Gradient
         public int $interpolationMode,
         /** @var list<GradientRecord> */
         public array $records,
+        public ?float $focalPoint = null,
     ) {}
+
+    #[Override]
+    public function jsonSerialize(): array
+    {
+        $ret = [
+            'spreadMode' => $this->spreadMode,
+            'interpolationMode' => $this->interpolationMode,
+            'records' => $this->records,
+        ];
+
+        if ($this->focalPoint !== null) {
+            $ret['focalPoint'] = $this->focalPoint;
+        }
+
+        return $ret;
+    }
 
     public function transformColors(ColorTransform $colorTransform): self
     {
@@ -49,6 +69,7 @@ final readonly class Gradient
             $this->spreadMode,
             $this->interpolationMode,
             $records,
+            $this->focalPoint,
         );
     }
 }

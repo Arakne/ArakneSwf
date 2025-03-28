@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Drawer\Svg;
 
-use Arakne\Swf\Extractor\Shape\FillType\ClippedBitmap;
+use Arakne\Swf\Extractor\Shape\FillType\Bitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
@@ -91,7 +91,7 @@ final class SvgBuilder
         return $pathElement;
     }
 
-    public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|ClippedBitmap|null $style): void
+    public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|Bitmap|null $style): void
     {
         if ($style === null) {
             $path['fill'] = 'none';
@@ -104,7 +104,7 @@ final class SvgBuilder
             $style instanceof Solid => self::applyFillSolid($path, $style),
             $style instanceof LinearGradient => self::applyFillLinearGradient($path, $style),
             $style instanceof RadialGradient => self::applyFillRadialGradient($path, $style),
-            $style instanceof ClippedBitmap => self::applyFillClippedBitmap($path, $style),
+            $style instanceof Bitmap => self::applyFillClippedBitmap($path, $style),
         };
     }
 
@@ -168,6 +168,11 @@ final class SvgBuilder
         $radialGradient['cy'] = '0';
         $radialGradient['r'] = '819.2';
 
+        if ($style->gradient->focalPoint) {
+            $radialGradient['fx'] = 0;
+            $radialGradient['fy'] = $style->gradient->focalPoint * 819.2;
+        }
+
         foreach ($style->gradient->records as $record) {
             $stop = $radialGradient->addChild('stop');
             $stop['offset'] = $record->ratio / 255;
@@ -179,7 +184,7 @@ final class SvgBuilder
         }
     }
 
-    public function applyFillClippedBitmap(SimpleXMLElement $path, ClippedBitmap $style): void
+    public function applyFillClippedBitmap(SimpleXMLElement $path, Bitmap $style): void
     {
         $pattern = $this->svg->addChild('pattern');
 

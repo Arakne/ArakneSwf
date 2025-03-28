@@ -37,7 +37,7 @@ final readonly class FillStyle
         public ?Color $color = null,
         public ?Matrix $matrix = null,
         public ?Gradient $gradient = null,
-        public ?array $focalGradient = null,
+        public ?Gradient $focalGradient = null,
         public ?int $bitmapId = null,
         public ?Matrix $bitmapMatrix = null,
     ) {}

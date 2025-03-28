@@ -10,7 +10,7 @@ use Override;
 
 use function crc32;
 
-final readonly class ClippedBitmap implements FillTypeInterface
+final readonly class Bitmap implements FillTypeInterface
 {
     private string $hash;
 
@@ -18,8 +18,9 @@ final readonly class ClippedBitmap implements FillTypeInterface
         public ImageCharacterInterface $bitmap,
         public Matrix $matrix,
         public bool $smoothed = true,
+        public bool $repeat = false,
     ) {
-        $this->hash = self::computeHash($bitmap, $matrix, $smoothed);
+        $this->hash = self::computeHash($bitmap, $matrix, $smoothed, $repeat);
     }
 
     #[Override]
@@ -37,7 +38,7 @@ final readonly class ClippedBitmap implements FillTypeInterface
         );
     }
 
-    private static function computeHash(ImageCharacterInterface $bitmap, Matrix $matrix, bool $smoothed): string
+    private static function computeHash(ImageCharacterInterface $bitmap, Matrix $matrix, bool $smoothed, bool $repeat): string
     {
         $imgHash = $bitmap->characterId;
 
@@ -46,7 +47,7 @@ final readonly class ClippedBitmap implements FillTypeInterface
             $imgHash .= '-' . crc32($bitmap->toPng());
         }
 
-        $prefix = 'CB';
+        $prefix = ($repeat ? 'R' : 'C') .'B';
 
         if (!$smoothed) {
             $prefix .= 'N';

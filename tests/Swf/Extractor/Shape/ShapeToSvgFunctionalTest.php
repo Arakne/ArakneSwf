@@ -78,6 +78,19 @@ class ShapeToSvgFunctionalTest extends TestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/1597/1597.swf');
         $shape = (new SwfExtractor($swf))->character(2);
         $this->assertSvg(__DIR__.'/../Fixtures/1597/shadow.svg', $shape);
+
+        $swf = new SwfFile(__DIR__.'/../Fixtures/7022/7022.swf');
+        $shape = (new SwfExtractor($swf))->character(5);
+        $this->assertSvg(__DIR__.'/../Fixtures/7022/5.svg', $shape);
+    }
+
+    #[Test]
+    public function withFocalGradiant()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1700/1700.swf');
+        $shape = (new SwfExtractor($swf))->character(203);
+
+        $this->assertSvg(__DIR__.'/../Fixtures/1700/shape-203.svg', $shape->toSvg());
     }
 
     private function assertSvg(string $expectedFile, string|ShapeDefinition $shape)

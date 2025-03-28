@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
-use Arakne\Swf\Extractor\Shape\FillType\ClippedBitmap;
+use Arakne\Swf\Extractor\Shape\FillType\Bitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
@@ -43,7 +43,7 @@ final readonly class PathStyle
          * The fill style and color of the current path
          * If this value is null, the path should not be filled
          */
-        public Solid|LinearGradient|RadialGradient|ClippedBitmap|null $fill = null,
+        public Solid|LinearGradient|RadialGradient|Bitmap|null $fill = null,
 
         /**
          * The line color of the current path

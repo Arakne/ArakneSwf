@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
-use Arakne\Swf\Extractor\Shape\FillType\ClippedBitmap;
+use Arakne\Swf\Extractor\Shape\FillType\Bitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
@@ -169,20 +169,34 @@ final readonly class ShapeProcessor
         return $builder->export();
     }
 
-    private function createFillType(FillStyle $style): Solid|LinearGradient|RadialGradient|ClippedBitmap
+    private function createFillType(FillStyle $style): Solid|LinearGradient|RadialGradient|Bitmap
     {
         return match ($style->type) {
             FillStyle::SOLID => new Solid($style->color),
             FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix, $style->gradient),
             FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix, $style->gradient),
-            FillStyle::CLIPPED_BITMAP => new ClippedBitmap(
+            FillStyle::FOCAL_GRADIENT => new RadialGradient($style->matrix, $style->focalGradient),
+            FillStyle::REPEATING_BITMAP => new Bitmap(
                 $this->extractor->character($style->bitmapId),
-                $style->bitmapMatrix
+                $style->bitmapMatrix,
+                repeat: true,
             ),
-            FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new ClippedBitmap(
+            FillStyle::CLIPPED_BITMAP => new Bitmap(
+                $this->extractor->character($style->bitmapId),
+                $style->bitmapMatrix,
+                repeat: false,
+            ),
+            FillStyle::NON_SMOOTHED_REPEATING_BITMAP => new Bitmap(
                 $this->extractor->character($style->bitmapId),
                 $style->bitmapMatrix,
                 smoothed: false,
+                repeat: true,
+            ),
+            FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new Bitmap(
+                $this->extractor->character($style->bitmapId),
+                $style->bitmapMatrix,
+                smoothed: false,
+                repeat: false,
             ),
             default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
         };

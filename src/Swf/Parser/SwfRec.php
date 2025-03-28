@@ -28,12 +28,12 @@ use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\Structure\Action\DefineFunction2Data;
 use Arakne\Swf\Parser\Structure\Action\DefineFunctionData;
 use Arakne\Swf\Parser\Structure\Action\GetURL2Data;
+use Arakne\Swf\Parser\Structure\Action\GetURLData;
 use Arakne\Swf\Parser\Structure\Action\GotoFrame2Data;
+use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Action\WaitForFrameData;
-use Arakne\Swf\Parser\Structure\Action\GetURLData;
-use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
@@ -49,9 +49,7 @@ use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Exception;
 
-use function dechex;
 use function sprintf;
-use function var_dump;
 
 /**
  * Parse SWF structures
@@ -644,15 +642,14 @@ readonly class SwfRec
     }
 
     // shapeVersion must be 4
-    public function collectFocalGradient(int $shapeVersion): array
+    public function collectFocalGradient(int $shapeVersion): Gradient
     {
-        $focalGradient = array();
-        $focalGradient['spreadMode'] = $this->io->collectUB(2);
-        $focalGradient['interpolationMode'] = $this->io->collectUB(2);
-        $numGradientRecords = $this->io->collectUB(4);
-        $focalGradient['gradientRecords'] = $this->collectGradientRecords($numGradientRecords, $shapeVersion);
-        $focalGradient['focalPoint'] = $this->io->collectFixed8();
-        return $focalGradient;
+        return new Gradient(
+            spreadMode: $this->io->collectUB(2),
+            interpolationMode: $this->io->collectUB(2),
+            records: $this->collectGradientRecords($this->io->collectUB(4), $shapeVersion),
+            focalPoint: $this->io->collectFixed8(),
+        );
     }
 
     public function collectFilterList(): array
