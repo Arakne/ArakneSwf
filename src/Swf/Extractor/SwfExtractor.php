@@ -37,8 +37,15 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
+use Arakne\Swf\Parser\Structure\Tag\ExportAssetsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
+
+use InvalidArgumentException;
+
+use function array_combine;
+use function assert;
+use function sprintf;
 
 /**
  * Extract resources from a SWF file
@@ -46,6 +53,13 @@ use Arakne\Swf\SwfFile;
 final class SwfExtractor
 {
     private ?array $characters = null;
+
+    /**
+     * Exported asset name to character ID.
+     *
+     * @var array<string, int>|null
+     */
+    private ?array $exported = null;
 
     public function __construct(
         private readonly SwfFile $file,
@@ -117,6 +131,45 @@ final class SwfExtractor
         $this->characters ??= ($this->shapes() + $this->sprites() + $this->images());
 
         return $this->characters[$characterId] ?? new MissingCharacter($characterId);
+    }
+
+    /**
+     * Get a character by its exported name.
+     *
+     * @see SwfExtractor::exported() to get the list of exported names.
+     * @throws InvalidArgumentException If the given name is not exported.
+     */
+    public function byName(string $name): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    {
+        $id = $this->exported()[$name] ?? null;
+
+        if ($id === null) {
+            throw new InvalidArgumentException(sprintf('The name "%s" has not been exported', $name));
+        }
+
+        return $this->character($id);
+    }
+
+    /**
+     * Get all exported tag names to character ID.
+     *
+     * @return array<string, int>
+     */
+    public function exported(): array
+    {
+        if ($this->exported !== null) {
+            return $this->exported;
+        }
+
+        $exported = [];
+
+        foreach ($this->file->tags(ExportAssetsTag::ID) as $tag) {
+            assert($tag instanceof ExportAssetsTag);
+
+            $exported += array_combine($tag->names, $tag->tags);
+        }
+
+        return $this->exported = $exported;
     }
 
     /**

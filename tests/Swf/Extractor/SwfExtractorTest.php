@@ -8,6 +8,7 @@ use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
+use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
@@ -125,5 +126,46 @@ class SwfExtractorTest extends ImageTestCase
 
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/sprite-3.svg', $extractor->character(3)->toSvg());
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/sprite-29.svg', $extractor->character(29)->toSvg());
+    }
+
+    #[Test]
+    public function byName()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1047/1047.swf'));
+
+        $staticR = $extractor->byName('staticR');
+        $this->assertInstanceOf(SpriteDefinition::class, $staticR);
+        $this->assertSame(66, $staticR->id);
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/staticR.svg', $staticR->toSvg());
+
+        $staticL = $extractor->byName('staticL');
+        $this->assertInstanceOf(SpriteDefinition::class, $staticL);
+        $this->assertSame(68, $staticL->id);
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/staticL.svg', $staticL->toSvg());
+    }
+
+    #[Test]
+    public function exported()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1047/1047.swf'));
+
+        $this->assertSame([
+            'runR' => 29,
+            'runL' => 43,
+            'bonusR' => 53,
+            'bonusL' => 56,
+            'anim0R' => 62,
+            'anim0L' => 64,
+            'staticR' => 66,
+            'staticL' => 68,
+            'walkL' => 70,
+            'walkR' => 72,
+            'anim1R' => 77,
+            'anim1L' => 79,
+            'hitR' => 91,
+            'hitL' => 95,
+            'dieR' => 97,
+            'dieL' => 99,
+        ], $extractor->exported());
     }
 }

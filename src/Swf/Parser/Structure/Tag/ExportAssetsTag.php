@@ -21,11 +21,17 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use function assert;
+use function count;
+
 final readonly class ExportAssetsTag
 {
+    public const int ID = 56;
+
     public function __construct(
         public array $tags,
         public array $names,
     ) {
+        assert(count($this->tags) === count($this->names));
     }
 }
