@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
+use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 
@@ -46,14 +47,15 @@ readonly class Swf
 
     /**
      * @param string $binary The content of the SWF file
+     * @param ErrorCollector|null $errorCollector The error collector to use
      */
-    public function __construct(string $binary)
+    public function __construct(string $binary, ?ErrorCollector $errorCollector = null)
     {
         $this->io = new SwfIO($binary);
         $this->rec = new SwfRec($this->io);
         $this->hdr = new SwfHdr($this->io, $this->rec);
         $this->header = $this->hdr->parseHeader();
-        $this->tag = new SwfTag($this->io, $this->rec, $this->header->version);
+        $this->tag = new SwfTag($this->io, $this->rec, $this->header->version, $errorCollector);
         $this->tags = $this->tag->parseTags();
     }
 

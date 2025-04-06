@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
+use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
@@ -85,22 +87,21 @@ use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Structure\Tag\VideoFrameTag;
 use Exception;
 
-use function bin2hex;
-use function ord;
+use function assert;
 use function sprintf;
 use function strlen;
 use function substr;
-use function var_dump;
 
 /**
  * Parse SWF tags
  */
-readonly class SwfTag
+final readonly class SwfTag
 {
     public function __construct(
         private SwfIO $io,
         private SwfRec $rec,
-        private int $swfVersion
+        private int $swfVersion,
+        private ?ErrorCollector $errorCollector,
     ) {}
 
     /**
@@ -112,33 +113,35 @@ readonly class SwfTag
     public function parseTags(): array
     {
         $tags = [];
+        $io = $this->io;
+        $len = strlen($io->b);
 
-        while ($this->io->bytePos < strlen($this->io->b)) {
+        while ($io->bytePos < $len) {
             // Collect record header (short or long)
-            $recordHeader = $this->io->collectUI16();
+            $recordHeader = $io->collectUI16();
             $tagType = $recordHeader >> 6;
             $tagLength = $recordHeader & 0x3f;
 
             if ($tagLength === 0x3f) {
-                $tagLength = $this->io->collectSI32();
+                $tagLength = $io->collectSI32();
             }
 
             // For definition tags, collect the 'id' also
             if ($this->isDefinitionTagType($tagType)) {
                 $tags[] = new SwfTagPosition(
                     type: $tagType,
-                    offset: $this->io->bytePos,
+                    offset: $io->bytePos,
                     length: $tagLength,
-                    id: $this->io->collectUI16(),
+                    id: $io->collectUI16(),
                 );
-                $this->io->bytePos += $tagLength - 2; // 2 bytes already consumed
+                $io->bytePos += $tagLength - 2; // 2 bytes already consumed
             } else {
                 $tags[] = new SwfTagPosition(
                     type: $tagType,
-                    offset: $this->io->bytePos,
+                    offset: $io->bytePos,
                     length: $tagLength,
                 );
-                $this->io->bytePos += $tagLength;
+                $io->bytePos += $tagLength;
             }
         }
 
@@ -265,18 +268,35 @@ readonly class SwfTag
             ),
         };
 
-        if ($this->io->bytePos != $tagOffset + $tagLength) {
-            // Make sure we have consumed whole tag
-            $sb = sprintf("Internal error: tagType=%d, %d bytes left:", $tagType, $tagOffset + $tagLength - $this->io->bytePos);
+        if ($ret instanceof UnknownTag) {
+            $this->errorCollector?->add(
+                $tag,
+                TagParseErrorType::UnknownTag,
+                [
+                    'code' => $tagType,
+                    'data' => $ret->data,
+                ]
+            );
+        }
 
-            for ($o = $this->io->bytePos; $o < $tagOffset + $tagLength; $o++) {
-                $sb .= sprintf(" %02x", ord($this->io->b[$o]));
-            }
-
-            var_dump($ret, $sb);
-
-            //throw new Exception($sb); // @todo handle error
-            $this->io->bytePos = $tagOffset + $tagLength;
+        if ($this->io->bytePos > $bytePosEnd) {
+            $this->errorCollector?->add(
+                $tag,
+                TagParseErrorType::ReadAfterEnd,
+                [
+                    'length' => $this->io->bytePos - $bytePosEnd,
+                    'data' => substr($this->io->b, $bytePosEnd, $this->io->bytePos - $bytePosEnd),
+                ]
+            );
+        } elseif ($this->io->bytePos < $bytePosEnd) {
+            $this->errorCollector?->add(
+                $tag,
+                TagParseErrorType::ExtraBytes,
+                [
+                    'length' => $bytePosEnd - $this->io->bytePos,
+                    'data' => substr($this->io->b, $this->io->bytePos, $bytePosEnd - $this->io->bytePos),
+                ]
+            );
         }
 
         return $ret;
@@ -581,8 +601,15 @@ readonly class SwfTag
         );
     }
 
+    /**
+     * @param int $bytePosEnd
+     * @param 2|3|4 $version
+     * @return DefineBitsJPEG2Tag|DefineBitsJPEG3Tag|DefineBitsJPEG4Tag
+     */
     private function parseDefineBitsJPEGTag(int $bytePosEnd, int $version): DefineBitsJPEG2Tag|DefineBitsJPEG3Tag|DefineBitsJPEG4Tag
     {
+        assert($version === 2 || $version === 3 || $version === 4);
+
         switch ($version) {
             case 2:
                 return new DefineBitsJPEG2Tag(
@@ -610,9 +637,6 @@ readonly class SwfTag
                     imageData: $imageData,
                     alphaData: $alphaData,
                 );
-
-            default:
-                throw new Exception(sprintf('Internal error: version=%d', $version));
         }
     }
 
@@ -720,7 +744,7 @@ readonly class SwfTag
 
         $io = new SwfIO($b);
         $rec = new SwfRec($io);
-        $tag = new SwfTag($io, $rec, $this->swfVersion);
+        $tag = new SwfTag($io, $rec, $this->swfVersion, $this->errorCollector);
 
         // Collect and parse tags
         $tags = [];

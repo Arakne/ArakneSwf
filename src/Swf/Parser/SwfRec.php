@@ -808,7 +808,8 @@ readonly class SwfRec
         return $soundInfo;
     }
 
-    public function collectButtonRecords(int $version): array {
+    public function collectButtonRecords(int $version): array
+    {
         $buttonRecords = [];
 
         for (;;) {

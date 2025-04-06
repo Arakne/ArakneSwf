@@ -4,6 +4,7 @@ namespace Arakne\Swf;
 
 use Arakne\Swf\Avm\Processor;
 use Arakne\Swf\Avm\State;
+use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Swf;
 use Arakne\Swf\Parser\SwfIO;
@@ -24,8 +25,13 @@ final class SwfFile
          * The path to the SWF file.
          */
         public readonly string $path,
-    ) {
-    }
+
+        /**
+         * Allow to collect errors during parsing.
+         * If not set, errors will be ignored.
+         */
+        public readonly ?ErrorCollector $errorCollector = null,
+    ) {}
 
     /**
      * Check if the given file is a valid SWF file.
@@ -134,6 +140,6 @@ final class SwfFile
 
     private function parser(): Swf
     {
-        return $this->parser ??= new Swf(file_get_contents($this->path));
+        return $this->parser ??= new Swf(file_get_contents($this->path), $this->errorCollector);
     }
 }
