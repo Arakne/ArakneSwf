@@ -2,16 +2,18 @@
 
 namespace Arakne\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Override;
 
 /**
  * Interface for all raster image characters defined in a SWF file.
  *
  * @todo extends DrawableInterface
  */
-interface ImageCharacterInterface
+interface ImageCharacterInterface extends DrawableInterface
 {
     /**
      * The character id of the image in the SWF file.
@@ -24,7 +26,7 @@ interface ImageCharacterInterface
      * Size of the image in twips.
      * Because raster images have no offset, the bounds are always (0, 0, width, height).
      */
-    //#[Override]
+    #[Override]
     public function bounds(): Rectangle;
 
     /**
@@ -36,6 +38,7 @@ interface ImageCharacterInterface
      * @param ColorTransform $colorTransform
      * @return self The transformed character
      */
+    #[Override]
     public function transformColors(ColorTransform $colorTransform): self;
 
     /**

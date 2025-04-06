@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\TransformedImage;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -9,6 +10,8 @@ use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+
+use SimpleXMLElement;
 
 use function base64_decode;
 use function file_get_contents;
@@ -113,5 +116,21 @@ class TransformedImageTest extends ImageTestCase
         $transformed = $image->transformColors(new ColorTransform(alphaMult: 128));
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-283-no-red-alpha50.png', $transformed->toPng());
+    }
+
+    #[Test]
+    public function draw()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            new ColorTransform(redMult: 0),
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+
+        $svg = new SimpleXMLElement($image->draw(new SvgCanvas($image->bounds()))->render());
+
+        $this->assertSame('matrix(1, 0, 0, 1, 0, 0)', (string) $svg->g['transform']);
+        $this->assertSame($image->toBase64Data(), (string) $svg->g->image['href']);
     }
 }

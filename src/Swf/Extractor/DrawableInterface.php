@@ -33,7 +33,7 @@ interface DrawableInterface
      * The current instance of the character should not be modified, a new instance should be returned
      *
      * @param ColorTransform $colorTransform
-     * @return static The transformed character
+     * @return self The transformed character
      */
-    public function transformColors(ColorTransform $colorTransform): static;
+    public function transformColors(ColorTransform $colorTransform): self;
 }

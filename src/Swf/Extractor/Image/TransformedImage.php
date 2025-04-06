@@ -2,6 +2,7 @@
 
 namespace Arakne\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\Util\GD;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -50,6 +51,14 @@ final readonly class TransformedImage implements ImageCharacterInterface
     public function toJpeg(int $quality = -1): string
     {
         return GD::fromPng($this->pngData)->toJpeg($quality);
+    }
+
+    #[Override]
+    public function draw(DrawerInterface $drawer): DrawerInterface
+    {
+        $drawer->image($this);
+
+        return $drawer;
     }
 
     /**

@@ -23,6 +23,7 @@ namespace Arakne\Swf\Extractor\Drawer\Svg;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
+use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\Shape;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
@@ -65,6 +66,14 @@ final class SvgCanvas implements DrawerInterface
         foreach ($shape->paths as $path) {
             $this->path($path);
         }
+    }
+
+    #[Override]
+    public function image(ImageCharacterInterface $image): void
+    {
+        $g = $this->g = $this->builder->addGroup($image->bounds());
+        $tag = $g->addChild('image');
+        $tag['href'] = $image->toBase64Data();
     }
 
     #[Override]

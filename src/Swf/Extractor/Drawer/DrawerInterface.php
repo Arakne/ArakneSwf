@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\Drawer;
 
 use Arakne\Swf\Extractor\DrawableInterface;
+use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\Shape;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
@@ -47,6 +48,13 @@ interface DrawerInterface
      * @param Shape $shape
      */
     public function shape(Shape $shape): void;
+
+    /**
+     * Draw a raster image
+     *
+     * @param ImageCharacterInterface $image
+     */
+    public function image(ImageCharacterInterface $image): void;
 
     /**
      * Include a sprite or shape in the current drawing

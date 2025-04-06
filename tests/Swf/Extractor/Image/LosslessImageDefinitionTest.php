@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
@@ -11,6 +12,8 @@ use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+
+use SimpleXMLElement;
 
 use function array_find;
 use function base64_decode;
@@ -170,5 +173,19 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $transformed = $image->transformColors(new ColorTransform(redMult: 0, greenMult: 0));
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits-blue.png', $transformed->toPng());
+    }
+
+    #[Test]
+    public function draw()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $image = new LosslessImageDefinition($tag);
+
+        $svg = new SimpleXMLElement($image->draw(new SvgCanvas($image->bounds()))->render());
+
+        $this->assertSame('matrix(1, 0, 0, 1, 0, 0)', (string) $svg->g['transform']);
+        $this->assertSame($image->toBase64Data(), (string) $svg->g->image['href']);
     }
 }

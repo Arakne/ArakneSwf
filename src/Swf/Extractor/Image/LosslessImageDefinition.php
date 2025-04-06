@@ -2,6 +2,7 @@
 
 namespace Arakne\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\Util\GD;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
@@ -67,6 +68,14 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     public function toJpeg(int $quality = -1): string
     {
         return $this->toGD()->toJpeg($quality);
+    }
+
+    #[Override]
+    public function draw(DrawerInterface $drawer): DrawerInterface
+    {
+        $drawer->image($this);
+
+        return $drawer;
     }
 
     private function toGD(): GD

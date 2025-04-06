@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -10,6 +11,8 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
+
+use SimpleXMLElement;
 
 use function base64_decode;
 use function in_array;
@@ -154,5 +157,27 @@ class JpegImageDefinitionTest extends ImageTestCase
         $transformed = $image->transformColors(new ColorTransform(redMult: 0, blueMult: 0));
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507-green.png', $transformed->toPng());
+    }
+
+    #[Test]
+    public function draw()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        /** @var DefineBitsJPEG3Tag $tag */
+        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+            if ($tag->characterId === 507) {
+                $image = new JpegImageDefinition($tag);
+                break;
+            }
+        }
+
+        $svg = new SvgCanvas($image->bounds());
+        $image->draw($svg);
+
+        $svg = new SimpleXMLElement($svg->render());
+
+        $this->assertSame('matrix(1, 0, 0, 1, 0, 0)', (string) $svg->g['transform']);
+        $this->assertSame($image->toBase64Data(), (string) $svg->g->image['href']);
     }
 }
