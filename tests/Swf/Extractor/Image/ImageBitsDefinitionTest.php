@@ -45,6 +45,18 @@ class ImageBitsDefinitionTest extends ImageTestCase
     }
 
     #[Test]
+    public function framesCount()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+
+        $image = new ImageBitsDefinition($tag, $jpegTables);
+
+        $this->assertSame(1, $image->framesCount());
+        $this->assertSame(1, $image->framesCount(true));
+    }
+
+    #[Test]
     public function toPng()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');

@@ -63,8 +63,9 @@ interface DrawerInterface
      *
      * @param DrawableInterface $object
      * @param Matrix $matrix
+     * @param non-negative-int $frame The frame to draw.
      */
-    public function include(DrawableInterface $object, Matrix $matrix): void;
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0): void;
 
     /**
      * Draw a path

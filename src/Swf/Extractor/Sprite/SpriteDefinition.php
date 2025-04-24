@@ -29,6 +29,9 @@ use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Override;
 
+use function count;
+use function min;
+
 /**
  * Store an SWF sprite character
  *
@@ -69,6 +72,26 @@ final class SpriteDefinition implements DrawableInterface
     }
 
     #[Override]
+    public function framesCount(bool $recursive = false): int
+    {
+        $count = count($this->sprite()->frames);
+
+        if (!$recursive) {
+            return $count;
+        }
+
+        foreach ($this->sprite()->frames as $index => $frame) {
+            $frameCount = $frame->framesCount(true) + $index;
+
+            if ($frameCount > $count) {
+                $count = $frameCount;
+            }
+        }
+
+        return $count;
+    }
+
+    #[Override]
     public function bounds(): Rectangle
     {
         return $this->sprite()->bounds;
@@ -86,22 +109,19 @@ final class SpriteDefinition implements DrawableInterface
     }
 
     #[Override]
-    public function draw(DrawerInterface $drawer): DrawerInterface
+    public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
-        $drawer->area($this->bounds());
+        $frames = $this->sprite()->frames;
+        $currentFrame = min($frame, count($frames) - 1);
 
-        foreach ($this->sprite()->objects as $object) {
-            $drawer->include($object->object, $object->matrix);
-        }
-
-        return $drawer;
+        return $frames[$currentFrame]->draw($drawer, $frame);
     }
 
     /**
      * Convert the sprite to SVG string
      */
-    public function toSvg(): string
+    public function toSvg(int $frame = 0): string
     {
-        return $this->draw(new SvgCanvas($this->bounds()))->render();
+        return $this->draw(new SvgCanvas($this->bounds()), $frame)->render();
     }
 }

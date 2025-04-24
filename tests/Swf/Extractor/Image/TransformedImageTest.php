@@ -54,6 +54,8 @@ class TransformedImageTest extends ImageTestCase
         $this->assertImageStringEqualsImageFile($expectedFile, $image->toPng());
         $this->assertSame(1, $image->characterId);
         $this->assertEquals(new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT), $image->bounds());
+        $this->assertSame(1, $image->framesCount());
+        $this->assertSame(1, $image->framesCount(true));
     }
 
     #[

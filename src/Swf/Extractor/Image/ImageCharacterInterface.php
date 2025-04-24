@@ -10,8 +10,6 @@ use Override;
 
 /**
  * Interface for all raster image characters defined in a SWF file.
- *
- * @todo extends DrawableInterface
  */
 interface ImageCharacterInterface extends DrawableInterface
 {

@@ -78,7 +78,13 @@ final class ShapeDefinition implements DrawableInterface
     }
 
     #[Override]
-    public function draw(DrawerInterface $drawer): DrawerInterface
+    public function framesCount(bool $recursive = false): int
+    {
+        return 1;
+    }
+
+    #[Override]
+    public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
         $drawer->shape($this->shape());
 

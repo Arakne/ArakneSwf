@@ -11,6 +11,11 @@ final readonly class SpriteObject
 {
     public function __construct(
         /**
+         * The character id of the object
+         */
+        public int $characterId,
+
+        /**
          * The depth of the object
          * Object with higher depth are drawn after object with lower depth (i.e. on top of them)
          */
@@ -37,10 +42,31 @@ final readonly class SpriteObject
     public function transformColors(ColorTransform $colorTransform): self
     {
         return new self(
+            $this->characterId,
             $this->depth,
             $this->object->transformColors($colorTransform),
             $this->bounds,
             $this->matrix,
+        );
+    }
+
+    /**
+     * Modify the object properties and return a new object
+     *
+     * @param DrawableInterface|null $object
+     * @param Rectangle|null $bounds
+     * @param Matrix|null $matrix
+     *
+     * @return self
+     */
+    public function with(?DrawableInterface $object = null, ?Rectangle $bounds = null, ?Matrix $matrix = null): self
+    {
+        return new self(
+            $this->characterId,
+            $this->depth,
+            $object ?? $this->object,
+            $bounds ?? $this->bounds,
+            $matrix ?? $this->matrix,
         );
     }
 }

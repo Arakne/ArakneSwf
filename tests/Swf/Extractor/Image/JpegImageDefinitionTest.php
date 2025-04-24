@@ -45,6 +45,18 @@ class JpegImageDefinitionTest extends ImageTestCase
     }
 
     #[Test]
+    public function framesCount()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+
+        $image = new JpegImageDefinition($tag);
+
+        $this->assertSame(1, $image->framesCount());
+        $this->assertSame(1, $image->framesCount(true));
+    }
+
+    #[Test]
     public function toPngOpaqueJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');

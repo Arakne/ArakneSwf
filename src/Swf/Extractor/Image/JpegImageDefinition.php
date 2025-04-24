@@ -54,6 +54,12 @@ final class JpegImageDefinition implements ImageCharacterInterface
     }
 
     #[Override]
+    public function framesCount(bool $recursive = false): int
+    {
+        return 1;
+    }
+
+    #[Override]
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
         if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
@@ -94,7 +100,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
     }
 
     #[Override]
-    public function draw(DrawerInterface $drawer): DrawerInterface
+    public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
         $drawer->image($this);
 

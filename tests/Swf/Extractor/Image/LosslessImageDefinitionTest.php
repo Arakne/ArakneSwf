@@ -11,8 +11,6 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
-
 use SimpleXMLElement;
 
 use function array_find;
@@ -43,6 +41,18 @@ class LosslessImageDefinitionTest extends ImageTestCase
 
         $this->assertEquals(new Rectangle(0, 12000, 0, 6900), $image->bounds());
         $this->assertSame($image->bounds(), $image->bounds());
+    }
+
+    #[Test]
+    public function framesCount()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $image = new LosslessImageDefinition($tag);
+
+        $this->assertSame(1, $image->framesCount());
+        $this->assertSame(1, $image->framesCount(true));
     }
 
     #[Test]

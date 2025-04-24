@@ -2,18 +2,21 @@
 
 namespace Arakne\Swf\Extractor\Sprite;
 
+use Arakne\Swf\Extractor\Frame\Frame;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
+use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
+use Arakne\Swf\Parser\Structure\Tag\EndTag;
+use Arakne\Swf\Parser\Structure\Tag\FrameLabelTag;
 use Arakne\Swf\Parser\Structure\Tag\PlaceObject2Tag;
-
+use Arakne\Swf\Parser\Structure\Tag\RemoveObject2Tag;
+use Arakne\Swf\Parser\Structure\Tag\RemoveObjectTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
 
-use function get_class;
+use function assert;
 use function ksort;
-use function method_exists;
-use function var_dump;
 
 final readonly class SpriteProcessor
 {
@@ -28,52 +31,85 @@ final readonly class SpriteProcessor
          */
         $objectsByDepth = [];
 
+        /**
+         * @var list<DoActionTag> $actions
+         */
+        $actions = [];
+
+        /**
+         * @var string|null $frameLabel
+         */
+        $frameLabel = null;
+
+        /**
+         * @var list<Frame> $frames
+         */
+        $frames = [];
+
         // Bounds of the sprite
         $xmin = PHP_INT_MAX;
         $ymin = PHP_INT_MAX;
         $xmax = PHP_INT_MIN;
         $ymax = PHP_INT_MIN;
 
-        foreach ($tag->tags as $placeObjectTag) {
-            if ($placeObjectTag instanceof ShowFrameTag) {
+        foreach ($tag->tags as $frameDisplayTag) {
+            if ($frameDisplayTag instanceof EndTag) {
                 break;
             }
 
-            if (!$placeObjectTag instanceof PlaceObject2Tag) {
-                //throw new Exception('Invalid tag ' . get_class($placeObjectTag));
-                continue;
-            }
+            if ($frameDisplayTag instanceof ShowFrameTag) {
+                // Ensure that depths are respected
+                ksort($objectsByDepth);
 
-            // @todo handle move
-            if ($placeObjectTag->characterId === null) {
-                continue;
-            }
-
-            $object = $this->extractor->character($placeObjectTag->characterId);
-            $currentObjectBounds = $object->bounds();
-
-            if ($placeObjectTag->matrix) {
-                // Because the origin shape has already an offset, we need to apply the transformation to the offset
-                // And apply the new matrix to the shape
-                $newMatrix = $placeObjectTag->matrix->translate($currentObjectBounds->xmin, $currentObjectBounds->ymin);
-                $currentObjectBounds = $currentObjectBounds->transform($placeObjectTag->matrix);
-            } else {
-                $newMatrix = new Matrix(
-                    translateX: $currentObjectBounds->xmin,
-                    translateY: $currentObjectBounds->ymin,
+                $frames[] = new Frame(
+                    $objectsByDepth ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0), // Empty frame, use empty bounds
+                    $objectsByDepth,
+                    $actions,
+                    $frameLabel,
                 );
+                $actions = [];
+                $frameLabel = null;
+                continue;
             }
 
-            if ($placeObjectTag->colorTransform) {
-                $object = $object->transformColors($placeObjectTag->colorTransform);
+            if ($frameDisplayTag instanceof DoActionTag) {
+                $actions[] = $frameDisplayTag;
+                continue;
             }
 
-            $objectsByDepth[$placeObjectTag->depth] = new SpriteObject(
-                $placeObjectTag->depth,
-                $object,
-                $currentObjectBounds,
-                $newMatrix,
-            );
+            if ($frameDisplayTag instanceof FrameLabelTag) {
+                $frameLabel = $frameDisplayTag->label;
+                continue;
+            }
+
+            if ($frameDisplayTag instanceof RemoveObject2Tag || $frameDisplayTag instanceof RemoveObjectTag) {
+                unset($objectsByDepth[$frameDisplayTag->depth]);
+                continue;
+            }
+
+            if (!$frameDisplayTag instanceof PlaceObject2Tag) {
+                // @todo use error collector
+                throw new \Exception('Invalid tag ' . get_class($frameDisplayTag));
+                //var_dump('Invalid tag ' . get_class($frameDisplayTag));
+                //continue;
+            }
+
+            if ($frameDisplayTag->characterId !== null) {
+                // New character at the given depth
+                $objectProperties = $this->placeNewObject($frameDisplayTag);
+            } else {
+                // Modify the character at the given depth
+                $objectProperties = $objectsByDepth[$frameDisplayTag->depth] ?? null;
+
+                if (!$objectProperties) {
+                    continue; // @todo error ?
+                }
+
+                $objectProperties = $this->modifyObject($frameDisplayTag, $objectProperties);
+            }
+
+            $objectsByDepth[$frameDisplayTag->depth] = $objectProperties;
+            $currentObjectBounds = $objectProperties->bounds;
 
             if ($currentObjectBounds->xmax > $xmax) {
                 $xmax = $currentObjectBounds->xmax;
@@ -92,12 +128,87 @@ final readonly class SpriteProcessor
             }
         }
 
-        // Ensure that depths are respected
-        ksort($objectsByDepth);
+        $spriteBounds = $objectsByDepth ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0); // Empty sprite, use empty bounds
+
+        // Use same bounds on all frames
+        foreach ($frames as $i => $frame) {
+            if ($frame->bounds != $spriteBounds) {
+                $frames[$i] = $frame->withBounds($spriteBounds);
+            }
+        }
 
         return new Sprite(
-            $objectsByDepth ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0), // Empty sprite, use empty bounds
-            ...$objectsByDepth
+            $spriteBounds,
+            ...$frames
         );
+    }
+
+    /**
+     * Handle display of a new object
+     *
+     * @param PlaceObject2Tag $tag
+     * @return SpriteObject
+     */
+    private function placeNewObject(PlaceObject2Tag $tag): SpriteObject
+    {
+        assert($tag->characterId !== null);
+        $object = $this->extractor->character($tag->characterId);
+        $currentObjectBounds = $object->bounds();
+
+        if ($tag->matrix) {
+            // Because the origin shape has already an offset, we need to apply the transformation to the offset
+            // And apply the new matrix to the shape
+            $newMatrix = $tag->matrix->translate($currentObjectBounds->xmin, $currentObjectBounds->ymin);
+            $currentObjectBounds = $currentObjectBounds->transform($tag->matrix);
+        } else {
+            $newMatrix = new Matrix(
+                translateX: $currentObjectBounds->xmin,
+                translateY: $currentObjectBounds->ymin,
+            );
+        }
+
+        if ($tag->colorTransform) {
+            $object = $object->transformColors($tag->colorTransform);
+        }
+
+        return new SpriteObject(
+            $tag->characterId,
+            $tag->depth,
+            $object,
+            $currentObjectBounds,
+            $newMatrix,
+        );
+    }
+
+    /**
+     * Handle movement/change properties of an already displayed object
+     *
+     * @param PlaceObject2Tag $tag
+     * @param SpriteObject $objectProperties
+     * @return SpriteObject
+     */
+    private function modifyObject(PlaceObject2Tag $tag, SpriteObject $objectProperties): SpriteObject
+    {
+
+        if ($tag->matrix) {
+            $currentObjectBounds = $objectProperties->object->bounds();
+            $objectProperties = $objectProperties->with(
+                bounds: $currentObjectBounds->transform($tag->matrix),
+                matrix: $tag->matrix->translate($currentObjectBounds->xmin, $currentObjectBounds->ymin),
+            );
+        }
+
+        if ($tag->colorTransform) {
+            // Because the color transform is already applied to the previous object, we need to load the original object
+            // And apply the color transform to it
+            $objectProperties = $objectProperties->with(
+                object: $this->extractor
+                    ->character($objectProperties->characterId)
+                    ->transformColors($tag->colorTransform)
+                ,
+            );
+        }
+
+        return $objectProperties;
     }
 }

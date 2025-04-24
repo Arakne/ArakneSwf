@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="39.4px" height="68.35px">
-    <g transform="matrix(1, 0, 0, 1, 17.9, 65)">
-        <use href="#object-0" width="39.4" height="68.35" transform="matrix(-1, 0, 0, 1, 21.5, -65)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="54.25px" height="68.8px">
+    <g transform="matrix(1, 0, 0, 1, 20.65, 65)">
+        <use href="#object-0" width="54.25" height="68.8" transform="matrix(-1, 0, 0, 1, 33.6, -65)"/>
     </g>
     <defs>
-        <g transform="matrix(1, 0, 0, 1, 21.5, 65)" id="object-0">
+        <g transform="matrix(1, 0, 0, 1, 33.6, 65)" id="object-0">
             <use href="#object-1" width="21" height="10.5" transform="matrix(-0.8, 0, 0, 0.8, 8.5, -5.05)"/>
             <use href="#object-3" width="3.7" height="8.75"
                  transform="matrix(0.3995, 0.7301, 0.4461, -0.4073, -6.95, -38.7)"/>

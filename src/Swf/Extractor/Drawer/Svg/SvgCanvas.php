@@ -77,14 +77,14 @@ final class SvgCanvas implements DrawerInterface
     }
 
     #[Override]
-    public function include(DrawableInterface $object, Matrix $matrix): void
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0): void
     {
         $included = new IncludedSvgCanvas(
             $this,
             ($this->defs ??= $this->root->addChild('defs')),
         );
 
-        $object->draw($included);
+        $object->draw($included, $frame);
 
         $g = $this->g ??= $this->builder->addGroup($object->bounds());
 

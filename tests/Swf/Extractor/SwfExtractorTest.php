@@ -10,6 +10,7 @@ use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\SwfFile;
@@ -33,8 +34,12 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertContainsOnly(ShapeDefinition::class, $shapes);
 
         $this->assertSame(1, $shapes[1]->id);
+        $this->assertSame(1, $shapes[1]->framesCount());
+        $this->assertSame(1, $shapes[1]->framesCount(true));
         $this->assertInstanceOf(DefineShapeTag::class, $shapes[1]->tag);
         $this->assertSame(2, $shapes[2]->id);
+        $this->assertSame(1, $shapes[2]->framesCount());
+        $this->assertSame(1, $shapes[2]->framesCount(true));
         $this->assertInstanceOf(DefineShapeTag::class, $shapes[2]->tag);
 
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/2.svg', $shapes[1]->toSvg());
@@ -73,6 +78,8 @@ class SwfExtractorTest extends ImageTestCase
         $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/complex_sprite.swf'));
 
         $this->assertInstanceOf(MissingCharacter::class, $extractor->character(10000));
+        $this->assertSame(1, $extractor->character(10000)->framesCount());
+        $this->assertSame(1, $extractor->character(10000)->framesCount(true));
 
         $drawer = new SvgCanvas(new Rectangle(0, 0, 0, 0));
         $this->assertSame($drawer, $extractor->character(10000)->draw($drawer));
@@ -142,6 +149,44 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertInstanceOf(SpriteDefinition::class, $staticL);
         $this->assertSame(68, $staticL->id);
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/staticL.svg', $staticL->toSvg());
+    }
+
+    #[Test]
+    public function spriteWithMultipleFrames()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1047/1047.swf'));
+        $sprite = $extractor->character(61);
+
+        $this->assertSame(40, $sprite->framesCount());
+        $this->assertSame(40, $sprite->framesCount(true));
+
+        for ($frame = 0; $frame < 40; $frame++) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/61_frames/frame_'.$frame.'.svg', $sprite->toSvg($frame));
+        }
+    }
+
+    #[Test]
+    public function spriteWithMultipleFramesRecursively()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1047/1047.swf'));
+        $sprite = $extractor->byName('anim0R');
+
+        $this->assertSame(1, $sprite->framesCount());
+        $this->assertSame(40, $sprite->framesCount(true));
+
+        for ($frame = 0; $frame < 40; $frame++) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1047/anim0R/frame_'.$frame.'.svg', $sprite->toSvg($frame));
+        }
+    }
+
+    #[Test]
+    public function spriteWithActions()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1047/1047.swf'));
+        $sprite = $extractor->character(5);
+
+        $this->assertCount(1, $sprite->sprite()->frames[0]->actions);
+        $this->assertCount(16, $sprite->sprite()->frames[0]->actions[0]->actions);
     }
 
     #[Test]

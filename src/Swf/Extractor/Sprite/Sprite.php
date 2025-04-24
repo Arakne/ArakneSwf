@@ -2,35 +2,40 @@
 
 namespace Arakne\Swf\Extractor\Sprite;
 
+use Arakne\Swf\Extractor\Frame\Frame;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
+use function assert;
+use function count;
 
 final readonly class Sprite
 {
     /**
-     * @var list<SpriteObject>
+     * @var list<Frame>
      */
-    public array $objects;
+    public array $frames;
 
     /**
-     * @param SpriteObject ...$objects Objects to displayed, ordered by depth
+     * @param Frame ...$frames
      * @no-named-arguments
      */
     public function __construct(
         public Rectangle $bounds,
-        SpriteObject ...$objects,
+        Frame ...$frames,
     ) {
-        $this->objects = $objects;
+        $this->frames = $frames;
+        assert(count($frames) > 0);
     }
 
     public function transformColors(ColorTransform $colorTransform)
     {
-        $objects = [];
+        $frames = [];
 
-        foreach ($this->objects as $object) {
-            $objects[] = $object->transformColors($colorTransform);
+        foreach ($this->frames as $object) {
+            $frames[] = $object->transformColors($colorTransform);
         }
 
-        return new self($this->bounds, ...$objects);
+        return new self($this->bounds, ...$frames);
     }
 }

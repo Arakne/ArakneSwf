@@ -47,6 +47,12 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     }
 
     #[Override]
+    public function framesCount(bool $recursive = false): int
+    {
+        return 1;
+    }
+
+    #[Override]
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
         return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, $this->toGD());
@@ -71,7 +77,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     }
 
     #[Override]
-    public function draw(DrawerInterface $drawer): DrawerInterface
+    public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
         $drawer->image($this);
 
