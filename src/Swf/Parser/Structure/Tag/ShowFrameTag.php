@@ -23,5 +23,5 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class ShowFrameTag
 {
-
+    public const int TYPE = 1;
 }

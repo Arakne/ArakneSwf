@@ -1,13 +1,18 @@
 <?php
 
-namespace Arakne\Swf\Extractor\Sprite;
+declare(strict_types=1);
+
+namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
-final readonly class SpriteObject
+/**
+ * Single object displayed in a frame
+ */
+final readonly class FrameObject
 {
     public function __construct(
         /**
@@ -39,6 +44,12 @@ final readonly class SpriteObject
         public Matrix $matrix,
     ) {}
 
+    /**
+     * Apply color transformation to the object
+     *
+     * @param ColorTransform $colorTransform
+     * @return self The new object with the color transformation applied
+     */
     public function transformColors(ColorTransform $colorTransform): self
     {
         return new self(

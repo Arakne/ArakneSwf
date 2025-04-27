@@ -185,8 +185,8 @@ class SwfExtractorTest extends ImageTestCase
         $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1047/1047.swf'));
         $sprite = $extractor->character(5);
 
-        $this->assertCount(1, $sprite->sprite()->frames[0]->actions);
-        $this->assertCount(16, $sprite->sprite()->frames[0]->actions[0]->actions);
+        $this->assertCount(1, $sprite->timeline()->frames[0]->actions);
+        $this->assertCount(16, $sprite->timeline()->frames[0]->actions[0]->actions);
     }
 
     #[Test]
@@ -212,5 +212,28 @@ class SwfExtractorTest extends ImageTestCase
             'dieR' => 97,
             'dieL' => 99,
         ], $extractor->exported());
+    }
+
+    #[Test]
+    public function timelineSingleFrame()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__ . '/Fixtures/1/1.swf'));
+        $timeline = $extractor->timeline(false);
+
+        foreach ($timeline->toSvgAll() as $f => $svg) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1/frame_'.$f.'.svg', $svg);
+        }
+    }
+
+    #[Test]
+    public function timelineMultipleFrames()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__ . '/Fixtures/homestuck/00004.swf'));
+        $timeline = $extractor->timeline();
+
+        // Note: morphsphape are not supported yet, so some frames are invalid
+        foreach ($timeline->toSvgAll() as $f => $svg) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/homestuck/timeline/frame_'.$f.'.svg', $svg);
+        }
     }
 }

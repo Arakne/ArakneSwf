@@ -27,7 +27,8 @@ use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
-use Arakne\Swf\Extractor\Sprite\SpriteProcessor;
+use Arakne\Swf\Extractor\Timeline\Timeline;
+use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
@@ -40,7 +41,6 @@ use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\ExportAssetsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
-
 use InvalidArgumentException;
 
 use function array_combine;
@@ -52,6 +52,9 @@ use function sprintf;
  */
 final class SwfExtractor
 {
+    /**
+     * @var array<int, ShapeDefinition|SpriteDefinition|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>|null
+     */
     private ?array $characters = null;
 
     /**
@@ -60,6 +63,7 @@ final class SwfExtractor
      * @var array<string, int>|null
      */
     private ?array $exported = null;
+    private ?Timeline $timeline = null;
 
     public function __construct(
         private readonly SwfFile $file,
@@ -113,7 +117,7 @@ final class SwfExtractor
     {
         // @todo cache
         $sprites = [];
-        $processor = new SpriteProcessor($this);
+        $processor = new TimelineProcessor($this);
 
         foreach ($this->file->tags(DefineSpriteTag::TYPE) as $pos => $tag) {
             if (($id = $pos->id) === null) {
@@ -124,6 +128,31 @@ final class SwfExtractor
         }
 
         return $sprites;
+    }
+
+    /**
+     * Get the root swf file timeline animation.
+     *
+     * @param bool $useFileDisplayBounds If true, the timeline will be adjusted to the file display bounds (i.e. {@see SwfFile::displayBounds()}). If false, the bounds will be the highest bounds of all frames.
+     *
+     * @return Timeline
+     * @throws \Exception
+     */
+    public function timeline(bool $useFileDisplayBounds = true): Timeline
+    {
+        $timeline = $this->timeline;
+
+        if ($timeline === null) {
+            $processor = new TimelineProcessor($this);
+
+            $this->timeline = $timeline = $processor->process($this->file->tags(...TimelineProcessor::TAG_TYPES));
+        }
+
+        if (!$useFileDisplayBounds) {
+            return $timeline;
+        }
+
+        return $timeline->withBounds($this->file->displayBounds());
     }
 
     public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition

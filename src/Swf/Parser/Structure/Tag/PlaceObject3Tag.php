@@ -26,6 +26,8 @@ use Arakne\Swf\Parser\Structure\Record\Matrix;
 
 final readonly class PlaceObject3Tag
 {
+    public const int TYPE = 70;
+
     public function __construct(
         public bool $move,
         public bool $hasImage,
@@ -41,6 +43,5 @@ final readonly class PlaceObject3Tag
         public ?int $blendMode,
         public ?int $bitmapCache,
         public ?array $clipActions,
-    ) {
-    }
+    ) {}
 }

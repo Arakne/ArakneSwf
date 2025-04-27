@@ -23,5 +23,5 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class EndTag
 {
-
+    public const int TYPE = 0;
 }

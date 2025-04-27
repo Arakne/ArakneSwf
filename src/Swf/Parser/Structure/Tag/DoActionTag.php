@@ -31,6 +31,8 @@ use Traversable;
  */
 final readonly class DoActionTag implements IteratorAggregate
 {
+    public const int TYPE = 12;
+
     public function __construct(
         /**
          * @var list<ActionRecord>

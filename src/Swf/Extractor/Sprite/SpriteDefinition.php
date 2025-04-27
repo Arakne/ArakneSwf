@@ -23,14 +23,12 @@ namespace Arakne\Swf\Extractor\Sprite;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
-use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
+use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
+use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Override;
-
-use function count;
-use function min;
 
 /**
  * Store an SWF sprite character
@@ -39,10 +37,10 @@ use function min;
  */
 final class SpriteDefinition implements DrawableInterface
 {
-    private ?Sprite $sprite = null;
+    private ?Timeline $timeline = null;
 
     public function __construct(
-        private SpriteProcessor $processor,
+        private TimelineProcessor $processor,
 
         /**
          * The character ID of the sprite
@@ -58,52 +56,38 @@ final class SpriteDefinition implements DrawableInterface
     ) {}
 
     /**
-     * Get the sprite object
-     * The sprite is processed only once and cached
+     * Get the timeline object
+     * The timeline is processed only once and cached
      */
-    public function sprite(): Sprite
+    public function timeline(): Timeline
     {
-        if (!$this->sprite) {
-            $this->sprite = $this->processor->process($this->tag);
+        if (!$this->timeline) {
+            $this->timeline = $this->processor->process($this->tag->tags);
             unset($this->processor); // Remove the processor to remove cyclic reference
         }
 
-        return $this->sprite;
+        return $this->timeline;
     }
 
     #[Override]
     public function framesCount(bool $recursive = false): int
     {
-        $count = count($this->sprite()->frames);
-
-        if (!$recursive) {
-            return $count;
-        }
-
-        foreach ($this->sprite()->frames as $index => $frame) {
-            $frameCount = $frame->framesCount(true) + $index;
-
-            if ($frameCount > $count) {
-                $count = $frameCount;
-            }
-        }
-
-        return $count;
+        return $this->timeline()->framesCount($recursive);
     }
 
     #[Override]
     public function bounds(): Rectangle
     {
-        return $this->sprite()->bounds;
+        return $this->timeline()->bounds;
     }
 
     #[Override]
     public function transformColors(ColorTransform $colorTransform): static
     {
-        $sprite = $this->sprite()->transformColors($colorTransform);
+        $sprite = $this->timeline()->transformColors($colorTransform);
 
         $self = clone $this;
-        $self->sprite = $sprite;
+        $self->timeline = $sprite;
 
         return $self;
     }
@@ -111,10 +95,7 @@ final class SpriteDefinition implements DrawableInterface
     #[Override]
     public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
-        $frames = $this->sprite()->frames;
-        $currentFrame = min($frame, count($frames) - 1);
-
-        return $frames[$currentFrame]->draw($drawer, $frame);
+        return $this->timeline()->draw($drawer, $frame);
     }
 
     /**
@@ -122,6 +103,6 @@ final class SpriteDefinition implements DrawableInterface
      */
     public function toSvg(int $frame = 0): string
     {
-        return $this->draw(new SvgCanvas($this->bounds()), $frame)->render();
+        return $this->timeline()->toSvg($frame);
     }
 }

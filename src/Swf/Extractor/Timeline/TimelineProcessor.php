@@ -1,16 +1,18 @@
 <?php
 
-namespace Arakne\Swf\Extractor\Sprite;
+declare(strict_types=1);
 
-use Arakne\Swf\Extractor\Frame\Frame;
+namespace Arakne\Swf\Extractor\Timeline;
+
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\FrameLabelTag;
 use Arakne\Swf\Parser\Structure\Tag\PlaceObject2Tag;
+use Arakne\Swf\Parser\Structure\Tag\PlaceObject3Tag;
+use Arakne\Swf\Parser\Structure\Tag\PlaceObjectTag;
 use Arakne\Swf\Parser\Structure\Tag\RemoveObject2Tag;
 use Arakne\Swf\Parser\Structure\Tag\RemoveObjectTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
@@ -18,16 +20,40 @@ use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
 use function assert;
 use function ksort;
 
-final readonly class SpriteProcessor
+/**
+ * Processor for render the timeline from swf tags
+ */
+final readonly class TimelineProcessor
 {
+    /**
+     * List of supported tag type ids
+     */
+    public const array TAG_TYPES = [
+        EndTag::TYPE,
+        ShowFrameTag::TYPE,
+        PlaceObjectTag::TYPE,
+        RemoveObjectTag::TYPE,
+        DoActionTag::TYPE,
+        PlaceObject2Tag::TYPE,
+        RemoveObject2Tag::TYPE,
+        FrameLabelTag::TYPE,
+        PlaceObject3Tag::TYPE,
+    ];
+
     public function __construct(
         private SwfExtractor $extractor,
     ) {}
 
-    public function process(DefineSpriteTag $tag): Sprite
+    /**
+     * Process display tags to render frames of the timeline
+     *
+     * @param iterable<object> $tags
+     * @return Timeline
+     */
+    public function process(iterable $tags): Timeline
     {
         /**
-         * @var array<int, SpriteObject> $objectsByDepth
+         * @var array<int, FrameObject> $objectsByDepth
          */
         $objectsByDepth = [];
 
@@ -52,7 +78,7 @@ final readonly class SpriteProcessor
         $xmax = PHP_INT_MIN;
         $ymax = PHP_INT_MIN;
 
-        foreach ($tag->tags as $frameDisplayTag) {
+        foreach ($tags as $frameDisplayTag) {
             if ($frameDisplayTag instanceof EndTag) {
                 break;
             }
@@ -137,7 +163,7 @@ final readonly class SpriteProcessor
             }
         }
 
-        return new Sprite(
+        return new Timeline(
             $spriteBounds,
             ...$frames
         );
@@ -147,9 +173,9 @@ final readonly class SpriteProcessor
      * Handle display of a new object
      *
      * @param PlaceObject2Tag $tag
-     * @return SpriteObject
+     * @return FrameObject
      */
-    private function placeNewObject(PlaceObject2Tag $tag): SpriteObject
+    private function placeNewObject(PlaceObject2Tag $tag): FrameObject
     {
         assert($tag->characterId !== null);
         $object = $this->extractor->character($tag->characterId);
@@ -171,7 +197,7 @@ final readonly class SpriteProcessor
             $object = $object->transformColors($tag->colorTransform);
         }
 
-        return new SpriteObject(
+        return new FrameObject(
             $tag->characterId,
             $tag->depth,
             $object,
@@ -184,10 +210,10 @@ final readonly class SpriteProcessor
      * Handle movement/change properties of an already displayed object
      *
      * @param PlaceObject2Tag $tag
-     * @param SpriteObject $objectProperties
-     * @return SpriteObject
+     * @param FrameObject $objectProperties
+     * @return FrameObject
      */
-    private function modifyObject(PlaceObject2Tag $tag, SpriteObject $objectProperties): SpriteObject
+    private function modifyObject(PlaceObject2Tag $tag, FrameObject $objectProperties): FrameObject
     {
 
         if ($tag->matrix) {

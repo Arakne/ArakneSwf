@@ -5,6 +5,7 @@ namespace Arakne\Swf;
 use Arakne\Swf\Avm\Processor;
 use Arakne\Swf\Avm\State;
 use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Swf;
 use Arakne\Swf\Parser\SwfIO;
@@ -73,6 +74,14 @@ final class SwfFile
         }
 
         return true;
+    }
+
+    /**
+     * Get the display size of SWF file frames.
+     */
+    public function displayBounds(): Rectangle
+    {
+        return $this->parser()->header->frameSize;
     }
 
     /**

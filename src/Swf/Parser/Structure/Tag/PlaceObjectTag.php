@@ -26,6 +26,8 @@ use Arakne\Swf\Parser\Structure\Record\Matrix;
 
 final readonly class PlaceObjectTag
 {
+    public const int TYPE = 4;
+
     public function __construct(
         public int $characterId,
         public int $depth,

@@ -23,8 +23,9 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class RemoveObject2Tag
 {
+    public const int TYPE = 28;
+
     public function __construct(
         public int $depth,
-    ) {
-    }
+    ) {}
 }

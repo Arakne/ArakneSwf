@@ -26,6 +26,8 @@ use Arakne\Swf\Parser\Structure\Record\Matrix;
 
 final readonly class PlaceObject2Tag
 {
+    public const int TYPE = 26;
+
     public function __construct(
         public bool $placeFlagMove,
         public int $depth,

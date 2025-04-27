@@ -23,6 +23,8 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 final readonly class FrameLabelTag
 {
+    public const int TYPE = 43;
+
     public function __construct(
         public string $label,
         public bool $namedAnchor = false,

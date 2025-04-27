@@ -1,28 +1,38 @@
 <?php
 
-namespace Arakne\Swf\Extractor\Frame;
+declare(strict_types=1);
+
+namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
-use Arakne\Swf\Extractor\Sprite\SpriteObject;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Override;
 
+/**
+ * Represent a single from of a timeline
+ */
 final readonly class Frame implements DrawableInterface
 {
     public function __construct(
+        /**
+         * The display rectangle of the frame
+         * It should be the same for all frames of the timeline
+         */
         public Rectangle $bounds,
 
         /**
          * Objects to displayed, ordered by depth
          *
-         * @var list<SpriteObject>
+         * @var list<FrameObject>
          */
         public array $objects,
 
         /**
+         * Script actions associated with this frame
+         *
          * @var list<DoActionTag>
          */
         public array $actions,
