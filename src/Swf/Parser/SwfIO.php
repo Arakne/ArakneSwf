@@ -34,11 +34,9 @@ use function bcpow;
 use function bcscale;
 use function gzuncompress;
 use function ord;
-use function strlen;
 use function strpos;
 use function substr;
 use function unpack;
-use function var_dump;
 
 /**
  * Low-level SWF primitives parser
@@ -267,7 +265,6 @@ class SwfIO
 
     public function collectDouble(): float
     {
-        // @todo verify with high values
         $low = $this->collectBytes(4);
         $high = $this->collectBytes(4);
 
@@ -300,7 +297,6 @@ class SwfIO
 
     public function collectSI32(): int
     {
-        // @todo test if this is correct
         // PHP doesn't handle unpack of 32bits little-endian signed integers
         // So we have to convert unsigned to signed
         $v = $this->collectUI32();
@@ -314,7 +310,6 @@ class SwfIO
 
     public function collectUI32(): int
     {
-        // @todo test if this is correct
         // Parse int32 as little-endian
         return (int) unpack('V', $this->collectBytes(4))[1];
     }
@@ -328,15 +323,16 @@ class SwfIO
 
     public function collectEncodedU32(): int
     {
+        // @todo optimize
         bcscale(0);
         $ret = '0';
         $multiplier = '1';
         for (;;) {
             $b = $this->collectUI8();
-            $ret = bcadd($ret, bcmul($b & 0x7f, $multiplier));
+            $ret = bcadd($ret, bcmul((string) ($b & 0x7f), $multiplier));
             $multiplier = bcmul($multiplier, '128');
             if (($b & 0x80) == 0) {
-                return $ret;
+                return (int) $ret;
             }
         }
     }

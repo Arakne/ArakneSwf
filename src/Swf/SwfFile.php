@@ -7,6 +7,7 @@ use Arakne\Swf\Avm\State;
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Swf;
 use Arakne\Swf\Parser\SwfIO;
 
@@ -125,7 +126,7 @@ final class SwfFile
         $state ??= new State();
 
         // @todo handle InitActionTag
-        foreach ($this->tags(12) as $tag) {
+        foreach ($this->tags(DoActionTag::TYPE) as $tag) {
             $state = $processor->run($tag->actions, $state);
         }
 

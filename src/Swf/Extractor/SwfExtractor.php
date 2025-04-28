@@ -58,6 +58,21 @@ final class SwfExtractor
     private ?array $characters = null;
 
     /**
+     * @var array<int, ShapeDefinition>|null
+     */
+    private ?array $shapes = null;
+
+    /**
+     * @var array<int, SpriteDefinition>|null
+     */
+    private ?array $sprites = null;
+
+    /**
+     * @var array<int, LosslessImageDefinition|JpegImageDefinition|ImageBitsDefinition>|null
+     */
+    private ?array $images = null;
+
+    /**
      * Exported asset name to character ID.
      *
      * @var array<string, int>|null
@@ -76,11 +91,16 @@ final class SwfExtractor
      *
      * Note: Shape will not be processed immediately, but only when requested.
      *
-     * @return array<string, ShapeDefinition>
+     * @return array<int, ShapeDefinition>
      */
     public function shapes(): array
     {
-        // @todo cache
+        $shapes = $this->shapes;
+
+        if ($shapes !== null) {
+            return $shapes;
+        }
+
         $shapes = [];
         $processor = new ShapeProcessor($this);
 
@@ -92,7 +112,7 @@ final class SwfExtractor
             $shapes[$id] = new ShapeDefinition($processor, $id, $tag);
         }
 
-        return $shapes;
+        return $this->shapes = $shapes;
     }
 
     /**
@@ -104,7 +124,7 @@ final class SwfExtractor
      */
     public function images(): array
     {
-        return $this->extractLosslessImages()
+        return $this->images ??= $this->extractLosslessImages()
             + $this->extractJpeg()
             + $this->extractDefineBits()
         ;
@@ -115,7 +135,12 @@ final class SwfExtractor
      */
     public function sprites(): array
     {
-        // @todo cache
+        $sprites = $this->sprites;
+        
+        if ($sprites !== null) {
+            return $sprites;
+        }
+
         $sprites = [];
         $processor = new TimelineProcessor($this);
 
@@ -136,7 +161,6 @@ final class SwfExtractor
      * @param bool $useFileDisplayBounds If true, the timeline will be adjusted to the file display bounds (i.e. {@see SwfFile::displayBounds()}). If false, the bounds will be the highest bounds of all frames.
      *
      * @return Timeline
-     * @throws \Exception
      */
     public function timeline(bool $useFileDisplayBounds = true): Timeline
     {

@@ -109,7 +109,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
 
     private function toGD(): GD
     {
-        // @todo handle v4
+        // @todo handle deblockParam on v4 tag
         return match ($this->tag->type) {
             ImageDataType::Png => GD::fromPng($this->tag->imageData),
             ImageDataType::Gif89a => $this->parseGifData(),
