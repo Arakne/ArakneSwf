@@ -21,12 +21,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Arakne\\": "src/"
+      "Arakne\\Swf\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Arakne\\Tests\\": "tests/"
+      "Arakne\\Tests\\Swf\\": "tests/"
     }
   },
   "scripts": {
