@@ -22,12 +22,21 @@ namespace Arakne\Swf;
 
 use Arakne\Swf\Avm\Processor;
 use Arakne\Swf\Avm\State;
+use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
+use Arakne\Swf\Extractor\Image\JpegImageDefinition;
+use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
+use Arakne\Swf\Extractor\MissingCharacter;
+use Arakne\Swf\Extractor\Shape\ShapeDefinition;
+use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
+use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Swf;
 use Arakne\Swf\Parser\SwfIO;
+use InvalidArgumentException;
 
 use function array_flip;
 use function file_get_contents;
@@ -164,6 +173,87 @@ final class SwfFile
     public function variables(?State $state = null, ?Processor $processor = null): array
     {
         return $this->execute($state, $processor)->variables;
+    }
+
+    /**
+     * Extract an asset by its exported name.
+     *
+     * This method is a helper method which simply calls `(new SwfExtractor($this))->byName($name)`.
+     * If you want to extract multiple assets, you should use the {@see SwfExtractor} class directly,
+     * which can rely on memory caching.
+     *
+     * @param string $name The name of the asset to extract.
+     * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     *
+     * @throws InvalidArgumentException When the name is not exported.
+     *
+     * @see SwfExtractor::byName()
+     */
+    public function assetByName(string $name): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    {
+        $extractor = new SwfExtractor($this);
+
+        return $extractor->byName($name);
+    }
+
+    /**
+     * Extract an asset by its character ID.
+     * If the character ID is not found, a {@see MissingCharacter} will be returned.
+     *
+     * This method is a helper method which simply calls `(new SwfExtractor($this))->character($id)`.
+     * If you want to extract multiple assets, you should use the {@see SwfExtractor} class directly,
+     * which can rely on memory caching.
+     *
+     * @param int $id The character ID of the asset to extract.
+     * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     *
+     * @see SwfExtractor::character()
+     */
+    public function assetById(int $id): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    {
+        $extractor = new SwfExtractor($this);
+
+        return $extractor->character($id);
+    }
+
+    /**
+     * Get all exported assets, and return them as an associative array indexed by their name.
+     *
+     * @return array<string, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
+     *
+     * @see SwfExtractor::exported()
+     * @see SwfExtractor::character()
+     */
+    public function exportedAssets(): array
+    {
+        $assets = [];
+        $extractor = new SwfExtractor($this);
+
+        foreach ($extractor->exported() as $name => $id) {
+            $assets[$name] = $extractor->character($id);
+        }
+
+        return $assets;
+    }
+
+    /**
+     * Get the root swf file timeline animation.
+     *
+     * This method is a helper method which simply calls `(new SwfExtractor($this))->timeline()`.
+     * If you want to extract multiple assets, you should use the {@see SwfExtractor} class directly,
+     * which can rely on memory caching.
+     *
+     * @param bool $useFileDisplayBounds If true, the timeline will be adjusted to the file display bounds (i.e. {@see SwfFile::displayBounds()}). If false, the bounds will be the highest bounds of all frames.
+     *
+     * @return Timeline
+     *
+     * @see SwfExtractor::timeline()
+     */
+    public function timeline(bool $useFileDisplayBounds = true): Timeline
+    {
+        $extractor = new SwfExtractor($this);
+
+        return $extractor->timeline($useFileDisplayBounds);
     }
 
     private function parser(): Swf

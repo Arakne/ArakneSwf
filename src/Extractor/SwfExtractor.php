@@ -178,6 +178,13 @@ final class SwfExtractor
         return $timeline->withBounds($this->file->displayBounds());
     }
 
+    /**
+     * Get a SWF character by its ID.
+     * When the character ID is not found, a {@see MissingCharacter} will be returned.
+     *
+     * @param int $characterId
+     * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     */
     public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $this->characters ??= ($this->shapes() + $this->sprites() + $this->images());
@@ -222,6 +229,23 @@ final class SwfExtractor
         }
 
         return $this->exported = $exported;
+    }
+
+    /**
+     * Release all loaded resources.
+     *
+     * This method allows to free memory, and break some circular references.
+     * It should be called when the extractor is no longer needed to help the garbage collector.
+     * The extractor can be used again after this method is called, but it will need to re-load all resources.
+     */
+    public function release(): void
+    {
+        $this->characters = null;
+        $this->sprites = null;
+        $this->images = null;
+        $this->shapes = null;
+        $this->exported = null;
+        $this->timeline = null;
     }
 
     /**

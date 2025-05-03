@@ -171,10 +171,10 @@ EOT;
 
     private function processVariables(ExtractOptions $options, string $file, string $name, SwfFile $swf): bool
     {
-        $state = $swf->execute();
+        $variables = $swf->variables();
 
         return $this->writeToOutputDir(
-            json_encode($state->variables, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            json_encode($variables, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             $file,
             $options,
             $name,

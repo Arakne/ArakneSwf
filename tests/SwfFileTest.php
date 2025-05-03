@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf;
 
 use Arakne\Swf\Avm\Api\ScriptArray;
 use Arakne\Swf\Avm\Api\ScriptObject;
+use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\TagParseError;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
@@ -20,6 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
+use function array_map;
 use function iterator_to_array;
 
 class SwfFileTest extends TestCase
@@ -218,6 +220,67 @@ class SwfFileTest extends TestCase
                 'length' => 8,
                 'data' => "\xf6\xda\xb3\xb5\xd7\xfb\x31\xc0",
             ], $error->payload);
+        }
+    }
+
+    #[Test]
+    public function assetByName()
+    {
+        $swf = new SwfFile(__DIR__.'/Extractor/Fixtures/1047/1047.swf');
+
+        $staticR = $swf->assetByName('staticR');
+        $this->assertInstanceOf(SpriteDefinition::class, $staticR);
+        $this->assertSame(66, $staticR->id);
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Extractor/Fixtures/1047/staticR.svg', $staticR->toSvg());
+    }
+
+    #[Test]
+    public function assetById()
+    {
+        $swf = new SwfFile(__DIR__.'/Extractor/Fixtures/complex_sprite.swf');
+        $sprite = $swf->assetById(13);
+
+        $this->assertInstanceOf(SpriteDefinition::class, $sprite);
+        $this->assertSame(13, $sprite->id);
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Extractor/Fixtures/sprite-13.svg', $sprite->toSvg());
+    }
+
+    #[Test]
+    public function exportedAssets()
+    {
+        $swf = new SwfFile(__DIR__.'/Extractor/Fixtures/1047/1047.swf');
+
+        $exported = $swf->exportedAssets();
+
+        $this->assertContainsOnly(SpriteDefinition::class, $exported);
+        $this->assertSame([
+            'runR' => 29,
+            'runL' => 43,
+            'bonusR' => 53,
+            'bonusL' => 56,
+            'anim0R' => 62,
+            'anim0L' => 64,
+            'staticR' => 66,
+            'staticL' => 68,
+            'walkL' => 70,
+            'walkR' => 72,
+            'anim1R' => 77,
+            'anim1L' => 79,
+            'hitR' => 91,
+            'hitL' => 95,
+            'dieR' => 97,
+            'dieL' => 99,
+        ], array_map(fn (SpriteDefinition $sprite) => $sprite->id, $exported));
+    }
+
+    #[Test]
+    public function timeline()
+    {
+        $swf = new SwfFile(__DIR__.'/Extractor/Fixtures/1/1.swf');
+        $timeline = $swf->timeline(false);
+
+        foreach ($timeline->toSvgAll() as $f => $svg) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__.'/Extractor/Fixtures/1/frame_'.$f.'.svg', $svg);
         }
     }
 }

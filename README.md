@@ -94,8 +94,35 @@ use Arakne\Swf\SwfFile;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 
 $file = new SwfFile('my_anim.swf');
+
+// You can extract some resources directly from the SwfFile instance
+// But if you want to extract multiple resources, it's better to use the SwfExtractor class for performance reasons
+
+// Render a sprite exported with name "anim" to SVG.
+// Note: the method toSvg() is not available for all character types, so check the type before calling it.
+$svg = $file->assetByName('anim')->toSvg();
+
+// Same as above, but using the character ID (doesn't need to be exported)
+$svg = $file->assetById(42)->toSvg();
+
+// You can also retrieve all exported assets from the SWF file
+foreach ($file->exportedAssets() as $name => $asset) {
+    if ($asset instanceof SpriteDefinition) {
+        // Render each frame of the sprite as SVG
+        for ($f = 0; $f < $asset->framesCount(); $f++) {
+            $svg = $asset->toSvg($f);
+        }
+    }
+}
+
+// You can also extract the main animation timeline
+$svg = $file->timeline()->toSvg();
+
+// If you want more control over the extraction process, or if you want to extract multiple resources,
+// you should use the SwfExtractor class. It improves performance by caching processed sprites and shapes in memory.
 $extractor = new SwfExtractor($file);
 
 // Get all shapes present in the SWF file
@@ -163,6 +190,10 @@ $character = $extractor->byName('my_sprite');
 foreach ($extractor->exported() as $name => $id) {
     $character = $extractor->character($id);
 }
+
+// If you want to parse multiple SWF files, it's advised to call `release()` method on the extractor
+// when you are done with it. This will free the memory used by the extractor and help the garbage collector.
+$extractor->release();
 ```
 
 If you want a custom rendering format, you can implement [`Arakne\Swf\Extractor\Drawer\DrawerInterface`](./src/Extractor/Drawer/DrawerInterface.php) 
@@ -246,7 +277,7 @@ $parser = new Swf(file_get_contents('my_anim.swf'));
 $header = $parser->header;
 
 foreach ($parser->tags as $pos) {
-    $tag => $parser->parseTag($pos);
+    $tag = $parser->parseTag($pos);
 }
 ```
 
