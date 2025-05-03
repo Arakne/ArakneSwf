@@ -221,46 +221,7 @@ class SwfIO
 
     public function collectFloat(): float
     {
-        // @todo use unpack ?
-        // We have to use bc... functions here
-        bcscale(0); // 0 digits precision
-        $w = '0';
-        $mult = '1';
-
-        for ($i = 0; $i < 4; $i++) {
-            $w = bcadd($w, bcmul($mult, sprintf('%d', $this->collectUI8())));
-            $mult = bcmul($mult, '256');
-        }
-
-        // Some constants
-        // @todo cache ?
-        $pow2_23 = bcpow('2', '23');
-
-        $signAndExponent = (int) bcdiv($w, $pow2_23);
-        $sign = ($signAndExponent >> 8) & 0x01; // 1 bit
-        $exponent = ($signAndExponent) & 0xff; // 8 bits
-        $mantissa = (int) bcmod($w, $pow2_23); // 23 bits
-
-        if ($exponent === 0) {
-            return $sign === 0 ? 0.0 : -0.0;
-        }
-
-        if ($exponent === 255) {
-            return $mantissa != 0 ? NAN : ($sign == 0 ? INF : -INF);
-        }
-
-        $ret = $sign == 0 ? 1.0 : -1.0;
-
-        if ($exponent > 127) {
-            $ret *= 1 << ($exponent - 127);
-        } else if ($exponent < 127) {
-            $ret /= 1 << (127 - $exponent);
-        }
-
-        $ret *= (1.0 + $mantissa / 8388608.0);
-        // echo sprintf("float32: w=[0x%X], sign=[%d], exponent=[%d], mantissa=[%d], return=[%s]\n",
-        // $w, $sign, $exponent, $mantissa, $ret);
-        return $ret;
+        return (float) unpack('g', $this->collectBytes(4))[1];
     }
 
     public function collectDouble(): float
@@ -324,6 +285,7 @@ class SwfIO
     public function collectEncodedU32(): int
     {
         // @todo optimize
+        // @todo tester (item 1/129.swf ?)
         bcscale(0);
         $ret = '0';
         $multiplier = '1';

@@ -2,4 +2,4 @@
 vendor
 composer.lock
 .phpunit.cache
-tests/Swf/Extractor/Fixtures/test.*
+tests/Extractor/Fixtures/test.*

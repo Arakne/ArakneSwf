@@ -6,13 +6,19 @@ use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
+use Arakne\Swf\Parser\Structure\Tag\PlaceObject3Tag;
 use Arakne\Swf\Parser\Structure\Tag\SetBackgroundColorTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
 use Arakne\Swf\Parser\Swf;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+
+use function assert;
+use function file_get_contents;
+use function var_dump;
 
 class SwfTest extends TestCase
 {
@@ -180,5 +186,52 @@ class SwfTest extends TestCase
             ACTIONS,
             implode("\n", $actions)
         );
+    }
+
+    #[Test]
+    public function parseFloat()
+    {
+        $swf = new Swf(file_get_contents(__DIR__.'/../Extractor/Fixtures/62/62.swf'));
+
+        foreach ($swf->tags as $pos) {
+            if ($pos->id === 19) {
+                $tag = $swf->parseTag($pos);
+            }
+        }
+
+        assert($tag instanceof DefineSpriteTag);
+
+        foreach ($tag->tags as $placeObject) {
+            if (
+                $placeObject instanceof PlaceObject3Tag
+                && isset($placeObject->surfaceFilterList[0]['filterId'])
+                && $placeObject->surfaceFilterList[0]['filterId'] === 6
+            ) {
+                $matrix = $placeObject->surfaceFilterList[0]['matrix'];
+            }
+        }
+
+        $this->assertEqualsWithDelta([
+            0.6462849,
+            0.9110194,
+            -0.30730438,
+            0.0,
+            109.12499,
+            0.21911979,
+            0.8362024,
+            0.19467786,
+            0.0,
+            109.125,
+            0.6046222,
+            0.3182575,
+            0.32712013,
+            0.0,
+            109.12499,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+        ], $matrix, 0.00001);
     }
 }
