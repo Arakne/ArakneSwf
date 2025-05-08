@@ -10,12 +10,10 @@ use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
-use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 
 use function array_keys;
 use function chmod;
@@ -235,5 +233,15 @@ class SwfExtractorTest extends ImageTestCase
         foreach ($timeline->toSvgAll() as $f => $svg) {
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/homestuck/timeline/frame_'.$f.'.svg', $svg);
         }
+    }
+
+    #[Test]
+    public function perfIssueApplyColorTransformLazily()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__ . '/Fixtures/1305/1305.swf'));
+        $sprite = $extractor->byName('anim0R');
+
+        $svg = $sprite->toSvg();
+        $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1305/anim0R.svg', $svg);
     }
 }

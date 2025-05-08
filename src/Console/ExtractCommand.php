@@ -120,39 +120,43 @@ EOT;
         $extractor = new SwfExtractor($swf);
         $success = true;
 
-        foreach ($options->characters as $characterId) {
-            $success = $this->processCharacter($options, $file, (string) $characterId, $extractor->character($characterId)) && $success;
-        }
-
-        foreach ($options->exported as $name) {
-            try {
-                $character = $extractor->byName($name);
-                $success = $this->processCharacter($options, $file, $name, $character) && $success;
-            } catch (InvalidArgumentException) {
-                echo "The character $name is not exported in the SWF file", PHP_EOL;
-                $success = false;
+        try {
+            foreach ($options->characters as $characterId) {
+                $success = $this->processCharacter($options, $file, (string)$characterId, $extractor->character($characterId)) && $success;
             }
-        }
 
-        if ($options->allSprites) {
-            foreach ($extractor->sprites() as $id => $sprite) {
-                $success = $this->processCharacter($options, $file, (string) $id, $sprite) && $success;
+            foreach ($options->exported as $name) {
+                try {
+                    $character = $extractor->byName($name);
+                    $success = $this->processCharacter($options, $file, $name, $character) && $success;
+                } catch (InvalidArgumentException) {
+                    echo "The character $name is not exported in the SWF file", PHP_EOL;
+                    $success = false;
+                }
             }
-        }
 
-        if ($options->allExported) {
-            foreach ($extractor->exported() as $name => $id) {
-                $character = $extractor->character($id);
-                $success = $this->processCharacter($options, $file, $name, $character) && $success;
+            if ($options->allSprites) {
+                foreach ($extractor->sprites() as $id => $sprite) {
+                    $success = $this->processCharacter($options, $file, (string)$id, $sprite) && $success;
+                }
             }
-        }
 
-        if ($options->timeline) {
-            $success = $this->processCharacter($options, $file, 'timeline', $extractor->timeline(false)) && $success;
-        }
+            if ($options->allExported) {
+                foreach ($extractor->exported() as $name => $id) {
+                    $character = $extractor->character($id);
+                    $success = $this->processCharacter($options, $file, $name, $character) && $success;
+                }
+            }
 
-        if ($options->variables) {
-            $success = $this->processVariables($options, $file, 'variables', $swf) && $success;
+            if ($options->timeline) {
+                $success = $this->processCharacter($options, $file, 'timeline', $extractor->timeline(false)) && $success;
+            }
+
+            if ($options->variables) {
+                $success = $this->processVariables($options, $file, 'variables', $swf) && $success;
+            }
+        } finally {
+            $extractor->release();
         }
 
         return $success;

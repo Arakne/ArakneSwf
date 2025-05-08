@@ -46,7 +46,7 @@ final readonly class Shape
         public array $paths,
     ) {}
 
-    public function transformColors(ColorTransform $colorTransform)
+    public function transformColors(ColorTransform $colorTransform): self
     {
         $newPaths = [];
 

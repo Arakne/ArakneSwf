@@ -144,7 +144,7 @@ final class Path
         }
     }
 
-    public function transformColors(ColorTransform $colorTransform)
+    public function transformColors(ColorTransform $colorTransform): self
     {
         return new self(
             $this->edges,

@@ -92,7 +92,7 @@ final readonly class Frame implements DrawableInterface
         $drawer->area($this->bounds);
 
         foreach ($this->objects as $object) {
-            $drawer->include($object->object, $object->matrix, $frame);
+            $drawer->include($object->transformedObject(), $object->matrix, $frame);
         }
 
         return $drawer;

@@ -58,7 +58,31 @@ final readonly class FrameObject
          * The transformation matrix to apply to the object
          */
         public Matrix $matrix,
+
+        /**
+         * Color transformations to apply to the object
+         *
+         * @var ColorTransform[]
+         */
+        public array $colorTransforms = [],
     ) {}
+
+    /**
+     * Get the object to display after applying the color transformations
+     */
+    public function transformedObject(): DrawableInterface
+    {
+        $object = $this->object;
+
+        // Apply each color transformation to the object
+        // Note: it's not possible to create a single composite color transformation
+        // because of clamping values to [0-255] after each transformation
+        foreach ($this->colorTransforms as $transform) {
+            $object = $object->transformColors($transform);
+        }
+
+        return $object;
+    }
 
     /**
      * Apply color transformation to the object
@@ -71,9 +95,10 @@ final readonly class FrameObject
         return new self(
             $this->characterId,
             $this->depth,
-            $this->object->transformColors($colorTransform),
+            $this->object,
             $this->bounds,
             $this->matrix,
+            [...$this->colorTransforms, $colorTransform],
         );
     }
 
