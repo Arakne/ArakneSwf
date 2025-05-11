@@ -1,5 +1,10 @@
 # Arakne SWF - Parse and extract SWF files in PHP
 
+[![Build](https://github.com/Arakne/ArakneSwf/actions/workflows/build.yml/badge.svg)](https://github.com/Arakne/ArakneSwf/actions/workflows/build.yml)
+[![Packagist](https://img.shields.io/packagist/v/arakne/swf)](https://packagist.org/packages/arakne/swf)
+[![codecov](https://codecov.io/github/Arakne/ArakneSwf/graph/badge.svg?token=vrelSdfWkp)](https://codecov.io/github/Arakne/ArakneSwf)
+[![License](https://img.shields.io/github/license/Arakne/ArakneSwf)](./COPYING.LESSER)
+
 Library to parse SWF tags and extract resources like sprites, images, etc. in pure PHP, without any external dependencies.
 Its goal is to simplify processing of multiple SWF files using a script file.
 
