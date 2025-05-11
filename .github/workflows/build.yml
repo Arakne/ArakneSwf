@@ -77,37 +77,32 @@ jobs:
 #              run: |
 #                ./infection.phar --logger-github
 
-#    coverage:
-#        name: Test coverage
-#        runs-on: ubuntu-latest
-#
-#        steps:
-#            - uses: actions/checkout@v2
-#
-#            - name: Set Timezone
-#              uses: szenius/set-timezone@v1.0
-#              with:
-#                  timezoneLinux: "Europe/Paris"
-#
-#            - name: Install PHP
-#              uses: shivammathur/setup-php@v2
-#              with:
-#                  php-version: 8.1
-#                  extensions: json
-#                  ini-values: date.timezone=Europe/Paris
-#
-#            - uses: mirromutth/mysql-action@v1.1
-#              with:
-#                  mysql version: '5.7'
-#                  mysql root password: 'root'
-#
-#            - name: Install dependencies
-#              run: composer install --prefer-dist --no-progress
-#
-#            - name: Run test coverage
-#              run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
-#
-#            - name: Upload coverage to Codecov
-#              uses: codecov/codecov-action@v2
-#              with:
-#                  files: coverage.xml
+    coverage:
+        name: Test coverage
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Set Timezone
+              uses: szenius/set-timezone@v1.0
+              with:
+                  timezoneLinux: "Europe/Paris"
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  extensions: json
+                  ini-values: date.timezone=Europe/Paris
+
+            - name: Install dependencies
+              run: composer install --prefer-dist --no-progress
+
+            - name: Run test coverage
+              run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  files: coverage.xml
