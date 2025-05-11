@@ -29,12 +29,6 @@ use Exception;
 use RuntimeException;
 
 use function assert;
-use function bcadd;
-use function bcdiv;
-use function bcmod;
-use function bcmul;
-use function bcpow;
-use function bcscale;
 use function gzuncompress;
 use function ord;
 use function strpos;
@@ -303,23 +297,22 @@ class SwfIO
      */
     public function collectEncodedU32(): int
     {
-        // @todo optimize
-        // @todo tester (item 1/139.swf ?)
-        bcscale(0);
-        $ret = '0';
-        $multiplier = '1';
+        $value = 0;
+        $offset = 0;
+
         for (;;) {
             $b = $this->collectUI8();
-            $ret = bcadd($ret, bcmul((string) ($b & 0x7f), $multiplier));
-            $multiplier = bcmul($multiplier, '128');
-            if (($b & 0x80) == 0) {
-                $ret = (int) $ret;
+            $value |= ($b & 0x7f) << $offset;
+            $offset += 7;
 
-                assert($ret >= 0);
-
-                return $ret;
+            if (($b & 0x80) === 0) {
+                break;
             }
         }
+
+        assert($value >= 0);
+
+        return $value;
     }
 
     // For debugging

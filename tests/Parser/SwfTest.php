@@ -6,6 +6,7 @@ use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
@@ -18,7 +19,6 @@ use PHPUnit\Framework\TestCase;
 
 use function assert;
 use function file_get_contents;
-use function var_dump;
 
 class SwfTest extends TestCase
 {
@@ -233,5 +233,23 @@ class SwfTest extends TestCase
             1.0,
             0.0,
         ], $matrix, 0.00001);
+    }
+
+    #[Test]
+    public function encodedU32()
+    {
+        $swf = new Swf(file_get_contents(__DIR__.'/../Fixtures/139.swf'));
+
+        foreach ($swf->tags as $pos) {
+            if ($pos->type === 86) {
+                $tag = $swf->parseTag($pos);
+                break;
+            }
+        }
+
+        assert($tag instanceof DefineSceneAndFrameLabelDataTag);
+
+        $this->assertSame([0], $tag->sceneOffsets);
+        $this->assertSame([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 86, 90, 94, 98, 102, 106, 110, 114, 118, 122, 126, 130, 134, 138, 142, 146, 150, 154, 158, 162], $tag->frameNumbers);
     }
 }

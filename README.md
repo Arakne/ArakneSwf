@@ -20,7 +20,6 @@ It may also require some PHP extensions, depending on the features you want to u
 - `gd` for image processing
 - `json` to export variables in JSON format
 - `xml` for sprite export (performed in SVG format)
-- `bcmath` to parse some SWF tags
 
 ```bash
 git clone https://github.com/Arakne/ArakneSwf
