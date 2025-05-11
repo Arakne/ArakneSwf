@@ -25,7 +25,8 @@ final readonly class StartSound2Tag
 {
     public function __construct(
         public string $soundClassName,
+
+        /** @var array<string, mixed> */
         public array $soundInfo,
-    ) {
-    }
+    ) {}
 }

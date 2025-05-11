@@ -21,15 +21,20 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
+use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
+
 final readonly class DefineFontTag
 {
     public function __construct(
         public int $fontId,
-        /**
-         * @var list<int>
-         */
+
+        /** @var list<int> */
         public array $offsetTable,
+
+        /** @var list<list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>> */
         public array $glyphShapeData,
-    ) {
-    }
+    ) {}
 }

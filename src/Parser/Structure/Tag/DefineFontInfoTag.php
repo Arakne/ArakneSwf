@@ -33,8 +33,10 @@ final readonly class DefineFontInfoTag
         public bool $fontFlagsItalic,
         public bool $fontFlagsBold,
         public bool $fontFlagsWideCodes,
+
+        /** @var list<int> */
         public array $codeTable,
+
         public ?int $languageCode = null,
-    ) {
-    }
+    ) {}
 }

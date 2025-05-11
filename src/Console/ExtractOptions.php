@@ -2,7 +2,8 @@
 
 namespace Arakne\Swf\Console;
 
-use function Arakne\Swf\Bin\usage;
+use RuntimeException;
+
 use function array_map;
 use function array_pop;
 use function array_push;
@@ -10,13 +11,12 @@ use function array_slice;
 use function count;
 use function explode;
 use function getopt;
-use function intval;
 use function is_dir;
+use function is_string;
 use function mkdir;
 use function range;
 use function realpath;
 use function strtolower;
-use function strval;
 
 /**
  * CLI options for the swf-extract command
@@ -121,6 +121,10 @@ final readonly class ExtractOptions
         global $argv;
 
         $cmd = $argv[0];
+        /**
+         * @var array<string, string|bool|list<string|bool>> $options
+         * @phpstan-ignore varTag.nativeType
+         */
         $options = getopt(
             'hc:e:',
             [
@@ -146,12 +150,28 @@ final readonly class ExtractOptions
             return new self($cmd, error: "Cannot create output directory: $output");
         }
 
+        $output = realpath($output);
+
+        if (!$output) {
+            return new self($cmd, error: "Cannot resolve output directory: $output");
+        }
+
+        $outputFilename = self::DEFAULT_OUTPUT_FILENAME;
+
+        if (isset($options['output-filename'])) {
+            $outputFilename = $options['output-filename'];
+
+            if (!is_string($outputFilename)) {
+                return new self($cmd, error: 'The --output-filename option must take only one value');
+            }
+        }
+
         return new self(
             $cmd,
             help: isset($options['h']) || isset($options['help']),
             files: $arguments,
-            output: realpath($output),
-            outputFilename: $options['output-filename'] ?? self::DEFAULT_OUTPUT_FILENAME,
+            output: $output,
+            outputFilename: $outputFilename,
             characters: array_map(intval(...), [...(array)($options['c'] ?? []), ...(array)($options['character'] ?? [])]),
             exported: array_map(strval(...), [...(array)($options['e'] ?? []), ...(array)($options['exported'] ?? [])]),
             frames: self::parseFramesOption($options),
@@ -164,7 +184,7 @@ final readonly class ExtractOptions
     }
 
     /**
-     * @param array $options
+     * @param array<string, string|bool|list<string|bool>> $options
      * @return positive-int[]|null
      */
     private static function parseFramesOption(array $options): ?array
@@ -178,6 +198,8 @@ final readonly class ExtractOptions
         $frames = [];
 
         foreach ((array) $option as $range) {
+            $range = (string) $range;
+
             if (strtolower($range) === 'all') {
                 return null;
             }
@@ -187,7 +209,12 @@ final readonly class ExtractOptions
             if (count($range) === 1) {
                 $frames[] = max((int) $range[0], 1);
             } else {
-                array_push($frames, ...range((int) $range[0], (int) $range[1]));
+                [$min, $max] = $range;
+
+                $min = max((int) $min, 1);
+                $max = max((int) $max, 1);
+
+                array_push($frames, ...range($min, $max));
             }
         }
 

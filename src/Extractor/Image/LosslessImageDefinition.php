@@ -31,6 +31,9 @@ use GdImage;
 
 use Override;
 
+use RuntimeException;
+
+use function assert;
 use function base64_encode;
 use function imagecolorallocate;
 use function imagecolorallocatealpha;
@@ -107,6 +110,10 @@ final class LosslessImageDefinition implements ImageCharacterInterface
         $width = $this->tag->bitmapWidth;
         $height = $this->tag->bitmapHeight;
 
+        if ($width < 1 || $height < 1) {
+             throw new RuntimeException('Empty image is not supported');
+        }
+
         $type = $this->tag->type();
         $gd = $type->isTrueColor() ? GD::create($width, $height) : GD::createWithColorPallet($width, $height);
 
@@ -121,38 +128,63 @@ final class LosslessImageDefinition implements ImageCharacterInterface
         return $gd;
     }
 
+    /**
+     * @param GD $gd
+     * @param positive-int $width
+     * @param positive-int $height
+     * @return void
+     */
     private function decode8Bit(GD $gd, int $width, int $height): void
     {
         $colors = [];
-        $colorMapLen = strlen($this->tag->colorTable);
+        $colorTable = $this->tag->colorTable ?? throw new RuntimeException('Color table is missing for 8-bit image');
+        $colorMapLen = strlen($colorTable);
         $image = $gd->image;
 
         for ($i = 0; $i < $colorMapLen; $i += 3) {
-            $colors[] = imagecolorallocate($image, ord($this->tag->colorTable[$i]), ord($this->tag->colorTable[$i + 1]), ord($this->tag->colorTable[$i + 2]));
+            $color = imagecolorallocate($image, ord($colorTable[$i]), ord($colorTable[$i + 1]), ord($colorTable[$i + 2]));
+            assert($color !== false);
+            $colors[] = $color;
         }
 
         $this->setColorMapPixels($image, $colors, $width, $height);
     }
 
+    /**
+     * @param GD $gd
+     * @param positive-int $width
+     * @param positive-int $height
+     * @return void
+     */
     private function decode8BitWithAlpha(GD $gd, int $width, int $height): void
     {
         $colors = [];
-        $colorMapLen = strlen($this->tag->colorTable);
+        $colorTable = $this->tag->colorTable ?? throw new RuntimeException('Color table is missing for 8-bit image');
+        $colorMapLen = strlen($colorTable);
         $image = $gd->image;
 
         for ($i = 0; $i < $colorMapLen; $i += 4) {
-            $colors[] = imagecolorallocatealpha(
+            $color = imagecolorallocatealpha(
                 $image,
-                ord($this->tag->colorTable[$i]),
-                ord($this->tag->colorTable[$i + 1]),
-                ord($this->tag->colorTable[$i + 2]),
-                127 - (ord($this->tag->colorTable[$i + 3]) >> 1), // GD alpha is 0 - 127
+                ord($colorTable[$i]),
+                ord($colorTable[$i + 1]),
+                ord($colorTable[$i + 2]),
+                127 - (ord($colorTable[$i + 3]) >> 1), // GD alpha is 0 - 127
             );
+            assert($color !== false);
+            $colors[] = $color;
         }
 
         $this->setColorMapPixels($image, $colors, $width, $height);
     }
 
+    /**
+     * @param GdImage $gd
+     * @param array<int, int> $colors
+     * @param positive-int $width
+     * @param positive-int $height
+     * @return void
+     */
     private function setColorMapPixels(GdImage $gd, array $colors, int $width, int $height): void
     {
         // Each line is 32-bit aligned, so compute the padding size added at the end of the line
@@ -170,6 +202,12 @@ final class LosslessImageDefinition implements ImageCharacterInterface
         }
     }
 
+    /**
+     * @param GD $gd
+     * @param positive-int $width
+     * @param positive-int $height
+     * @return void
+     */
     private function decode32BitWithAlpha(GD $gd, int $width, int $height): void
     {
         $gd->disableAlphaBlending();
@@ -178,7 +216,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
         $len = $width * $height * 4;
 
         for ($index = 0; $index < $len; $index += 4) {
-            $pixel = $index / 4;
+            $pixel = $index >> 2;
             $x = $pixel % $width;
             $y = intdiv($pixel, $width);
 
@@ -186,6 +224,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
 
             if ($alpha === 0) {
                 // With opacity 0, the color cannot be determined, so only use fully transparent color
+                /** @var non-negative-int $y */
                 $gd->setTransparent($x, $y);
                 continue;
             }
@@ -194,6 +233,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
             $green = ord($data[$index + 2]);
             $blue = ord($data[$index + 3]);
 
+            /** @var non-negative-int $y */
             $gd->setPixelAlpha($x, $y, $red, $green, $blue, $alpha);
         }
     }
@@ -209,10 +249,11 @@ final class LosslessImageDefinition implements ImageCharacterInterface
             $green = ord($data[$index + 2]);
             $blue = ord($data[$index + 3]);
 
-            $pixel = $index / 4;
+            $pixel = $index >> 2;
             $x = $pixel % $width;
             $y = intdiv($pixel, $width);
 
+            /** @var non-negative-int $y */
             $gd->setPixel($x, $y, $red, $green, $blue);
         }
     }

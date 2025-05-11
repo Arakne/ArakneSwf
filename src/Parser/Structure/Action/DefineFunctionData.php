@@ -25,8 +25,10 @@ final readonly class DefineFunctionData
 {
     public function __construct(
         public string $name,
+
+        /** @var list<string> */
         public array $parameters,
+
         public int $codeSize,
-    ) {
-    }
+    ) {}
 }

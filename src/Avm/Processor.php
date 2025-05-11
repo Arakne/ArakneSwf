@@ -32,12 +32,17 @@ use Exception;
 use function array_pop;
 use function array_reverse;
 use function array_splice;
+use function assert;
 use function count;
 use function is_array;
 use function is_callable;
+use function is_float;
 use function is_int;
+use function is_integer;
 use function is_object;
+use function is_string;
 use function method_exists;
+use function var_dump;
 
 /**
  * Execute the parsed AVM bytecode.
@@ -51,8 +56,7 @@ final readonly class Processor
          * If false, the processor will always return null for method calls, without executing them.
          */
         private bool $allowFunctionCall = true,
-    ) {
-    }
+    ) {}
 
     /**
      * Run the given actions and return the final state.
@@ -85,8 +89,12 @@ final readonly class Processor
     public function execute(State $state, ActionRecord $action): void
     {
         match ($action->opcode) {
-            Opcode::ActionConstantPool => $state->constants = $action->data,
-            Opcode::ActionPush => array_push($state->stack, ...self::toPhpValues($state, ...$action->data)),
+            Opcode::ActionConstantPool =>
+                /* @phpstan-ignore assign.propertyType */
+                $state->constants = $action->data,
+            Opcode::ActionPush =>
+                /** @phpstan-ignore argument.unpackNonIterable, argument.type */
+                array_push($state->stack, ...self::toPhpValues($state, ...$action->data)),
             Opcode::ActionSetVariable => $this->setVariable($state),
             Opcode::ActionGetVariable => $this->getVariable($state),
             Opcode::ActionGetMember => $this->getMember($state),
@@ -112,7 +120,6 @@ final readonly class Processor
      * @param Value ...$values
      *
      * @return list<mixed>
-     * @no-named-arguments
      */
     public static function toPhpValues(State $state, Value ...$values): array
     {
@@ -120,7 +127,7 @@ final readonly class Processor
 
         foreach ($values as $value) {
             $parsed[] = match ($value->type) {
-                Type::Constant8, Type::Constant16 => $state->constants[$value->value],
+                Type::Constant8, Type::Constant16 => $state->constants[(int) $value->value],
                 // @todo register
                 default => $value->value,
             };
@@ -140,6 +147,9 @@ final readonly class Processor
     private function getVariable(State $state): void
     {
         $index = count($state->stack) - 1;
+        assert($index > 0);
+
+        // @phpstan-ignore assign.propertyType
         $state->stack[$index] = $state->variables[$state->stack[$index]] ?? null;
     }
 
@@ -163,9 +173,9 @@ final readonly class Processor
 
     private function callMethod(State $state): void
     {
-        $methodName = array_pop($state->stack);
+        $methodName = (string) array_pop($state->stack);
         $scriptObject = array_pop($state->stack);
-        $argumentCount = array_pop($state->stack);
+        $argumentCount = (int) array_pop($state->stack);
         $args = $argumentCount > 0 ? array_splice($state->stack, -$argumentCount) : [];
 
         if (!$this->allowFunctionCall) {
@@ -188,8 +198,8 @@ final readonly class Processor
 
     private function newObject(State $state): void
     {
-        $type = array_pop($state->stack);
-        $argumentCount = array_pop($state->stack);
+        $type = (string) array_pop($state->stack);
+        $argumentCount = (int) array_pop($state->stack);
         $args = $argumentCount > 0 ? array_reverse(array_splice($state->stack, -$argumentCount)) : [];
 
         $state->stack[] = match ($type) {
@@ -201,7 +211,7 @@ final readonly class Processor
 
     private function initObject(State $state): void
     {
-        $propertiesCount = array_pop($state->stack);
+        $propertiesCount = (int) array_pop($state->stack);
         $args = $propertiesCount > 0 ? array_splice($state->stack, -$propertiesCount * 2) : [];
         $properties = [];
 
@@ -217,7 +227,7 @@ final readonly class Processor
 
     private function initArray(State $state): void
     {
-        $size = array_pop($state->stack);
+        $size = (int) array_pop($state->stack);
         $values = $size > 0 ? array_reverse(array_splice($state->stack, -$size)) : [];
 
         // @todo use inlined array or ArrayObject?
@@ -235,6 +245,15 @@ final readonly class Processor
             return;
         }
 
+        // Float that is an integer: use it as an int
+        if (is_float($propertyName) && (int) $propertyName == $propertyName) {
+            $propertyName = (int) $propertyName;
+        }
+
+        if (!is_int($propertyName)) {
+            $propertyName = (string) $propertyName;
+        }
+
         if ($scriptObject instanceof ScriptArray) {
             $scriptObject[$propertyName] = $value;
             return;
@@ -246,19 +265,23 @@ final readonly class Processor
     private function toString(State $state): void
     {
         $index = count($state->stack) - 1;
+        assert($index >= 0);
+        // @phpstan-ignore assign.propertyType
         $state->stack[$index] = (string) ($state->stack[$index] ?? null);
     }
 
     private function toNumber(State $state): void
     {
         $index = count($state->stack) - 1;
+        assert($index >= 0);
+        // @phpstan-ignore assign.propertyType
         $state->stack[$index] = (float) ($state->stack[$index] ?? null);
     }
 
     private function callFunction(State $state): void
     {
-        $functionName = array_pop($state->stack);
-        $argumentCount = array_pop($state->stack);
+        $functionName = (string) array_pop($state->stack);
+        $argumentCount = (int) array_pop($state->stack);
         $args = $argumentCount > 0 ? array_reverse(array_splice($state->stack, -$argumentCount)) : [];
 
         $state->stack[] = match ($functionName) {
@@ -269,6 +292,14 @@ final readonly class Processor
         };
     }
 
+    /**
+     * @param State $state
+     * @param string $functionName
+     * @param list<mixed> $args
+     *
+     * @return mixed
+     * @throws Exception
+     */
     private function callCustomFunction(State $state, string $functionName, array $args): mixed
     {
         if (!$this->allowFunctionCall) {

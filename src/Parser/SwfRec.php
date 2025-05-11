@@ -224,6 +224,11 @@ readonly class SwfRec
         return $actions;
     }
 
+    /**
+     * @param Opcode $opcode
+     * @param non-negative-int $actionLength
+     * @return mixed
+     */
     public function collectActionData(Opcode $opcode, int $actionLength): mixed
     {
         return match ($opcode) {
@@ -316,6 +321,11 @@ readonly class SwfRec
         );
     }
 
+    /**
+     * @param non-negative-int $actionLength
+     * @return list<Value>
+     * @throws Exception
+     */
     private function collectPush(int $actionLength): array
     {
         $actionData = [];
@@ -352,7 +362,7 @@ readonly class SwfRec
         $numParams = $this->io->collectUI16();
 
         for ($i = 0; $i < $numParams; $i++) {
-            $params = $this->io->collectString();
+            $params[] = $this->io->collectString();
         }
 
         $codeSize = $this->io->collectUI16();
@@ -371,12 +381,16 @@ readonly class SwfRec
         return new GotoFrame2Data($sceneBiasFlag, $playFlag, $sceneBias);
     }
 
+    /**
+     * @param int $shapeVersion
+     * @return list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>
+     */
     public function collectShape(int $shapeVersion): array
     {
         $numFillBits = $this->io->collectUB(4);
         $numLineBits = $this->io->collectUB(4);
 
-        return $this->collectShapeRecords($shapeVersion, null, null, $numFillBits, $numLineBits);
+        return $this->collectShapeRecords($shapeVersion, $numFillBits, $numLineBits);
     }
 
     public function collectShapeWithStyle(int $shapeVersion): ShapeWithStyle
@@ -387,21 +401,19 @@ readonly class SwfRec
         $numFillBits = $this->io->collectUB(4);
         $numLineBits = $this->io->collectUB(4);
 
-        $shapeRecords = $this->collectShapeRecords($shapeVersion, $fillStyles, $lineStyles, $numFillBits, $numLineBits);
+        $shapeRecords = $this->collectShapeRecords($shapeVersion, $numFillBits, $numLineBits);
 
         return new ShapeWithStyle($fillStyles, $lineStyles, $shapeRecords);
     }
 
     /**
      * @param int $shapeVersion
-     * @param array|null $fillStyles
-     * @param array|null $lineStyles
      * @param int $numFillBits
      * @param int $numLineBits
      * @return list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>
      * @throws Exception
      */
-    public function collectShapeRecords(int $shapeVersion, ?array $fillStyles, ?array $lineStyles, int $numFillBits, int $numLineBits): array
+    public function collectShapeRecords(int $shapeVersion, int $numFillBits, int $numLineBits): array
     {
         $shapeRecords = [];
 
@@ -448,8 +460,8 @@ readonly class SwfRec
 
                     if ($stateNewStyles && ($shapeVersion == 2 || $shapeVersion == 3 || $shapeVersion == 4)) { // XXX shapeVersion 4 not in spec
                         $this->io->byteAlign();
-                        $newFillStyles = $fillStyles = $this->collectFillStyleArray($shapeVersion);
-                        $newLineStyles = $lineStyles = $this->collectLineStyleArray($shapeVersion);
+                        $newFillStyles = $this->collectFillStyleArray($shapeVersion);
+                        $newLineStyles = $this->collectLineStyleArray($shapeVersion);
                         $numFillBits = $this->io->collectUB(4);
                         $numLineBits = $this->io->collectUB(4);
                     } else {
@@ -499,6 +511,10 @@ readonly class SwfRec
         return $shapeRecords;
     }
 
+    /**
+     * @return list<mixed>
+     * @throws Exception
+     */
     public function collectMorphFillStyleArray(): array
     {
         $morphFillStyleArray = [];
@@ -515,6 +531,9 @@ readonly class SwfRec
         return $morphFillStyleArray;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function collectMorphFillStyle(): array
     {
         $morphFillStyle = []; // To return
@@ -546,6 +565,9 @@ readonly class SwfRec
         return $morphFillStyle;
     }
 
+    /**
+     * @return list<mixed>
+     */
     public function collectMorphGradient(): array
     {
         $morphGradient = [];
@@ -558,6 +580,9 @@ readonly class SwfRec
         return $morphGradient;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function collectMorphGradientRecord(): array
     {
         return [
@@ -568,6 +593,10 @@ readonly class SwfRec
         ];
     }
 
+    /**
+     * @param int $version
+     * @return list<mixed>
+     */
     public function collectMorphLineStyleArray(int $version): array
     {
         $morphLineStyleArray = [];
@@ -592,6 +621,9 @@ readonly class SwfRec
         return $morphLineStyleArray;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function collectMorphLineStyle(): array
     {
         return [
@@ -602,6 +634,9 @@ readonly class SwfRec
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function collectMorphLineStyle2(): array
     {
         $morphLineStyle2 = []; // To return
@@ -652,6 +687,9 @@ readonly class SwfRec
         );
     }
 
+    /**
+     * @return list<mixed>
+     */
     public function collectFilterList(): array
     {
         $filterList = array();
@@ -726,11 +764,11 @@ readonly class SwfRec
                 case 5: // ConvolutionFilter
                     $filter['matrixX'] = $this->io->collectUI8();
                     $filter['matrixY'] = $this->io->collectUI8();
-                    $filter['divisor'] = $this->collectFloat();
-                    $filter['bias'] = $this->collectFloat();
+                    $filter['divisor'] = $this->io->collectFloat();
+                    $filter['bias'] = $this->io->collectFloat();
                     $filter['matrix'] = array();
                     for ($i = 0; $i < $filter['matrixX'] * $filter['matrixY']; $i++) {
-                        $filter['matrix'][] = $this->collectFloat();
+                        $filter['matrix'][] = $this->io->collectFloat();
                     }
                     $filter['defaultColor'] = $this->collectRGBA();
                     $this->io->collectUB(6);
@@ -773,6 +811,9 @@ readonly class SwfRec
         return $filterList;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function collectSoundInfo(): array
     {
         $soundInfo = [];
@@ -808,6 +849,10 @@ readonly class SwfRec
         return $soundInfo;
     }
 
+    /**
+     * @param int $version
+     * @return list<mixed>
+     */
     public function collectButtonRecords(int $version): array
     {
         $buttonRecords = [];
@@ -851,6 +896,10 @@ readonly class SwfRec
         return $buttonRecords;
     }
 
+    /**
+     * @param int $bytePosEnd
+     * @return list<mixed>
+     */
     public function collectButtonCondActions(int $bytePosEnd): array
     {
         $buttonCondActions = array();
@@ -881,6 +930,10 @@ readonly class SwfRec
         return $buttonCondActions;
     }
 
+    /**
+     * @param int $swfVersion
+     * @return array<string, mixed>
+     */
     public function collectClipActions(int $swfVersion): array
     {
         $clipActions = [];
@@ -905,6 +958,10 @@ readonly class SwfRec
         return $clipActions;
     }
 
+    /**
+     * @param int $swfVersion
+     * @return array<string, mixed>
+     */
     public function collectClipActionRecord(int $swfVersion): array
     {
         $clipActionRecord = [];
@@ -918,6 +975,10 @@ readonly class SwfRec
         return $clipActionRecord;
     }
 
+    /**
+     * @param int $swfVersion
+     * @return array<string, mixed>
+     */
     public function collectClipEventFlags(int $swfVersion): array
     {
         $ret = array();
@@ -973,6 +1034,12 @@ readonly class SwfRec
         return $gradientRecords;
     }
 
+    /**
+     * @param int $glyphBits
+     * @param int $advanceBits
+     * @param int $textVersion
+     * @return list<mixed>
+     */
     public function collectTextRecords(int $glyphBits, int $advanceBits, int $textVersion): array
     {
         $textRecords = array();
@@ -1138,6 +1205,10 @@ readonly class SwfRec
         return $style;
     }
 
+    /**
+     * @param int $bytePosEnd
+     * @return list<mixed>
+     */
     public function collectZoneTable(int $bytePosEnd): array
     {
         $zoneRecords = array();

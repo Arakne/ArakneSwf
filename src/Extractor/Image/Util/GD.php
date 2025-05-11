@@ -25,6 +25,8 @@ use BadMethodCallException;
 use GdImage;
 use InvalidArgumentException;
 
+use RuntimeException;
+
 use function assert;
 use function error_get_last;
 use function extension_loaded;
@@ -47,6 +49,7 @@ use function imagesetpixel;
 use function imagesx;
 use function imagesy;
 use function is_int;
+use function is_string;
 use function min;
 use function ord;
 use function rewind;
@@ -81,12 +84,20 @@ final class GD
 
     /**
      * Change a pixel color, with alpha channel.
+     *
+     * @param non-negative-int $x
+     * @param non-negative-int $y
+     * @param int<0, 255> $red
+     * @param int<0, 255> $green
+     * @param int<0, 255> $blue
+     * @param int<0, 255> $alpha
      */
     public function setPixelAlpha(int $x, int $y, int $red, int $green, int $blue, int $alpha): void
     {
         $gd = $this->image;
 
         if ($alpha === 0) {
+            // @phpstan-ignore-next-line
             imagesetpixel($gd, $x, $y, ($this->transparentColor ??= imagecolorallocatealpha($gd, 0, 0, 0, 127)));
             return;
         }
@@ -99,6 +110,8 @@ final class GD
         $green = (int) ($green * $factor);
         $blue = (int) ($blue * $factor);
 
+        assert($red >=0 && $green >= 0 && $blue >= 0);
+
         $newColor = imagecolorallocatealpha(
             $gd,
             min($red, 255),
@@ -107,11 +120,19 @@ final class GD
             127 - ($alpha >> 1) // GD uses 0-127, and represents transparency, so we divide alpha by 2 and invert it
         );
 
+        assert($newColor !== false);
+
         imagesetpixel($gd, $x, $y, $newColor);
     }
 
     /**
      * Change a pixel color, without alpha channel.
+     *
+     * @param non-negative-int $x
+     * @param non-negative-int $y
+     * @param int<0, 255> $red
+     * @param int<0, 255> $green
+     * @param int<0, 255> $blue
      */
     public function setPixel(int $x, int $y, int $red, int $green, int $blue): void
     {
@@ -123,24 +144,34 @@ final class GD
             $blue,
         );
 
+        assert($newColor !== false);
+
         imagesetpixel($gd, $x, $y, $newColor);
     }
 
     /**
      * Set the pixel at the given coordinates as fully transparent.
+     *
+     * @param non-negative-int $x
+     * @param non-negative-int $y
      */
     public function setTransparent(int $x, int $y): void
     {
         $gd = $this->image;
 
+        // @phpstan-ignore-next-line
         imagesetpixel($gd, $x, $y, ($this->transparentColor ??= imagecolorallocatealpha($gd, 0, 0, 0, 127)));
     }
 
     /**
      * Get the color at the given coordinates.
+     *
+     * @param non-negative-int $x
+     * @param non-negative-int $y
      */
     public function color(int $x, int $y): int
     {
+        // @phpstan-ignore return.type
         return imagecolorat($this->image, $x, $y);
     }
 
@@ -210,11 +241,15 @@ final class GD
     public function toPng(int $compression = -1): string
     {
         $stream = fopen('php://memory','r+');
-        imagepng($this->image, $stream, $compression);
+        assert($stream !== false);
+
+        imagepng($this->image, $stream, $compression) ?: throw new RuntimeException('Failed to convert image to PNG');
         rewind($stream);
 
         $content = stream_get_contents($stream);
         fclose($stream);
+
+        assert(is_string($content));
 
         return $content;
     }
@@ -228,11 +263,15 @@ final class GD
     public function toJpeg(int $quality = -1): string
     {
         $stream = fopen('php://memory','r+');
-        imagejpeg($this->image, $stream, $quality);
+        assert($stream !== false);
+
+        imagejpeg($this->image, $stream, $quality) ?: throw new RuntimeException('Failed to convert image to JPEG');
         rewind($stream);
 
         $content = stream_get_contents($stream);
         fclose($stream);
+
+        assert(is_string($content));
 
         return $content;
     }
@@ -259,7 +298,8 @@ final class GD
         $gd = @imagecreatefromstring(self::fixJpegData($jpegData));
 
         if (!$gd) {
-            throw new InvalidArgumentException('Invalid JPEG data:' . error_get_last()['message']);
+            $error = error_get_last() ?? ['message' => 'Unknown error'];
+            throw new InvalidArgumentException('Invalid JPEG data:' . $error['message']);
         }
 
         $width = imagesx($gd);
@@ -284,7 +324,8 @@ final class GD
         $gd = @imagecreatefromstring($imageData);
 
         if (!$gd) {
-            throw new InvalidArgumentException('Invalid PNG data:' . error_get_last()['message']);
+            $error = error_get_last() ?? ['message' => 'Unknown error'];
+            throw new InvalidArgumentException('Invalid PNG data:' . $error['message']);
         }
 
         $width = imagesx($gd);
@@ -295,6 +336,9 @@ final class GD
 
     /**
      * Create a new GD image with a color pallet.
+     *
+     * @param positive-int $width
+     * @param positive-int $height
      */
     public static function createWithColorPallet(int $width, int $height): self
     {
@@ -303,6 +347,9 @@ final class GD
 
     /**
      * Create a new GD image with true color.
+     *
+     * @param positive-int $width
+     * @param positive-int $height
      */
     public static function create(int $width, int $height): self
     {

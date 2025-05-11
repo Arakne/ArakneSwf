@@ -20,14 +20,18 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Shape\FillType\Bitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\FillStyle;
+use Arakne\Swf\Parser\Structure\Record\Gradient;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
@@ -68,13 +72,11 @@ final readonly class ShapeProcessor
         $x = 0;
         $y = 0;
 
-        /**
-         * @var PathStyle|null $fillStyle0
-         * @var PathStyle|null $fillStyle1
-         * @var PathStyle|null $lineStyle
-         */
+        /** @var PathStyle|null $fillStyle0 */
         $fillStyle0 = null;
+        /** @var PathStyle|null $fillStyle1 */
         $fillStyle1 = null;
+        /** @var PathStyle|null $lineStyle */
         $lineStyle = null;
 
         $builder = new PathsBuilder();
@@ -171,33 +173,32 @@ final readonly class ShapeProcessor
     private function createFillType(FillStyle $style): Solid|LinearGradient|RadialGradient|Bitmap
     {
         return match ($style->type) {
-            FillStyle::SOLID => new Solid($style->color),
-            FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix, $style->gradient),
-            FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix, $style->gradient),
-            FillStyle::FOCAL_GRADIENT => new RadialGradient($style->matrix, $style->focalGradient),
-            FillStyle::REPEATING_BITMAP => new Bitmap(
-                $this->extractor->character($style->bitmapId),
-                $style->bitmapMatrix,
-                repeat: true,
-            ),
-            FillStyle::CLIPPED_BITMAP => new Bitmap(
-                $this->extractor->character($style->bitmapId),
-                $style->bitmapMatrix,
-                repeat: false,
-            ),
-            FillStyle::NON_SMOOTHED_REPEATING_BITMAP => new Bitmap(
-                $this->extractor->character($style->bitmapId),
-                $style->bitmapMatrix,
-                smoothed: false,
-                repeat: true,
-            ),
-            FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new Bitmap(
-                $this->extractor->character($style->bitmapId),
-                $style->bitmapMatrix,
-                smoothed: false,
-                repeat: false,
-            ),
+            FillStyle::SOLID => new Solid($style->color ?? new Color(0, 0, 0, 0)), // @todo transparent factory method
+            FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix ?? new Matrix(), $style->gradient ?? new Gradient(0, 0, [])),
+            FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix ?? new Matrix(), $style->gradient ?? new Gradient(0, 0, [])),
+            FillStyle::FOCAL_GRADIENT => new RadialGradient($style->matrix ?? new Matrix(), $style->focalGradient ?? new Gradient(0, 0, [], 0.0)),
+            FillStyle::REPEATING_BITMAP => $this->createBitmapFill($style, smoothed: true, repeat: true),
+            FillStyle::CLIPPED_BITMAP => $this->createBitmapFill($style, smoothed: true, repeat: false),
+            FillStyle::NON_SMOOTHED_REPEATING_BITMAP => $this->createBitmapFill($style, smoothed: false, repeat: true),
+            FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => $this->createBitmapFill($style, smoothed: false, repeat: false),
             default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
         };
+    }
+
+    private function createBitmapFill(FillStyle $style, bool $smoothed, bool $repeat): Bitmap
+    {
+        // @todo null image instead of exception
+        $character = $this->extractor->character($style->bitmapId ?? throw new InvalidArgumentException('Bitmap id not not set'));
+
+        if (!$character instanceof ImageCharacterInterface) {
+            throw new InvalidArgumentException('Bitmap id is not a valid image character');
+        }
+
+        return new Bitmap(
+            $character,
+            $style->bitmapMatrix ?? throw new InvalidArgumentException('Bitmap matrix not set'),
+            smoothed: $smoothed,
+            repeat: $repeat,
+        );
     }
 }

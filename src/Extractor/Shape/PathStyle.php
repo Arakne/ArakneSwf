@@ -86,7 +86,7 @@ final readonly class PathStyle
         return ($color->red << 24) | ($color->green << 16) | ($color->blue << 8) | ($color->alpha ?? 255);
     }
 
-    public function transformColors(ColorTransform $colorTransform)
+    public function transformColors(ColorTransform $colorTransform): self
     {
         $fill = $this->fill?->transformColors($colorTransform);
         $lineColor = $this->lineColor?->transform($colorTransform);

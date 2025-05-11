@@ -21,7 +21,11 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 
 final readonly class DefineMorphShapeTag
 {
@@ -30,10 +34,17 @@ final readonly class DefineMorphShapeTag
         public Rectangle $startBounds,
         public Rectangle $endBounds,
         public int $offset,
+
+        /** @var list<mixed> */
         public array $fillStyles,
+
+        /** @var list<mixed> */
         public array $lineStyles,
+
+        /** @var list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> */
         public array $startEdges,
+
+        /** @var list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> */
         public array $endEdges,
-    ) {
-    }
+    ) {}
 }

@@ -28,6 +28,8 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Override;
 
+use RuntimeException;
+
 use function base64_encode;
 use function getimagesizefromstring;
 
@@ -55,7 +57,7 @@ final class ImageBitsDefinition implements ImageCharacterInterface
             return $this->bounds;
         }
 
-        [$width, $height] = getimagesizefromstring($this->toJpeg());
+        [$width, $height] = getimagesizefromstring($this->toJpeg()) ?: throw new RuntimeException('Invalid JPEG data');
 
         return $this->bounds = new Rectangle(0, $width * 20, 0, $height * 20);
     }

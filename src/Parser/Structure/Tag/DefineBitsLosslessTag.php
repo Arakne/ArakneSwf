@@ -40,8 +40,21 @@ final readonly class DefineBitsLosslessTag
         public int $version,
         public int $characterId,
         public int $bitmapFormat,
+
+        /**
+         * Swf spec allow 0 width and height, but this is not a valid image
+         *
+         * @var non-negative-int
+         */
         public int $bitmapWidth,
+
+        /**
+         * Swf spec allow 0 width and height, but this is not a valid image
+         *
+         * @var non-negative-int
+         */
         public int $bitmapHeight,
+
         public ?string $colorTable,
 
         /**

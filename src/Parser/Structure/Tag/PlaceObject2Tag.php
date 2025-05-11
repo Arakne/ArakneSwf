@@ -37,7 +37,7 @@ final readonly class PlaceObject2Tag
         public ?int $ratio,
         public ?string $name,
         public ?int $clipDepth,
+        /** @var array<string, mixed>|null */
         public ?array $clipActions,
-    ) {
-    }
+    ) {}
 }

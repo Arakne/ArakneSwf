@@ -64,14 +64,14 @@ final class IncludedSvgCanvas implements DrawerInterface
     public function area(Rectangle $bounds): void
     {
         $this->g = $this->builder->addGroup($bounds);
-        $this->g['id'] = $this->ids[] = $this->root->nextObjectId();
+        $this->g->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
     }
 
     #[Override]
     public function shape(Shape $shape): void
     {
         $this->g = $this->builder->addGroupWithOffset($shape->xOffset, $shape->yOffset);
-        $this->g['id'] = $this->ids[] = $this->root->nextObjectId();
+        $this->g->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
 
         foreach ($shape->paths as $path) {
             $this->path($path);
@@ -83,7 +83,7 @@ final class IncludedSvgCanvas implements DrawerInterface
     {
         $g = $this->g = $this->builder->addGroup($image->bounds());
         $tag = $g->addChild('image');
-        $tag['href'] = $image->toBase64Data();
+        $tag->addAttribute('href', $image->toBase64Data());
     }
 
     #[Override]
@@ -98,15 +98,15 @@ final class IncludedSvgCanvas implements DrawerInterface
 
         if (!$g) {
             $g = $this->builder->addGroup($object->bounds());
-            $g['id'] = $this->ids[] = $this->root->nextObjectId();
+            $g->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
         }
 
         foreach ($included->ids as $id) {
             $use = $g->addChild('use');
-            $use['href'] = '#' . $id;
-            $use['width'] = $bounds->width() / 20;
-            $use['height'] = $bounds->height() / 20;
-            $use['transform'] = $matrix->toSvgTransformation();
+            $use->addAttribute('href', '#' . $id);
+            $use->addAttribute('width', (string) ($bounds->width() / 20));
+            $use->addAttribute('height', (string) ($bounds->height() / 20));
+            $use->addAttribute('transform', $matrix->toSvgTransformation());
         }
     }
 

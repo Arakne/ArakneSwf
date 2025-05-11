@@ -39,18 +39,24 @@ final readonly class SvgPathDrawer implements PathDrawerInterface
     #[Override]
     public function move(int $x, int $y): void
     {
-        ($this->element)['d'] .= 'M' . ($x / 20) . ' ' . ($y / 20);
+        $this->push('M' . ($x / 20) . ' ' . ($y / 20));
     }
 
     #[Override]
     public function line(int $toX, int $toY): void
     {
-        ($this->element)['d'] .= 'L' . ($toX / 20) . ' ' . ($toY / 20);
+        $this->push('L' . ($toX / 20) . ' ' . ($toY / 20));
     }
 
     #[Override]
     public function curve(int $controlX, int $controlY, int $toX, int $toY): void
     {
-        ($this->element)['d'] .= 'Q' . ($controlX / 20) . ' ' . ($controlY / 20) . ' ' . ($toX / 20) . ' ' . ($toY / 20);
+        $this->push('Q' . ($controlX / 20) . ' ' . ($controlY / 20) . ' ' . ($toX / 20) . ' ' . ($toY / 20));
+    }
+
+    private function push(string $command): void
+    {
+        // @phpstan-ignore offsetAssign.valueType
+        ($this->element)['d'] .= $command;
     }
 }

@@ -24,10 +24,16 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 final readonly class DefineSceneAndFrameLabelDataTag
 {
     public function __construct(
+        /** @var list<int> */
         public array $sceneOffsets,
+
+        /** @var list<string> */
         public array $sceneNames,
+
+        /** @var list<int> */
         public array $frameNumbers,
+
+        /** @var list<string> */
         public array $frameLabels,
-    ) {
-    }
+    ) {}
 }

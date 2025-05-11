@@ -31,6 +31,5 @@ final readonly class DoInitActionTag
          * @var list<ActionRecord>
          */
         public array $actions,
-    ) {
-    }
+    ) {}
 }

@@ -26,13 +26,23 @@ final readonly class DefineButtonSoundTag
     public function __construct(
         public int $buttonId,
         public int $buttonSoundChar0,
+
+        /** @var array<string, mixed>|null */
         public ?array $buttonSoundInfo0,
+
         public int $buttonSoundChar1,
+
+        /** @var array<string, mixed>|null */
         public ?array $buttonSoundInfo1,
+
         public int $buttonSoundChar2,
+
+        /** @var array<string, mixed>|null */
         public ?array $buttonSoundInfo2,
+
         public int $buttonSoundChar3,
+
+        /** @var array<string, mixed>|null */
         public ?array $buttonSoundInfo3,
-    ) {
-    }
+    ) {}
 }

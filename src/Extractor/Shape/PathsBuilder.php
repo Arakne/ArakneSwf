@@ -50,6 +50,7 @@ final class PathsBuilder
      *
      * @param PathStyle|null ...$styles
      * @return void
+     * @no-named-arguments
      */
     public function setActiveStyles(?PathStyle ...$styles): void
     {
@@ -58,6 +59,8 @@ final class PathsBuilder
 
     /**
      * Merge new edges to all open paths with the active styles
+     *
+     * @no-named-arguments
      */
     public function merge(EdgeInterface ...$edges): void
     {

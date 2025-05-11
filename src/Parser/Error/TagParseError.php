@@ -28,6 +28,8 @@ final readonly class TagParseError
     public function __construct(
         public SwfTagPosition $position,
         public TagParseErrorType $error,
+
+        /** @var array<string, mixed> */
         public array $payload = [],
     ) {}
 }

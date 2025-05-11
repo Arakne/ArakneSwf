@@ -26,6 +26,9 @@ namespace Arakne\Swf\Parser;
 
 use Exception;
 
+use RuntimeException;
+
+use function assert;
 use function bcadd;
 use function bcdiv;
 use function bcmod;
@@ -58,7 +61,8 @@ class SwfIO
     public function doUncompress(int $len): void
     {
         $compressedMaxLen = $len - 8;
-        $this->b = substr($this->b, 0, 8) . substr(gzuncompress(substr($this->b, 8), $compressedMaxLen), 0, $compressedMaxLen);
+        $uncompress = gzuncompress(substr($this->b, 8), $compressedMaxLen) ?: throw new RuntimeException('Invalid compressed data');
+        $this->b = substr($this->b, 0, 8) . substr($uncompress, 0, $compressedMaxLen);
     }
 
     public function byteAlign(): void
@@ -201,7 +205,7 @@ class SwfIO
             return $sign == 0 ? 0.0 : -0.0;
         }
 
-        if ($exponent === 0x3f) {
+        if ($exponent === 0x1f) {
             return $mantissa != 0 ? NAN : ($sign == 0 ? INF : -INF);
         }
 
@@ -221,6 +225,7 @@ class SwfIO
 
     public function collectFloat(): float
     {
+        // @phpstan-ignore offsetAccess.nonOffsetAccessible
         return (float) unpack('g', $this->collectBytes(4))[1];
     }
 
@@ -229,10 +234,13 @@ class SwfIO
         $low = $this->collectBytes(4);
         $high = $this->collectBytes(4);
 
+        // @phpstan-ignore offsetAccess.nonOffsetAccessible
         return (float) unpack('e', $high . $low)[1];
     }
 
-    // Integers
+    /**
+     * @return int<0, 255>
+     */
     public function collectUI8(): int
     {
         return ord($this->collectByte());
@@ -251,6 +259,9 @@ class SwfIO
         return $ret;
     }
 
+    /**
+     * @return int<0, 65535>
+     */
     public function collectUI16(): int
     {
         return ord($this->collectByte()) + (ord($this->collectByte()) << 8);
@@ -269,9 +280,13 @@ class SwfIO
         return $v;
     }
 
+    /**
+     * @return non-negative-int
+     */
     public function collectUI32(): int
     {
         // Parse int32 as little-endian
+        // @phpstan-ignore offsetAccess.nonOffsetAccessible, return.type
         return (int) unpack('V', $this->collectBytes(4))[1];
     }
 
@@ -279,13 +294,17 @@ class SwfIO
     {
         // @todo test if this is correct
         // Parse int64 as little-endian
+        // @phpstan-ignore offsetAccess.nonOffsetAccessible
         return (int) unpack('P', $this->collectBytes(8))[1];
     }
 
+    /**
+     * @return non-negative-int
+     */
     public function collectEncodedU32(): int
     {
         // @todo optimize
-        // @todo tester (item 1/129.swf ?)
+        // @todo tester (item 1/139.swf ?)
         bcscale(0);
         $ret = '0';
         $multiplier = '1';
@@ -294,7 +313,11 @@ class SwfIO
             $ret = bcadd($ret, bcmul((string) ($b & 0x7f), $multiplier));
             $multiplier = bcmul($multiplier, '128');
             if (($b & 0x80) == 0) {
-                return (int) $ret;
+                $ret = (int) $ret;
+
+                assert($ret >= 0);
+
+                return $ret;
             }
         }
     }

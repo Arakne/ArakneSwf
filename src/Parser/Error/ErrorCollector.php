@@ -58,7 +58,7 @@ final class ErrorCollector implements IteratorAggregate
      *
      * @param SwfTagPosition $position
      * @param TagParseErrorType $error
-     * @param array $payload
+     * @param array<string, mixed> $payload
      */
     public function add(SwfTagPosition $position, TagParseErrorType $error, array $payload = []): void
     {

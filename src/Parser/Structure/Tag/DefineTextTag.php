@@ -33,7 +33,8 @@ final readonly class DefineTextTag
         public Matrix $textMatrix,
         public int $glyphBits,
         public int $advanceBits,
+
+        /** @var list<mixed> */
         public array $textRecords,
-    ) {
-    }
+    ) {}
 }

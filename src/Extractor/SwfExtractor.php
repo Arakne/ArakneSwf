@@ -104,6 +104,8 @@ final class SwfExtractor
         $processor = new ShapeProcessor($this);
 
         foreach ($this->file->tags(DefineShapeTag::TYPE_V1, DefineShapeTag::TYPE_V2, DefineShapeTag::TYPE_V3, DefineShape4Tag::TYPE_V4) as $pos => $tag) {
+            assert($tag instanceof DefineShapeTag || $tag instanceof DefineShape4Tag);
+
             if (($id = $pos->id) === null) {
                 continue;
             }
@@ -130,7 +132,7 @@ final class SwfExtractor
     }
 
     /**
-     * @return array<string, SpriteDefinition>
+     * @return array<int, SpriteDefinition>
      */
     public function sprites(): array
     {
@@ -144,6 +146,8 @@ final class SwfExtractor
         $processor = new TimelineProcessor($this);
 
         foreach ($this->file->tags(DefineSpriteTag::TYPE) as $pos => $tag) {
+            assert($tag instanceof DefineSpriteTag);
+
             if (($id = $pos->id) === null) {
                 continue;
             }
@@ -151,7 +155,7 @@ final class SwfExtractor
             $sprites[$id] = new SpriteDefinition($processor, $id, $tag);
         }
 
-        return $sprites;
+        return $this->sprites = $sprites;
     }
 
     /**
@@ -256,6 +260,8 @@ final class SwfExtractor
         $images = [];
 
         foreach ($this->file->tags(DefineBitsLosslessTag::V1_ID, DefineBitsLosslessTag::V2_ID) as $pos => $tag) {
+            assert($tag instanceof DefineBitsLosslessTag);
+
             if (($id = $pos->id) === null) {
                 continue;
             }
@@ -281,6 +287,11 @@ final class SwfExtractor
                 continue;
             }
 
+            if ($jpegTables === null) {
+                continue; // JPEGTablesTag must be before DefineBitsTag
+            }
+
+            assert($tag instanceof DefineBitsTag);
             $images[$tag->characterId] = new ImageBitsDefinition($tag, $jpegTables);
         }
 
@@ -295,6 +306,8 @@ final class SwfExtractor
         $images = [];
 
         foreach ($this->file->tags(DefineBitsJPEG2Tag::ID, DefineBitsJPEG3Tag::ID, DefineBitsJPEG4Tag::ID) as $pos => $tag) {
+            assert($tag instanceof DefineBitsJPEG2Tag || $tag instanceof DefineBitsJPEG3Tag || $tag instanceof DefineBitsJPEG4Tag);
+
             if (($id = $pos->id) === null) {
                 continue;
             }

@@ -44,11 +44,11 @@ final class SvgCanvas implements DrawerInterface
 
     public function __construct(Rectangle $bounds)
     {
-        $this->root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
-        $this->builder = new SvgBuilder($this->root);
+        $this->root = $root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+        $this->builder = new SvgBuilder($root);
 
-        ($this->root)['width'] = ($bounds->width() / 20) . 'px';
-        ($this->root)['height'] = ($bounds->height() / 20) . 'px';
+        $root->addAttribute('width', ($bounds->width() / 20) . 'px');
+        $root->addAttribute('height', ($bounds->height() / 20) . 'px');
     }
 
     #[Override]
@@ -72,7 +72,7 @@ final class SvgCanvas implements DrawerInterface
     {
         $g = $this->g = $this->builder->addGroup($image->bounds());
         $tag = $g->addChild('image');
-        $tag['href'] = $image->toBase64Data();
+        $tag->addAttribute('href', $image->toBase64Data());
     }
 
     #[Override]
@@ -89,10 +89,10 @@ final class SvgCanvas implements DrawerInterface
 
         foreach ($included->ids as $id) {
             $use = $g->addChild('use');
-            $use['href'] = '#' . $id;
-            $use['width'] = $object->bounds()->width() / 20;
-            $use['height'] = $object->bounds()->height() / 20;
-            $use['transform'] = $matrix->toSvgTransformation();
+            $use->addAttribute('href', '#' . $id);
+            $use->addAttribute('width', (string) ($object->bounds()->width() / 20));
+            $use->addAttribute('height', (string) ($object->bounds()->height() / 20));
+            $use->addAttribute('transform', $matrix->toSvgTransformation());
         }
     }
 
@@ -124,6 +124,7 @@ final class SvgCanvas implements DrawerInterface
      */
     public function toXml(): string
     {
+        // @phpstan-ignore return.type
         return $this->root->asXML();
     }
 }

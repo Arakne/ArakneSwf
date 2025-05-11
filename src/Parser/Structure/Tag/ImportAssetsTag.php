@@ -26,8 +26,11 @@ final readonly class ImportAssetsTag
     public function __construct(
         public int $version,
         public string $url,
+
+        /** @var list<int> */
         public array $tags,
+
+        /** @var list<string> */
         public array $names,
-    ) {
-    }
+    ) {}
 }

@@ -29,7 +29,10 @@ final readonly class ExportAssetsTag
     public const int ID = 56;
 
     public function __construct(
+        /** @var list<int> */
         public array $tags,
+
+        /** @var list<string> */
         public array $names,
     ) {
         assert(count($this->tags) === count($this->names));

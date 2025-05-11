@@ -42,7 +42,7 @@ final readonly class Frame implements DrawableInterface
         /**
          * Objects to displayed, ordered by depth
          *
-         * @var list<FrameObject>
+         * @var array<int, FrameObject>
          */
         public array $objects,
 

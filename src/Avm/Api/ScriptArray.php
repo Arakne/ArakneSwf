@@ -27,6 +27,7 @@ use Traversable;
 use function array_fill;
 use function count;
 use function is_float;
+use function is_int;
 
 /**
  * Emulates an ActionScript Array object.
@@ -48,11 +49,13 @@ class ScriptArray extends ScriptObject
     {
         parent::__construct();
 
-        if (count($values) === 1) {
-            $values = array_fill(0, (int) $values[0], null);
+        if (count($values) === 1 && is_int($values[0])) {
+            $values = array_fill(0, $values[0], null);
         }
 
         $this->values = $values;
+
+        // @phpstan-ignore argument.type
         $this->addProperty('length', fn () => count($this->values), $this->setLength(...));
     }
 
@@ -91,6 +94,9 @@ class ScriptArray extends ScriptObject
         }
     }
 
+    /**
+     * @return array<array-key, mixed>
+     */
     #[Override]
     public function jsonSerialize(): array
     {

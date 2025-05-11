@@ -30,11 +30,15 @@ use Override;
 use Traversable;
 
 use function count;
+use function is_callable;
 use function is_int;
 use function is_string;
 
 /**
  * Base object class for ActionScript objects.
+ *
+ * @implements ArrayAccess<array-key, mixed>
+ * @implements IteratorAggregate<array-key, mixed>
  */
 class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate, Countable
 {
@@ -121,14 +125,26 @@ class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate, 
         return $this->getPropertyValue($name);
     }
 
-    public function __set(string $name, $value): void
+    public function __set(string $name, mixed $value): void
     {
         $this->setPropertyValue($name, $value);
     }
 
+    /**
+     * @param string $name
+     * @param mixed[] $arguments
+     *
+     * @return mixed
+     */
     public function __call(string $name, array $arguments): mixed
     {
-        return ($this->properties[$name])(...$arguments);
+        $method = $this->properties[$name] ?? null;
+
+        if (!is_callable($method)) {
+            return null;
+        }
+
+        return $method(...$arguments);
     }
 
     public function __isset(string $name): bool

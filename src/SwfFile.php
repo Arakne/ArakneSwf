@@ -39,6 +39,7 @@ use Arakne\Swf\Parser\SwfIO;
 use InvalidArgumentException;
 
 use function array_flip;
+use function assert;
 use function file_get_contents;
 use function strlen;
 
@@ -77,7 +78,7 @@ final class SwfFile
         // Read only the first header part
         $head = file_get_contents($this->path, false, null, 0, 8);
 
-        if (strlen($head) < 8) {
+        if ($head === false || strlen($head) < 8) {
             return false;
         }
 
@@ -154,6 +155,8 @@ final class SwfFile
 
         // @todo handle InitActionTag
         foreach ($this->tags(DoActionTag::TYPE) as $tag) {
+            assert($tag instanceof DoActionTag);
+
             $state = $processor->run($tag->actions, $state);
         }
 
@@ -258,6 +261,9 @@ final class SwfFile
 
     private function parser(): Swf
     {
-        return $this->parser ??= new Swf(file_get_contents($this->path), $this->errorCollector);
+        return $this->parser ??= new Swf(
+            file_get_contents($this->path) ?: throw new InvalidArgumentException('Unable to read the file'),
+            $this->errorCollector
+        );
     }
 }

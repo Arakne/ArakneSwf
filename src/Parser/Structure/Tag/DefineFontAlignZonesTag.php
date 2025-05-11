@@ -26,7 +26,8 @@ final readonly class DefineFontAlignZonesTag
     public function __construct(
         public int $fontId,
         public int $csmTableHint,
+
+        /** @var list<mixed> */
         public array $zoneTable,
-    ) {
-    }
+    ) {}
 }

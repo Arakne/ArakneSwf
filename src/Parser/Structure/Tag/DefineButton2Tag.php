@@ -27,8 +27,11 @@ final readonly class DefineButton2Tag
         public int $buttonId,
         public bool $trackAsMenu,
         public int $actionOffset,
+
+        /** @var list<mixed> */
         public array $characters,
+
+        /** @var list<mixed> */
         public array $actions,
-    ) {
-    }
+    ) {}
 }

@@ -99,6 +99,8 @@ final class SpriteDefinition implements DrawableInterface
 
     /**
      * Convert the sprite to SVG string
+     *
+     * @param non-negative-int $frame The frame to render
      */
     public function toSvg(int $frame = 0): string
     {

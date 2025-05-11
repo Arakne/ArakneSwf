@@ -28,6 +28,7 @@ use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use SimpleXMLElement;
 
+use function assert;
 use function sprintf;
 
 /**
@@ -59,11 +60,11 @@ final class SvgBuilder
     public function addGroupWithOffset(int $xOffset, int $yOffset): SimpleXMLElement
     {
         $g = $this->svg->addChild('g');
-        $g['transform'] = sprintf(
+        $g->addAttribute('transform', sprintf(
             'matrix(1, 0, 0, 1, %h, %h)',
             $xOffset / 20,
             $yOffset / 20,
-        );
+        ));
 
         return $g;
     }
@@ -73,16 +74,16 @@ final class SvgBuilder
         $pathElement = $g->addChild('path');
 
         $this->applyFillStyle($pathElement, $path->style->fill);
-        $pathElement['stroke'] = $path->style->lineColor?->hex() ?? 'none';
+        $pathElement->addAttribute('stroke', $path->style->lineColor?->hex() ?? 'none');
 
         if ($path->style->lineColor?->hasTransparency() === true) {
-            $pathElement['stroke-opacity'] = $path->style->lineColor->opacity();
+            $pathElement->addAttribute('stroke-opacity', (string) $path->style->lineColor->opacity());
         }
 
         if ($path->style->lineWidth > 0) {
-            $pathElement['stroke-width'] = $path->style->lineWidth / 20;
-            $pathElement['stroke-linecap'] = 'round';
-            $pathElement['stroke-linejoin'] = 'round';
+            $pathElement->addAttribute('stroke-width', (string) ($path->style->lineWidth / 20));
+            $pathElement->addAttribute('stroke-linecap', 'round');
+            $pathElement->addAttribute('stroke-linejoin', 'round');
         }
 
         $path->draw(new SvgPathDrawer($pathElement));
@@ -93,11 +94,11 @@ final class SvgBuilder
     public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|Bitmap|null $style): void
     {
         if ($style === null) {
-            $path['fill'] = 'none';
+            $path->addAttribute('fill', 'none');
             return;
         }
 
-        $path['fill-rule'] = 'evenodd';
+        $path->addAttribute('fill-rule', 'evenodd');
 
         match (true) {
             $style instanceof Solid => self::applyFillSolid($path, $style),
@@ -109,76 +110,78 @@ final class SvgBuilder
 
     public function applyFillSolid(SimpleXMLElement $path, Solid $style): void
     {
-        $path['fill'] = $style->color->hex();
+        $path->addAttribute('fill', $style->color->hex());
 
         if ($style->color->hasTransparency()) {
-            $path['fill-opacity'] = $style->color->opacity();
+            $path->addAttribute('fill-opacity', (string) $style->color->opacity());
         }
     }
 
     public function applyFillLinearGradient(SimpleXMLElement $path, LinearGradient $style): void
     {
         $id = 'gradient-'.$style->hash();
-        $path['fill'] = 'url(#'.$id.')';
+        $path->addAttribute('fill', 'url(#'.$id.')');
 
         if (isset($this->elementsById[$id])) {
             return;
         }
 
         $this->elementsById[$id] = $linearGradient = $this->svg->addChild('linearGradient');
+        assert($linearGradient instanceof SimpleXMLElement);
 
-        $linearGradient['gradientTransform'] = $style->matrix->toSvgTransformation();
-        $linearGradient['gradientUnits'] = 'userSpaceOnUse';
-        $linearGradient['spreadMethod'] = 'pad';
-        $linearGradient['id'] = $id;
+        $linearGradient->addAttribute('gradientTransform', $style->matrix->toSvgTransformation());
+        $linearGradient->addAttribute('gradientUnits', 'userSpaceOnUse');
+        $linearGradient->addAttribute('spreadMethod', 'pad');
+        $linearGradient->addAttribute('id', $id);
 
         // All gradients are defined in a standard space called the gradient square. The gradient square is centered at (0,0),
         // and extends from (-16384,-16384) to (16384,16384).
-        $linearGradient['x1'] = '-819.2';
-        $linearGradient['x2'] = '819.2';
+        $linearGradient->addAttribute('x1', '-819.2');
+        $linearGradient->addAttribute('x2', '819.2');
 
         foreach ($style->gradient->records as $record) {
             $stop = $linearGradient->addChild('stop');
-            $stop['offset'] = $record->ratio / 255;
-            $stop['stop-color'] = $record->color->hex();
-            $stop['stop-opacity'] = $record->color->opacity();
+            $stop->addAttribute('offset', (string) ($record->ratio / 255));
+            $stop->addAttribute('stop-color', $record->color->hex());
+            $stop->addAttribute('stop-opacity', (string) $record->color->opacity());
         }
     }
 
     public function applyFillRadialGradient(SimpleXMLElement $path, RadialGradient $style): void
     {
         $id = 'gradient-'.$style->hash();
-        $path['fill'] = 'url(#'.$id.')';
+        $path->addAttribute('fill', 'url(#'.$id.')');
 
         if (isset($this->elementsById[$id])) {
             return;
         }
 
         $radialGradient = $this->svg->addChild('radialGradient');
+        assert($radialGradient instanceof SimpleXMLElement);
 
-        $radialGradient['gradientTransform'] = $style->matrix->toSvgTransformation();
-        $radialGradient['gradientUnits'] = 'userSpaceOnUse';
-        $radialGradient['spreadMethod'] = 'pad';
-        $radialGradient['id'] = $id;
+        $radialGradient->addAttribute('gradientTransform', $style->matrix->toSvgTransformation());
+        $radialGradient->addAttribute('gradientUnits', 'userSpaceOnUse');
+        $radialGradient->addAttribute('spreadMethod', 'pad');
+        $radialGradient->addAttribute('id', $id);
 
         // All gradients are defined in a standard space called the gradient square. The gradient square is centered at (0,0),
         // and extends from (-16384,-16384) to (16384,16384).
-        $radialGradient['cx'] = '0';
-        $radialGradient['cy'] = '0';
-        $radialGradient['r'] = '819.2';
+        $radialGradient->addAttribute('cx', '0');
+        $radialGradient->addAttribute('cy', '0');
+        $radialGradient->addAttribute('r', '819.2');
 
         if ($style->gradient->focalPoint) {
-            $radialGradient['fx'] = 0;
-            $radialGradient['fy'] = $style->gradient->focalPoint * 819.2;
+            $radialGradient->addAttribute('fx', '0');
+            $radialGradient->addAttribute('fy', (string) ($style->gradient->focalPoint * 819.2));
         }
 
         foreach ($style->gradient->records as $record) {
             $stop = $radialGradient->addChild('stop');
-            $stop['offset'] = $record->ratio / 255;
-            $stop['stop-color'] = $record->color->hex();
+            $stop->addAttribute('offset', (string) ($record->ratio / 255));
+            $stop->addAttribute('stop-color', $record->color->hex());
 
             if ($record->color->hasTransparency()) {
-                $stop['stop-opacity'] = $record->color->opacity();
+                $stop->addAttribute('stop-opacity', (string) $record->color->opacity());
             }
         }
     }
@@ -186,22 +189,23 @@ final class SvgBuilder
     public function applyFillClippedBitmap(SimpleXMLElement $path, Bitmap $style): void
     {
         $pattern = $this->svg->addChild('pattern');
+        assert($pattern instanceof SimpleXMLElement);
 
-        $pattern['id'] = 'pattern-'.$style->hash();
-        $pattern['overflow'] = 'visible';
-        $pattern['patternUnits'] = 'userSpaceOnUse';
-        $pattern['width'] = $style->bitmap->bounds()->width() / 20;
-        $pattern['height'] = $style->bitmap->bounds()->height() / 20;
-        $pattern['viewBox'] = sprintf('0 0 %h %h', $style->bitmap->bounds()->width() / 20, $style->bitmap->bounds()->height() / 20);
-        $pattern['patternTransform'] = $style->matrix->toSvgTransformation(undoTwipScale: true);
+        $pattern->addAttribute('id', 'pattern-'.$style->hash());
+        $pattern->addAttribute('overflow', 'visible');
+        $pattern->addAttribute('patternUnits', 'userSpaceOnUse');
+        $pattern->addAttribute('width', (string) ($style->bitmap->bounds()->width() / 20));
+        $pattern->addAttribute('height', (string) ($style->bitmap->bounds()->height() / 20));
+        $pattern->addAttribute('viewBox', sprintf('0 0 %h %h', $style->bitmap->bounds()->width() / 20, $style->bitmap->bounds()->height() / 20));
+        $pattern->addAttribute('patternTransform', $style->matrix->toSvgTransformation(undoTwipScale: true));
 
         if (!$style->smoothed) {
-            $pattern['image-rendering'] = 'optimizeSpeed';
+            $pattern->addAttribute('image-rendering', 'optimizeSpeed');
         }
 
         $image = $pattern->addChild('image');
-        $image['href'] = $style->bitmap->toBase64Data();
+        $image->addAttribute('href', $style->bitmap->toBase64Data());
 
-        $path['fill'] = 'url(#'.$pattern['id'].')';
+        $path->addAttribute('fill', 'url(#'.$pattern['id'].')');
     }
 }

@@ -41,6 +41,9 @@ final readonly class Gradient implements JsonSerializable
         public ?float $focalPoint = null,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     #[Override]
     public function jsonSerialize(): array
     {

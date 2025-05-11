@@ -27,10 +27,11 @@ final readonly class DefineButtonTag
 {
     public function __construct(
         public int $buttonId,
+
+        /** @var list<mixed> */
         public array $characters,
-        /**
-         * @var list<ActionRecord>
-         */
+
+        /** @var list<ActionRecord> */
         public array $actions,
     ) {
     }

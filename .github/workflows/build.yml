@@ -34,32 +34,25 @@ jobs:
 
             - name: Run test suite
               run: vendor/bin/phpunit
-#
-#    analysis:
-#        name: Analysis
-#        runs-on: ubuntu-latest
-#
-#        steps:
-#            - uses: actions/checkout@v2
-#
-#            - name: Set Timezone
-#              uses: szenius/set-timezone@v1.0
-#              with:
-#                  timezoneLinux: "Europe/Paris"
-#
-#            - name: Install PHP
-#              uses: shivammathur/setup-php@v2
-#              with:
-#                  php-version: 8.4
-#                  extensions: json
-#                  ini-values: date.timezone=Europe/Paris
-#
-#            - uses: mirromutth/mysql-action@v1.1
-#              with:
-#                  mysql root password: 'root'
-#                  mysql database: 'test'
-#                  mysql user: 'test'
-#                  mysql password: 'test'
+
+    analysis:
+        name: Analysis
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Set Timezone
+              uses: szenius/set-timezone@v1.0
+              with:
+                  timezoneLinux: "Europe/Paris"
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  extensions: json
+                  ini-values: date.timezone=Europe/Paris
 #
 #            - name: Install Infection
 #              run: |
@@ -67,26 +60,18 @@ jobs:
 #                wget https://github.com/infection/infection/releases/download/0.28.1/infection.phar.asc
 #                chmod +x infection.phar
 #                gpg --recv-keys C6D76C329EBADE2FB9C458CFC5095986493B4AA0 && gpg --with-fingerprint --verify infection.phar.asc infection.phar
-#
-#            - name: Validate composer.json and composer.lock
-#              run: composer validate --strict
-#
-#            - name: Install dependencies
-#              run: composer install --prefer-dist --no-progress
-#
-#            - name: Run type coverage
-#              run: ./vendor/bin/psalm --shepherd --no-cache --output-format=github
+
+            - name: Validate composer.json and composer.lock
+              run: composer validate --strict
+
+            - name: Install dependencies
+              run: composer install --prefer-dist --no-progress
+
+            - name: Run type coverage
+              run: ./vendor/bin/phpstan
 #
 #            - name: Run checkstyle
 #              run: PHP_CS_FIXER_IGNORE_ENV=1 ./vendor/bin/php-cs-fixer check --diff
-#
-#            - name: Wait for MySQL
-#              run: |
-#                  while :
-#                  do
-#                    sleep 1
-#                    mysql -h 127.0.0.1 -u root --password=root -e 'select version()' && break
-#                  done
 #
 #            - name: Run Infection
 #              run: |

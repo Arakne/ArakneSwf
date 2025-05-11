@@ -39,9 +39,11 @@ final readonly class PlaceObject3Tag
         public ?int $ratio,
         public ?string $name,
         public ?int $clipDepth,
+        /** @var list<mixed>|null */
         public ?array $surfaceFilterList,
         public ?int $blendMode,
         public ?int $bitmapCache,
+        /** @var array<string, mixed>|null */
         public ?array $clipActions,
     ) {}
 }

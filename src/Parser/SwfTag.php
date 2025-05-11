@@ -87,6 +87,8 @@ use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Structure\Tag\VideoFrameTag;
 use Exception;
 
+use http\Exception\RuntimeException;
+
 use function assert;
 use function sprintf;
 use function strlen;
@@ -347,6 +349,8 @@ final readonly class SwfTag
 
     private function parseRemoveObjectTag(int $bytePosEnd, int $version): RemoveObjectTag|RemoveObject2Tag
     {
+        assert($version === 1 || $version === 2);
+
         return match ($version) {
             1 => new RemoveObjectTag(
                 characterId: $this->io->collectUI16(),
@@ -504,6 +508,8 @@ final readonly class SwfTag
 
     private function parseStartSoundTag(int $bytePosEnd, int $version): StartSoundTag|StartSound2Tag
     {
+        assert($version === 1 || $version === 2);
+
         return match ($version) {
             1 => new StartSoundTag(
                 soundId: $this->io->collectUI16(),
@@ -568,6 +574,8 @@ final readonly class SwfTag
 
     private function parseDefineBitsLosslessTag(int $bytePosEnd, int $version): DefineBitsLosslessTag
     {
+        assert($version === 1 || $version === 2);
+
         $characterId = $this->io->collectUI16();
         $bitmapFormat = $this->io->collectUI8();
         $bitmapWidth = $this->io->collectUI16();
@@ -575,7 +583,7 @@ final readonly class SwfTag
 
         if ($bitmapFormat == 3) {
             $colors = $this->io->collectUI8();
-            $data = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)); // ZLIB uncompress
+            $data = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
             $colorTableSize = match ($version) {
                 1 => 3 * ($colors + 1), // 3 bytes per RGB value
                 2 => 4 * ($colors + 1), // 4 bytes per RGBA value
@@ -585,7 +593,7 @@ final readonly class SwfTag
             $pixelData = substr($data, $colorTableSize);
         } elseif ($bitmapFormat == 4 || $bitmapFormat == 5) {
             $colorTable = null;
-            $pixelData = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)); // ZLIB uncompress
+            $pixelData = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
         } else {
             throw new Exception(sprintf('Internal error: bitmapFormat=%d', $bitmapFormat));
         }
@@ -621,7 +629,7 @@ final readonly class SwfTag
                 return new DefineBitsJPEG3Tag(
                     characterId: $this->io->collectUI16(),
                     imageData: $this->io->collectBytes($this->io->collectUI32()),
-                    alphaData: gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)), // ZLIB uncompress alpha channel
+                    alphaData: gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')), // ZLIB uncompress alpha channel
                 );
 
             case 4:
@@ -629,7 +637,7 @@ final readonly class SwfTag
                 $alphaDataOffset = $this->io->collectUI32();
                 $deblockParam = $this->io->collectUI16();
                 $imageData = $this->io->collectBytes($alphaDataOffset);
-                $alphaData = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)); // ZLIB uncompress alpha channel
+                $alphaData = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
 
                 return new DefineBitsJPEG4Tag(
                     characterId: $characterId,
@@ -805,8 +813,8 @@ final readonly class SwfTag
         $startEdgeBounds = $this->rec->collectRect();
         $endEdgeBounds = $this->rec->collectRect();
         $this->io->collectUB(6); // Reserved
-        $usesNonScalingStrokes = $this->io->collectUB(1);
-        $usesScalingStrokes = $this->io->collectUB(1);
+        $usesNonScalingStrokes = (bool) $this->io->collectUB(1);
+        $usesScalingStrokes = (bool) $this->io->collectUB(1);
 
         return new DefineMorphShape2Tag(
             characterId: $characterId,

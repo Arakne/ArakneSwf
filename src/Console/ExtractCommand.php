@@ -15,6 +15,7 @@ use Arakne\Swf\SwfFile;
 use InvalidArgumentException;
 use Throwable;
 
+use function assert;
 use function basename;
 use function count;
 use function dirname;
@@ -176,9 +177,12 @@ EOT;
     private function processVariables(ExtractOptions $options, string $file, string $name, SwfFile $swf): bool
     {
         $variables = $swf->variables();
+        $content = json_encode($variables, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        assert($content !== false);
 
         return $this->writeToOutputDir(
-            json_encode($variables, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            $content,
             $file,
             $options,
             $name,

@@ -1,0 +1,13 @@
+parameters:
+    level: 9
+    paths:
+        - src
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # Ignore errors on AVM processor: fewer checks are performed for performance
+        - path: src/Avm/Processor.php
+          identifier: cast.string
+        - path: src/Avm/Processor.php
+          identifier: cast.int
+        - path: src/Avm/Processor.php
+          identifier: cast.double

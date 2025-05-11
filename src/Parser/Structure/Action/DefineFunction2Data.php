@@ -35,9 +35,13 @@ final readonly class DefineFunction2Data
         public bool $suppressThisFlag,
         public bool $preloadThisFlag,
         public bool $preloadGlobalFlag,
+
+        /** @var list<string> */
         public array $parameters,
+
+        /** @var list<int> */
         public array $registers,
+
         public int $codeSize,
-    ) {
-    }
+    ) {}
 }

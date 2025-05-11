@@ -24,8 +24,10 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 final readonly class SymbolClassTag
 {
     public function __construct(
+        /** @var list<int> */
         public array $tags,
+
+        /** @var list<string> */
         public array $names,
-    ) {
-    }
+    ) {}
 }

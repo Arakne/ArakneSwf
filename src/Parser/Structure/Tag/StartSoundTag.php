@@ -25,7 +25,8 @@ final readonly class StartSoundTag
 {
     public function __construct(
         public int $soundId,
+
+        /** @var array<string, mixed> */
         public array $soundInfo,
-    ) {
-    }
+    ) {}
 }

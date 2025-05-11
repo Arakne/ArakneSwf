@@ -47,6 +47,7 @@ final readonly class LinearGradient implements FillTypeInterface
     #[Override]
     public function hash(): string
     {
+        // @phpstan-ignore argument.type
         return 'L' . hash('xxh128', json_encode($this));
     }
 }

@@ -47,6 +47,7 @@ final readonly class RadialGradient implements FillTypeInterface
     #[Override]
     public function hash(): string
     {
+        // @phpstan-ignore argument.type
         return 'R' . hash('xxh128', json_encode($this));
     }
 }

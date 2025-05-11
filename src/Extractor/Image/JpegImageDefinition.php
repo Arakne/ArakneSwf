@@ -32,6 +32,8 @@ use BadMethodCallException;
 
 use Override;
 
+use RuntimeException;
+
 use function base64_encode;
 use function getimagesizefromstring;
 use function ord;
@@ -66,7 +68,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
             $data = GD::fixJpegData($data);
         }
 
-        [$width, $height] = getimagesizefromstring($data);
+        [$width, $height] = getimagesizefromstring($data) ?: throw new RuntimeException('Invalid JPEG data');
 
         return $this->bounds = new Rectangle(0, $width * 20, 0, $height * 20);
     }
