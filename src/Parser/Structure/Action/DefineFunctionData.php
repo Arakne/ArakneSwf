@@ -28,7 +28,6 @@ final readonly class DefineFunctionData
 
         /** @var list<string> */
         public array $parameters,
-
         public int $codeSize,
     ) {}
 }

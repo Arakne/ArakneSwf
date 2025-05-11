@@ -28,6 +28,5 @@ final readonly class ProtectTag
          * Password is an MD5 hash of the password.
          */
         public ?string $password,
-    ) {
-    }
+    ) {}
 }

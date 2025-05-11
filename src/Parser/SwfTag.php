@@ -86,7 +86,6 @@ use Arakne\Swf\Parser\Structure\Tag\SymbolClassTag;
 use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Structure\Tag\VideoFrameTag;
 use Exception;
-
 use http\Exception\RuntimeException;
 
 use function assert;
@@ -153,7 +152,7 @@ final readonly class SwfTag
     private function isDefinitionTagType(int $tagType): bool
     {
         switch ($tagType) {
-            case  2: // DefineShape
+            case 2: // DefineShape
             case 22: // DefineShape2
             case 32: // DefineShape3
             case 83: // DefineShape4
@@ -163,7 +162,7 @@ final readonly class SwfTag
             case 75: // DefineFont3
             case 91: // DefineFont4
                 return true; // fontId
-            case  7: // DefineButton
+            case 7: // DefineButton
             case 34: // DefineButton2
                 return true; // buttonId
             case 14: // DefineSound
@@ -174,7 +173,7 @@ final readonly class SwfTag
             case 33: // DefineText2
             case 20: // DefineBitsLossless
             case 36: // DefineBitsLossless2
-            case  6: // DefineBits
+            case 6: // DefineBits
             case 21: // DefineBitsJPEG2
             case 35: // DefineBitsJPEG3
             case 90: // DefineBitsJPEG4
@@ -416,11 +415,11 @@ final readonly class SwfTag
         // Collect and push back 1st element of OffsetTable (this is numGlyphs * 2)
         $numGlyphs = $this->io->collectUI16() / 2;
         $this->io->bytePos -= 2;
-        $offsetTable = array();
+        $offsetTable = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
             $offsetTable[] = $this->io->collectUI16();
         }
-        $glyphShapeData = array();
+        $glyphShapeData = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
             $glyphShapeData[] = $this->rec->collectShape(1);
         }
@@ -867,7 +866,7 @@ final readonly class SwfTag
         for ($i = 0; $i < $numGlyphs; $i++) {
             if ($version === 2) {
                 $codeTable[] = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
-            } else if ($version === 3) {
+            } elseif ($version === 3) {
                 $codeTable[] = $this->io->collectUI16();
             }
         }
@@ -877,16 +876,16 @@ final readonly class SwfTag
             $layout['fontAscent'] = $this->io->collectSI16();
             $layout['fontDescent'] = $this->io->collectSI16();
             $layout['fontLeading'] = $this->io->collectSI16();
-            $layout['fontAdvanceTable'] = array();
+            $layout['fontAdvanceTable'] = [];
             for ($i = 0; $i < $numGlyphs; $i++) {
                 $layout['fontAdvanceTable'][] = $this->io->collectSI16();
             }
-            $layout['fontBoundsTable'] = array();
+            $layout['fontBoundsTable'] = [];
             for ($i = 0; $i < $numGlyphs; $i++) {
                 $layout['fontBoundsTable'][] = $this->rec->collectRect();
             }
             $kerningCount = $this->io->collectUI16();
-            $layout['fontKerningTable'] = array();
+            $layout['fontKerningTable'] = [];
             for ($i = 0; $i < $kerningCount; $i++) {
                 $fontKerningCode1 = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
                 $fontKerningCode2 = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
@@ -894,7 +893,7 @@ final readonly class SwfTag
                 $layout['fontKerningTable'][] = [
                     'fontKerningCode1' => $fontKerningCode1,
                     'fontKerningCode2' => $fontKerningCode2,
-                    'fontKerningAdjustment' => $fontKerningAdjustment
+                    'fontKerningAdjustment' => $fontKerningAdjustment,
                 ];
             }
         } else {

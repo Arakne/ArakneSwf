@@ -28,6 +28,5 @@ final readonly class DefineScalingGridTag
     public function __construct(
         public int $characterId,
         public Rectangle $splitter,
-    ) {
-    }
+    ) {}
 }

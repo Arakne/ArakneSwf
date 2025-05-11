@@ -31,6 +31,5 @@ final readonly class DefineSoundTag
         public int $soundType,
         public int $soundSampleCount,
         public string $soundData,
-    ) {
-    }
+    ) {}
 }

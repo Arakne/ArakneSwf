@@ -33,6 +33,5 @@ final readonly class DefineButtonTag
 
         /** @var list<ActionRecord> */
         public array $actions,
-    ) {
-    }
+    ) {}
 }

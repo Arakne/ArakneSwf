@@ -26,7 +26,6 @@ use Countable;
 use IteratorAggregate;
 use JsonSerializable;
 use Override;
-
 use Traversable;
 
 use function count;
@@ -57,8 +56,7 @@ class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate, 
          * @var array<array-key, Closure(mixed):void>
          */
         protected array $setters = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Define a new computed property.

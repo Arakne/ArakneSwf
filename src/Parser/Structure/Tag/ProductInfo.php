@@ -37,6 +37,5 @@ final readonly class ProductInfo
         public int $minorVersion,
         public int $buildNumber,
         public int $compilationDate,
-    ) {
-    }
+    ) {}
 }

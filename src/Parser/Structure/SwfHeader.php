@@ -35,6 +35,5 @@ final readonly class SwfHeader
         public Rectangle $frameSize,
         public float $frameRate,
         public int $frameCount,
-    ) {
-    }
+    ) {}
 }

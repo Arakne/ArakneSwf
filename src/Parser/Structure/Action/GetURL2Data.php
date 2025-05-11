@@ -28,6 +28,5 @@ final readonly class GetURL2Data
         public int $reserved,
         public bool $loadTargetFlag,
         public bool $loadVariablesFlag,
-    ) {
-    }
+    ) {}
 }

@@ -25,6 +25,5 @@ final readonly class MetadataTag
 {
     public function __construct(
         public string $metadata,
-    ) {
-    }
+    ) {}
 }

@@ -24,7 +24,6 @@ use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use BadMethodCallException;
 use GdImage;
 use InvalidArgumentException;
-
 use RuntimeException;
 
 use function assert;
@@ -110,7 +109,7 @@ final class GD
         $green = (int) ($green * $factor);
         $blue = (int) ($blue * $factor);
 
-        assert($red >=0 && $green >= 0 && $blue >= 0);
+        assert($red >= 0 && $green >= 0 && $blue >= 0);
 
         $newColor = imagecolorallocatealpha(
             $gd,
@@ -240,7 +239,7 @@ final class GD
      */
     public function toPng(int $compression = -1): string
     {
-        $stream = fopen('php://memory','r+');
+        $stream = fopen('php://memory', 'r+');
         assert($stream !== false);
 
         imagepng($this->image, $stream, $compression) ?: throw new RuntimeException('Failed to convert image to PNG');
@@ -262,7 +261,7 @@ final class GD
      */
     public function toJpeg(int $quality = -1): string
     {
-        $stream = fopen('php://memory','r+');
+        $stream = fopen('php://memory', 'r+');
         assert($stream !== false);
 
         imagejpeg($this->image, $stream, $quality) ?: throw new RuntimeException('Failed to convert image to JPEG');

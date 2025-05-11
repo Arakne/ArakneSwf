@@ -47,7 +47,6 @@ final readonly class DefineEditTextTag
 
         /** @var array<string, mixed>|null */
         public ?array $layout,
-
         public string $variableName,
         public ?string $initialText,
     ) {}

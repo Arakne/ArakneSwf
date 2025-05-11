@@ -27,6 +27,5 @@ final readonly class DefineFontNameTag
         public int $fontId,
         public string $fontName,
         public string $fontCopyright,
-    ) {
-    }
+    ) {}
 }

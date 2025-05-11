@@ -115,7 +115,7 @@ final class SwfFile
 
     /**
      * Extract and parse tags from the SWF file.
-     * 
+     *
      * The key of the result is the tag position and id, and the value is the parsed tag.
      *
      * @param int ...$tagIds The tag IDs to extract. If empty, all tags are extracted.

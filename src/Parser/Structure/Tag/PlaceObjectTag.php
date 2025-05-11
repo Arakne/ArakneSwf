@@ -33,6 +33,5 @@ final readonly class PlaceObjectTag
         public int $depth,
         public Matrix $matrix,
         public ?ColorTransform $colorTransform,
-    ) {
-    }
+    ) {}
 }

@@ -137,7 +137,7 @@ final class SwfExtractor
     public function sprites(): array
     {
         $sprites = $this->sprites;
-        
+
         if ($sprites !== null) {
             return $sprites;
         }

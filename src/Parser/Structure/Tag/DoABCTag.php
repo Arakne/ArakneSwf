@@ -27,6 +27,5 @@ final readonly class DoABCTag
         public int $flags,
         public string $name,
         public string $data,
-    ) {
-    }
+    ) {}
 }

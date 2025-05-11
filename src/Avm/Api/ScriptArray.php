@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace Arakne\Swf\Avm\Api;
 
 use Override;
-
 use Traversable;
 
 use function array_fill;

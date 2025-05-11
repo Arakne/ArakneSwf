@@ -28,6 +28,5 @@ final readonly class DefineButtonCxformTag
     public function __construct(
         public int $buttonId,
         public ColorTransform $colorTransform,
-    ) {
-    }
+    ) {}
 }

@@ -27,6 +27,5 @@ final readonly class SetBackgroundColorTag
         public int $red,
         public int $green,
         public int $blue,
-    ) {
-    }
+    ) {}
 }

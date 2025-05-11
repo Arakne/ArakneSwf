@@ -27,6 +27,5 @@ final readonly class GotoFrame2Data
         public bool $sceneBiasFlag,
         public bool $playFlag,
         public ?int $sceneBias,
-    ) {
-    }
+    ) {}
 }

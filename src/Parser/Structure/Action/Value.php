@@ -32,6 +32,5 @@ final readonly class Value
          * The parsed value
          */
         public int|float|string|bool|null $value,
-    ) {
-    }
+    ) {}
 }

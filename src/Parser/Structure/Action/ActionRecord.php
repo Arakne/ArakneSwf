@@ -28,6 +28,5 @@ final readonly class ActionRecord
         public Opcode $opcode,
         public int $length,
         public mixed $data,
-    ) {
-    }
+    ) {}
 }

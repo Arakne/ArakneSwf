@@ -539,7 +539,7 @@ readonly class SwfRec
         $morphFillStyle = []; // To return
         $morphFillStyle['fillStyleType'] = $this->io->collectUI8();
 
-        switch($morphFillStyle['fillStyleType']) {
+        switch ($morphFillStyle['fillStyleType']) {
             case 0x00: // Solid fill
                 $morphFillStyle['startColor'] = $this->collectRGBA();
                 $morphFillStyle['endColor'] = $this->collectRGBA();
@@ -610,7 +610,7 @@ readonly class SwfRec
             for ($i = 0; $i < $lineStyleCount; $i++) {
                 $morphLineStyleArray[] = $this->collectMorphLineStyle();
             }
-        } else if ($version === 2) {
+        } elseif ($version === 2) {
             for ($i = 0; $i < $lineStyleCount; $i++) {
                 $morphLineStyleArray[] = $this->collectMorphLineStyle2();
             }
@@ -692,10 +692,10 @@ readonly class SwfRec
      */
     public function collectFilterList(): array
     {
-        $filterList = array();
+        $filterList = [];
         $numberOfFilters = $this->io->collectUI8();
         for ($f = 0; $f < $numberOfFilters; $f++) {
-            $filter = array();
+            $filter = [];
             $filter['filterId'] = $this->io->collectUI8();
             switch ($filter['filterId']) {
                 case 0: // DropShadowFilter
@@ -742,11 +742,11 @@ readonly class SwfRec
                     break;
                 case 4: // GradientGlowFilter
                     $filter['numColors'] = $this->io->collectUI8();
-                    $filter['gradientColors'] = array();
+                    $filter['gradientColors'] = [];
                     for ($i = 0; $i < $filter['numColors']; $i++) {
                         $filter['gradientColors'][] = $this->collectRGBA();
                     }
-                    $filter['gradientRatio'] = array();
+                    $filter['gradientRatio'] = [];
                     for ($i = 0; $i < $filter['numColors']; $i++) {
                         $filter['gradientRatio'][] = $this->io->collectUI8();
                     }
@@ -766,7 +766,7 @@ readonly class SwfRec
                     $filter['matrixY'] = $this->io->collectUI8();
                     $filter['divisor'] = $this->io->collectFloat();
                     $filter['bias'] = $this->io->collectFloat();
-                    $filter['matrix'] = array();
+                    $filter['matrix'] = [];
                     for ($i = 0; $i < $filter['matrixX'] * $filter['matrixY']; $i++) {
                         $filter['matrix'][] = $this->io->collectFloat();
                     }
@@ -776,7 +776,7 @@ readonly class SwfRec
                     $filter['preservedAlpha'] = $this->io->collectUB(1);
                     break;
                 case 6: // ColorMatrixFilter
-                    $matrix = array();
+                    $matrix = [];
                     for ($i = 0; $i < 20; $i++) {
                         $matrix[$i] = $this->io->collectFloat();
                     }
@@ -784,11 +784,11 @@ readonly class SwfRec
                     break;
                 case 7: // GradientBevelFilter
                     $filter['numColors'] = $this->io->collectUI8();
-                    $filter['gradientColors'] = array();
+                    $filter['gradientColors'] = [];
                     for ($i = 0; $i < $filter['numColors']; $i++) {
                         $filter['gradientColors'][] = $this->collectRGBA();
                     }
-                    $filter['gradientRatio'] = array();
+                    $filter['gradientRatio'] = [];
                     for ($i = 0; $i < $filter['numColors']; $i++) {
                         $filter['gradientRatio'][] = $this->io->collectUI8();
                     }
@@ -836,10 +836,10 @@ readonly class SwfRec
             $soundInfo['loopCount'] = $this->io->collectUI16();
         }
         if ($soundInfo['hasEnvelope'] != 0) {
-            $soundInfo['envelopeRecords'] = array();
+            $soundInfo['envelopeRecords'] = [];
             $envPoints = $this->io->collectUI8();
             for ($i = 0; $i < $envPoints; $i++) {
-                $soundEnvelope = array();
+                $soundEnvelope = [];
                 $soundEnvelope['pos44'] = $this->io->collectUI32();
                 $soundEnvelope['leftLevel'] = $this->io->collectUI16();
                 $soundEnvelope['rightLevel'] = $this->io->collectUI16();
@@ -858,7 +858,7 @@ readonly class SwfRec
         $buttonRecords = [];
 
         for (;;) {
-            $buttonRecord = array();
+            $buttonRecord = [];
 
             $reserved = $this->io->collectUB(2);
             $buttonRecord['buttonHasBlendMode'] = $this->io->collectUB(1);
@@ -902,9 +902,9 @@ readonly class SwfRec
      */
     public function collectButtonCondActions(int $bytePosEnd): array
     {
-        $buttonCondActions = array();
+        $buttonCondActions = [];
         for (;;) {
-            $buttonCondAction = array();
+            $buttonCondAction = [];
             $here = $this->io->bytePos;
             $condActionSize = $this->io->collectUI16();
 
@@ -981,7 +981,7 @@ readonly class SwfRec
      */
     public function collectClipEventFlags(int $swfVersion): array
     {
-        $ret = array();
+        $ret = [];
         $ret['clipEventKeyUp'] = $this->io->collectUB(1);
         $ret['clipEventKeyDown'] = $this->io->collectUB(1);
         $ret['clipEventMouseUp'] = $this->io->collectUB(1);
@@ -1042,10 +1042,10 @@ readonly class SwfRec
      */
     public function collectTextRecords(int $glyphBits, int $advanceBits, int $textVersion): array
     {
-        $textRecords = array();
+        $textRecords = [];
         // Collect text records
         for (;;) {
-            $textRecord = array();
+            $textRecord = [];
             $textRecord['textRecordType'] = $this->io->collectUB(1);
             $reserved = $this->io->collectUB(3); // Reserved, must be 0
             $textRecord['styleFlagsHasFont'] = $this->io->collectUB(1);
@@ -1074,10 +1074,10 @@ readonly class SwfRec
             if ($textRecord['styleFlagsHasFont'] != 0) {
                 $textRecord['textHeight'] = $this->io->collectUI16();
             }
-            $textRecord['glyphEntries'] = array();
+            $textRecord['glyphEntries'] = [];
             $glyphCount = $this->io->collectUI8();
             for ($i = 0; $i < $glyphCount; $i++) {
-                $glyphEntry = array();
+                $glyphEntry = [];
                 $glyphEntry['glyphIndex'] = $this->io->collectUB($glyphBits);
                 $glyphEntry['glyphAdvance'] = $this->io->collectSB($advanceBits);
                 $textRecord['glyphEntries'][] = $glyphEntry;
@@ -1125,7 +1125,7 @@ readonly class SwfRec
                     color: $shapeVersion == 1 || $shapeVersion == 2 ? $this->collectRGB() : $this->collectRGBA(),
                 );
             }
-        } else if ($shapeVersion == 4) {
+        } elseif ($shapeVersion == 4) {
             for ($i = 0; $i < $lineStyleCount; $i++) {
                 $width = $this->io->collectUI16();
 
@@ -1211,19 +1211,19 @@ readonly class SwfRec
      */
     public function collectZoneTable(int $bytePosEnd): array
     {
-        $zoneRecords = array();
+        $zoneRecords = [];
         while ($this->io->bytePos < $bytePosEnd) {
-            $zoneData = array();
+            $zoneData = [];
             $numZoneData = $this->io->collectUI8();
             for ($i = 0; $i < $numZoneData; $i++) {
                 $alignmentCoordinate = $this->io->collectFloat16();
                 $range = $this->io->collectFloat16();
-                $zoneData[] = array('alignmentCoordinate' => $alignmentCoordinate, 'range' => $range);
+                $zoneData[] = ['alignmentCoordinate' => $alignmentCoordinate, 'range' => $range];
             }
             $this->io->collectUB(6); // Reserved;
             $zoneMaskY = $this->io->collectUB(1);
             $zoneMaskX = $this->io->collectUB(1);
-            $zoneRecords[] = array('zoneData' => $zoneData, 'zoneMaskY' => $zoneMaskY, 'zoneMaskX' => $zoneMaskX);
+            $zoneRecords[] = ['zoneData' => $zoneData, 'zoneMaskY' => $zoneMaskY, 'zoneMaskX' => $zoneMaskX];
         }
         return $zoneRecords;
     }

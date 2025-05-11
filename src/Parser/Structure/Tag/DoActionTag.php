@@ -38,8 +38,7 @@ final readonly class DoActionTag implements IteratorAggregate
          * @var list<ActionRecord>
          */
         public array $actions,
-    ) {
-    }
+    ) {}
 
     #[Override]
     public function getIterator(): Traversable

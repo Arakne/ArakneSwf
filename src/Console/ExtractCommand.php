@@ -1,5 +1,23 @@
 <?php
 
+/*
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
+
+declare(strict_types=1);
+
 namespace Arakne\Swf\Console;
 
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
@@ -75,38 +93,38 @@ final readonly class ExtractCommand
         }
 
         echo <<<EOT
-Arakne-Swf by Vincent Quatrevieux
-Extract resources from an SWF file.
+            Arakne-Swf by Vincent Quatrevieux
+            Extract resources from an SWF file.
 
-Usage: 
-    {$options->command} [options] <file> [<file> ...] <output>
+            Usage: 
+                {$options->command} [options] <file> [<file> ...] <output>
 
-Options:
-    -h, --help            Show this help message
-    -c, --character <id>  Specify the character id to extract. This option is repeatable.
-    -e, --exported <name> Extract the character with the specified exported name. This option is repeatable.
-    --frames <frames>     Frames to export, if applicable. Can be a single frame number, a range (e.g. 1-10), or "all".
-                          By default, all frames will be exported. This option is repeatable.
-    --full-animation      Extract the full animation for animated characters.
-                          If set, the frames count will be computed on included sprites, instead of counting 
-                          only the current character.
-    --variables           Extract action script variables to JSON
-    --all-sprites         Extract all sprites from the SWF file
-    --all-exported        Extract all exported symbols from the SWF file
-    --timeline            Extract the root SWF animation
-    --output-filename     Define the filename pattern to use for the output files
-                          (default: {$options->outputFilename})
-                          Takes the following placeholders:
-                          - {basename}: The base name of the SWF file
-                          - {name}: The name or id of the character / exported symbol
-                          - {ext}: The file extension (png, svg, json, etc.)
-                          - {frame}/{_frame}: The frame number (1-based). {_frame} will prefix with "_" if needed
+            Options:
+                -h, --help            Show this help message
+                -c, --character <id>  Specify the character id to extract. This option is repeatable.
+                -e, --exported <name> Extract the character with the specified exported name. This option is repeatable.
+                --frames <frames>     Frames to export, if applicable. Can be a single frame number, a range (e.g. 1-10), or "all".
+                                      By default, all frames will be exported. This option is repeatable.
+                --full-animation      Extract the full animation for animated characters.
+                                      If set, the frames count will be computed on included sprites, instead of counting 
+                                      only the current character.
+                --variables           Extract action script variables to JSON
+                --all-sprites         Extract all sprites from the SWF file
+                --all-exported        Extract all exported symbols from the SWF file
+                --timeline            Extract the root SWF animation
+                --output-filename     Define the filename pattern to use for the output files
+                                      (default: {$options->outputFilename})
+                                      Takes the following placeholders:
+                                      - {basename}: The base name of the SWF file
+                                      - {name}: The name or id of the character / exported symbol
+                                      - {ext}: The file extension (png, svg, json, etc.)
+                                      - {frame}/{_frame}: The frame number (1-based). {_frame} will prefix with "_" if needed
 
-Arguments:
-    <file>      The SWF file to extract resources from. Multiple files can be specified.
-    <output>    The output directory where the extracted resources will be saved.
+            Arguments:
+                <file>      The SWF file to extract resources from. Multiple files can be specified.
+                <output>    The output directory where the extracted resources will be saved.
 
-EOT;
+            EOT;
     }
 
     public function process(ExtractOptions $options, string $file): bool
@@ -256,7 +274,7 @@ EOT;
 
         $dir = dirname($outputFile);
 
-        if (!is_dir($dir) && !mkdir($dir, 0775, true)) {
+        if (!is_dir($dir) && !mkdir($dir, 0o775, true)) {
             echo "Cannot create output directory: $dir", PHP_EOL;
             return false;
         }

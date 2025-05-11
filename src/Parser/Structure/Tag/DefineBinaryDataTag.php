@@ -26,6 +26,5 @@ final readonly class DefineBinaryDataTag
     public function __construct(
         public int $tag,
         public string $data,
-    ) {
-    }
+    ) {}
 }

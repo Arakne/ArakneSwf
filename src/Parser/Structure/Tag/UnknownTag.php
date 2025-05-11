@@ -31,6 +31,5 @@ final readonly class UnknownTag
     public function __construct(
         public int $code,
         public string $data,
-    ) {
-    }
+    ) {}
 }

@@ -29,6 +29,5 @@ final readonly class CSMTextSettingsTag
         public int $gridFit,
         public float $thickness,
         public float $sharpness,
-    ) {
-    }
+    ) {}
 }

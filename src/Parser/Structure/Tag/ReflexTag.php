@@ -34,6 +34,5 @@ final readonly class ReflexTag
          * Should be "rfx".
          */
         public string $name,
-    ) {
-    }
+    ) {}
 }

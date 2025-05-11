@@ -17,7 +17,8 @@
     "phpunit/phpunit": "~10.5",
     "friendsofphp/php-cs-fixer": "^3.62",
     "sapientpro/image-comparator": "^1.2",
-    "phpstan/phpstan": "^2.1"
+    "phpstan/phpstan": "^2.1",
+    "php-cs-fixer/shim": "^3.9"
   },
   "autoload": {
     "psr-4": {

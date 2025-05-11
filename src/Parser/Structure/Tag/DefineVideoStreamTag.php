@@ -31,6 +31,5 @@ final readonly class DefineVideoStreamTag
         public int $deblocking,
         public int $smoothing,
         public int $codecId,
-    ) {
-    }
+    ) {}
 }

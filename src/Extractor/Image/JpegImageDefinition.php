@@ -29,9 +29,7 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
 use BadMethodCallException;
-
 use Override;
-
 use RuntimeException;
 
 use function base64_encode;

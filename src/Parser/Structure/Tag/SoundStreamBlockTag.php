@@ -25,6 +25,5 @@ final readonly class SoundStreamBlockTag
 {
     public function __construct(
         public string $soundData,
-    ) {
-    }
+    ) {}
 }

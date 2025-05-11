@@ -41,7 +41,6 @@ final readonly class DefineFunction2Data
 
         /** @var list<int> */
         public array $registers,
-
         public int $codeSize,
     ) {}
 }

@@ -29,6 +29,5 @@ final readonly class FileAttributesTag
         public bool $hasMetadata,
         public bool $actionScript3,
         public bool $useNetwork,
-    ) {
-    }
+    ) {}
 }

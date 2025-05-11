@@ -32,6 +32,5 @@ final readonly class DefineSpriteTag
          * @var list<object>
          */
         public array $tags,
-    ) {
-    }
+    ) {}
 }

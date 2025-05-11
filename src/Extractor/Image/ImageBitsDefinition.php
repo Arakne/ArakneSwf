@@ -27,7 +27,6 @@ use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Override;
-
 use RuntimeException;
 
 use function base64_encode;

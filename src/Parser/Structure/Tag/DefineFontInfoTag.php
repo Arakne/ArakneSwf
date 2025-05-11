@@ -36,7 +36,6 @@ final readonly class DefineFontInfoTag
 
         /** @var list<int> */
         public array $codeTable,
-
         public ?int $languageCode = null,
     ) {}
 }

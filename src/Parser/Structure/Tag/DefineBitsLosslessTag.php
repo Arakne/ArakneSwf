@@ -54,7 +54,6 @@ final readonly class DefineBitsLosslessTag
          * @var non-negative-int
          */
         public int $bitmapHeight,
-
         public ?string $colorTable,
 
         /**

@@ -34,6 +34,5 @@ final readonly class SoundStreamHeadTag
         public int $streamSoundType,
         public int $streamSoundSampleCount,
         public ?int $latencySeek,
-    ) {
-    }
+    ) {}
 }

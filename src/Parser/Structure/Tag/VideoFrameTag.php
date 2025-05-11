@@ -27,6 +27,5 @@ final readonly class VideoFrameTag
         public int $streamId,
         public int $frameNum,
         public string $videoData,
-    ) {
-    }
+    ) {}
 }

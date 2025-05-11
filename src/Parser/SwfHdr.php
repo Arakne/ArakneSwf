@@ -43,7 +43,7 @@ readonly class SwfHdr
         $signature = $this->io->collectBytes(3);
         if ($signature === 'CWS') {
             $compressed = true;
-        } else if ($signature === 'FWS') {
+        } elseif ($signature === 'FWS') {
             $compressed = false;
         } else {
             throw new \Exception(sprintf('Internal error: signature=[%s]', $signature));

@@ -29,6 +29,5 @@ final readonly class DefineFont4Tag
         public bool $bold,
         public string $name,
         public ?string $data,
-    ) {
-    }
+    ) {}
 }

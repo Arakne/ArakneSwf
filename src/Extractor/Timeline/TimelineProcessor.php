@@ -246,8 +246,7 @@ final readonly class TimelineProcessor
             $objectProperties = $objectProperties->with(
                 object: $this->extractor
                     ->character($objectProperties->characterId)
-                    ->transformColors($tag->colorTransform)
-                ,
+                    ->transformColors($tag->colorTransform),
             );
         }
 

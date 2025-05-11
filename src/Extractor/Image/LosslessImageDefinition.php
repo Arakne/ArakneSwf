@@ -28,9 +28,7 @@ use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use BadMethodCallException;
 use GdImage;
-
 use Override;
-
 use RuntimeException;
 
 use function assert;
@@ -111,7 +109,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
         $height = $this->tag->bitmapHeight;
 
         if ($width < 1 || $height < 1) {
-             throw new RuntimeException('Empty image is not supported');
+            throw new RuntimeException('Empty image is not supported');
         }
 
         $type = $this->tag->type();

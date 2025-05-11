@@ -35,6 +35,5 @@ final readonly class SwfTagPosition
          * The tag id is set only in case of a definition tag (e.g. DefineXXX)
          */
         public ?int $id = null,
-    ) {
-    }
+    ) {}
 }
