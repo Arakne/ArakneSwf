@@ -39,4 +39,13 @@ final readonly class StyleChangeRecord
         /** @var list<LineStyle> */
         public array $lineStyles,
     ) {}
+
+    /**
+     * Does a full draw context reset is requested?
+     * If true, following drawing should be performed like a new shape
+     */
+    public function reset(): bool
+    {
+        return $this->stateNewStyles && $this->stateLineStyle && $this->stateFillStyle0 && $this->stateFillStyle1 && $this->stateMoveTo;
+    }
 }

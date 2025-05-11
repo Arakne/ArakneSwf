@@ -64,8 +64,6 @@ class SwfExtractorTest extends ImageTestCase
         $sprites = $extractor->sprites();
 
         foreach ($sprites as $sprite) {
-            file_put_contents(__DIR__.'/Fixtures/test.svg', $sprite->toSvg());
-            chmod(__DIR__.'/Fixtures/test.svg', 0666);
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/sprite-'.$sprite->id.'.svg', $sprite->toSvg());
         }
     }
@@ -120,7 +118,6 @@ class SwfExtractorTest extends ImageTestCase
 
         $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/1597/1597.swf'));
         $sprite = $extractor->character(48);
-        file_put_contents(__DIR__.'/Fixtures/1597/sprite-48.svg', $sprite->toSvg());
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1597/sprite-48.svg', $sprite->toSvg());
     }
 

@@ -30,14 +30,28 @@ use function array_reverse;
 final class PathsBuilder
 {
     /**
+     * Paths that are in the process of being built
+     *
      * @var array<string, Path>
      */
     private array $openPaths = [];
 
     /**
+     * All paths that have been built, so no more edges can be added
+     *
+     * Note: those paths are not yet finalized (i.e. not yet fixed nor ordered)
+     *
      * @var list<Path>
      */
     private array $closedPaths = [];
+
+    /**
+     * All paths ready to be exported
+     * Those paths are already fixed and ordered (i.e. polygon are properly closed, and lines paths are placed after fill paths)
+     *
+     * @var list<Path>
+     */
+    private array $finalizedPaths = [];
 
     /**
      * @var list<PathStyle|null>
@@ -95,6 +109,16 @@ final class PathsBuilder
     }
 
     /**
+     * Finalize drawing of all active paths
+     * This allows to start a new drawing context
+     */
+    public function finalize(): void
+    {
+        $this->finalizedPaths = $this->export();
+        $this->closedPaths = [];
+    }
+
+    /**
      * Export all built paths
      *
      * @return list<Path>
@@ -109,7 +133,7 @@ final class PathsBuilder
         foreach ($this->closedPaths as $path) {
             $fixedPath = $path->fix();
 
-            if ($fixedPath->style->lineColor !== null) {
+            if ($fixedPath->style->lineWidth > 0) {
                 $linePaths[] = $fixedPath;
             } else {
                 $fillPaths[] = $fixedPath;
@@ -117,7 +141,7 @@ final class PathsBuilder
         }
 
         // Line paths should be drawn after fill paths
-        return [...$fillPaths, ...$linePaths];
+        return [...$this->finalizedPaths, ...$fillPaths, ...$linePaths];
     }
 
     /**

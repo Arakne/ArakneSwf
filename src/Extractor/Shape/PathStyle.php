@@ -46,15 +46,22 @@ final readonly class PathStyle
 
         /**
          * The line color of the current path
-         * If this value is null, the path should not be stroked
+         * If this value is null, the path should not be stroked, unless the lineFill is set
          */
         public ?Color $lineColor = null,
+
+        /**
+         * Draw the stoke line with a fill style
+         * Unlike {@see PathStyle::$fill}, the fill will be applied on the stoke line within its width,
+         * instead of drawing the polygon.
+         */
+        public Solid|LinearGradient|RadialGradient|Bitmap|null $lineFill = null,
 
         /**
          * The width of the line in twips
          *
          * This value should be divided by 20 to get the width in pixels
-         * This value should be set only if the lineColor is set
+         * This value should be set only if the lineColor or lineFill is set
          */
         public int $lineWidth = 0,
 
@@ -66,7 +73,7 @@ final readonly class PathStyle
          */
         public bool $reverse = false,
     ) {
-        $this->hash = $this->fill?->hash() . '-' . self::colorHash($this->lineColor) . '-' . $this->lineWidth;
+        $this->hash = $this->fill?->hash() . $this->lineFill?->hash() . '-' . self::colorHash($this->lineColor) . '-' . $this->lineWidth;
     }
 
     /**
@@ -90,10 +97,12 @@ final readonly class PathStyle
     {
         $fill = $this->fill?->transformColors($colorTransform);
         $lineColor = $this->lineColor?->transform($colorTransform);
+        $lineFill = $this->lineFill?->transformColors($colorTransform);
 
         return new self(
             $fill,
             $lineColor,
+            $lineFill,
             $this->lineWidth,
             $this->reverse
         );

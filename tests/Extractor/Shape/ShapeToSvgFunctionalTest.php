@@ -93,6 +93,20 @@ class ShapeToSvgFunctionalTest extends TestCase
         $this->assertSvg(__DIR__.'/../Fixtures/1700/shape-203.svg', $shape->toSvg());
     }
 
+    #[Test]
+    public function defineShape4()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/62/62.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $this->assertSvg(__DIR__.'/../Fixtures/62/shape-1.svg', $extractor->character(1)->toSvg());
+        $this->assertSvg(__DIR__.'/../Fixtures/62/shape-5.svg', $extractor->character(5)->toSvg());
+        $this->assertSvg(__DIR__.'/../Fixtures/62/shape-6.svg', $extractor->character(6)->toSvg());
+        $this->assertSvg(__DIR__.'/../Fixtures/62/shape-8.svg', $extractor->character(8)->toSvg());
+        $this->assertSvg(__DIR__.'/../Fixtures/62/shape-12.svg', $extractor->character(12)->toSvg());
+        $this->assertSvg(__DIR__.'/../Fixtures/62/shape-13.svg', $extractor->character(13)->toSvg());
+    }
+
     private function assertSvg(string $expectedFile, string|ShapeDefinition $shape)
     {
         if ($shape instanceof ShapeDefinition) {

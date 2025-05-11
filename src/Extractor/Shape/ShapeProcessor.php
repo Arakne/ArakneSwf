@@ -88,6 +88,11 @@ final readonly class ShapeProcessor
                     $builder->merge(...$edges);
                     $edges = [];
 
+                    if ($shape->reset()) {
+                        // Start a new drawing context
+                        $builder->finalize();
+                    }
+
                     if ($shape->stateNewStyles) {
                         // Reset styles to ensure that we don't use old styles
                         $builder->close();
@@ -101,6 +106,7 @@ final readonly class ShapeProcessor
                         if ($style !== null) {
                             $lineStyle = new PathStyle(
                                 lineColor: $style->color,
+                                lineFill: $style->fillType ? $this->createFillType($style->fillType) : null,
                                 lineWidth: $style->width,
                             );
                         } else {

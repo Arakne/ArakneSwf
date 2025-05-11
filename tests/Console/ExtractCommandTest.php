@@ -13,15 +13,12 @@ use RecursiveIteratorIterator;
 
 use function array_diff;
 use function array_values;
-use function copy;
 use function file_get_contents;
 use function glob;
-use function implode;
 use function is_dir;
 use function natsort;
 use function ob_start;
 use function scandir;
-use function var_dump;
 
 class ExtractCommandTest extends ImageTestCase
 {

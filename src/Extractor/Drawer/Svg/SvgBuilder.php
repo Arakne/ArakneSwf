@@ -73,16 +73,21 @@ final class SvgBuilder
     {
         $pathElement = $g->addChild('path');
 
-        $this->applyFillStyle($pathElement, $path->style->fill);
-        $pathElement->addAttribute('stroke', $path->style->lineColor?->hex() ?? 'none');
+        $this->applyFillStyle($pathElement, $path->style->fill, 'fill');
 
-        if ($path->style->lineColor?->hasTransparency() === true) {
-            $pathElement->addAttribute('stroke-opacity', (string) $path->style->lineColor->opacity());
+        if ($path->style->lineFill !== null) {
+            $this->applyFillStyle($pathElement, $path->style->lineFill, 'stroke');
+        } else {
+            $pathElement->addAttribute('stroke', $path->style->lineColor?->hex() ?? 'none');
+
+            if ($path->style->lineColor?->hasTransparency() === true) {
+                $pathElement->addAttribute('stroke-opacity', (string) $path->style->lineColor->opacity());
+            }
         }
 
         if ($path->style->lineWidth > 0) {
             $pathElement->addAttribute('stroke-width', (string) ($path->style->lineWidth / 20));
-            $pathElement->addAttribute('stroke-linecap', 'round');
+            $pathElement->addAttribute('stroke-linecap', 'round'); // @todo use style from LINESTYLE2 if available
             $pathElement->addAttribute('stroke-linejoin', 'round');
         }
 
@@ -91,36 +96,44 @@ final class SvgBuilder
         return $pathElement;
     }
 
-    public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|Bitmap|null $style): void
+    /**
+     * @param SimpleXMLElement $path The path element to configure
+     * @param Solid|LinearGradient|RadialGradient|Bitmap|null $style The fill style to apply
+     * @param string $attribute The attribute to use for the fill style. Should be 'fill' or 'stroke'
+     * @return void
+     */
+    public function applyFillStyle(SimpleXMLElement $path, Solid|LinearGradient|RadialGradient|Bitmap|null $style, string $attribute): void
     {
         if ($style === null) {
-            $path->addAttribute('fill', 'none');
+            $path->addAttribute($attribute, 'none');
             return;
         }
 
-        $path->addAttribute('fill-rule', 'evenodd');
+        if ($attribute === 'fill') {
+            $path->addAttribute('fill-rule', 'evenodd');
+        }
 
         match (true) {
-            $style instanceof Solid => self::applyFillSolid($path, $style),
-            $style instanceof LinearGradient => self::applyFillLinearGradient($path, $style),
-            $style instanceof RadialGradient => self::applyFillRadialGradient($path, $style),
-            $style instanceof Bitmap => self::applyFillClippedBitmap($path, $style),
+            $style instanceof Solid => self::applyFillSolid($path, $style, $attribute),
+            $style instanceof LinearGradient => self::applyFillLinearGradient($path, $style, $attribute),
+            $style instanceof RadialGradient => self::applyFillRadialGradient($path, $style, $attribute),
+            $style instanceof Bitmap => self::applyFillClippedBitmap($path, $style, $attribute),
         };
     }
 
-    public function applyFillSolid(SimpleXMLElement $path, Solid $style): void
+    public function applyFillSolid(SimpleXMLElement $path, Solid $style, string $attribute): void
     {
-        $path->addAttribute('fill', $style->color->hex());
+        $path->addAttribute($attribute, $style->color->hex());
 
         if ($style->color->hasTransparency()) {
-            $path->addAttribute('fill-opacity', (string) $style->color->opacity());
+            $path->addAttribute($attribute.'-opacity', (string) $style->color->opacity());
         }
     }
 
-    public function applyFillLinearGradient(SimpleXMLElement $path, LinearGradient $style): void
+    public function applyFillLinearGradient(SimpleXMLElement $path, LinearGradient $style, string $attribute): void
     {
         $id = 'gradient-'.$style->hash();
-        $path->addAttribute('fill', 'url(#'.$id.')');
+        $path->addAttribute($attribute, 'url(#'.$id.')');
 
         if (isset($this->elementsById[$id])) {
             return;
@@ -147,10 +160,10 @@ final class SvgBuilder
         }
     }
 
-    public function applyFillRadialGradient(SimpleXMLElement $path, RadialGradient $style): void
+    public function applyFillRadialGradient(SimpleXMLElement $path, RadialGradient $style, string $attribute): void
     {
         $id = 'gradient-'.$style->hash();
-        $path->addAttribute('fill', 'url(#'.$id.')');
+        $path->addAttribute($attribute, 'url(#'.$id.')');
 
         if (isset($this->elementsById[$id])) {
             return;
@@ -186,7 +199,7 @@ final class SvgBuilder
         }
     }
 
-    public function applyFillClippedBitmap(SimpleXMLElement $path, Bitmap $style): void
+    public function applyFillClippedBitmap(SimpleXMLElement $path, Bitmap $style, string $attribute): void
     {
         $pattern = $this->svg->addChild('pattern');
         assert($pattern instanceof SimpleXMLElement);
@@ -206,6 +219,6 @@ final class SvgBuilder
         $image = $pattern->addChild('image');
         $image->addAttribute('href', $style->bitmap->toBase64Data());
 
-        $path->addAttribute('fill', 'url(#'.$pattern['id'].')');
+        $path->addAttribute($attribute, 'url(#'.$pattern['id'].')');
     }
 }
