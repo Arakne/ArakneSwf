@@ -151,6 +151,7 @@ final readonly class TimelineProcessor
                     continue; // @todo error ?
                 }
 
+                assert(!$frameDisplayTag instanceof PlaceObjectTag); // Modify is not possible with PlaceObjectTag
                 $objectProperties = $this->modifyObject($frameDisplayTag, $objectProperties);
             }
 

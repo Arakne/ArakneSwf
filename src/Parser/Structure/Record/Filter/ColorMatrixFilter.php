@@ -29,7 +29,7 @@ final readonly class ColorMatrixFilter
     public function __construct(
         public int $filterId,
         /**
-         * @var list<float> Size must be 20
+         * @var array<int<0, 19>, float> Size must be 20
          */
         public array $matrix,
     ) {

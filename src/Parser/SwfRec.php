@@ -716,9 +716,9 @@ readonly class SwfRec
                         angle: $this->io->collectFixed(),
                         distance: $this->io->collectFixed(),
                         strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1),
-                        knockout: $this->io->collectUB(1),
-                        compositeSource: $this->io->collectUB(1),
+                        innerShadow: $this->io->collectUB(1) === 1,
+                        knockout: $this->io->collectUB(1) === 1,
+                        compositeSource: $this->io->collectUB(1) === 1,
                         passes: $this->io->collectUB(5),
                     );
                     break;
@@ -754,10 +754,10 @@ readonly class SwfRec
                         angle: $this->io->collectFixed(),
                         distance: $this->io->collectFixed(),
                         strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1),
-                        knockout: $this->io->collectUB(1),
-                        compositeSource: $this->io->collectUB(1),
-                        onTop: $this->io->collectUB(1),
+                        innerShadow: $this->io->collectUB(1) === 1,
+                        knockout: $this->io->collectUB(1) === 1,
+                        compositeSource: $this->io->collectUB(1) === 1,
+                        onTop: $this->io->collectUB(1) === 1,
                         passes: $this->io->collectUB(4),
                     );
                     break;
@@ -784,10 +784,10 @@ readonly class SwfRec
                         angle: $this->io->collectFixed(),
                         distance: $this->io->collectFixed(),
                         strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1),
-                        knockout: $this->io->collectUB(1),
-                        compositeSource: $this->io->collectUB(1),
-                        onTop: $this->io->collectUB(1),
+                        innerShadow: $this->io->collectUB(1) === 1,
+                        knockout: $this->io->collectUB(1) === 1,
+                        compositeSource: $this->io->collectUB(1) === 1,
+                        onTop: $this->io->collectUB(1) === 1,
                         passes: $this->io->collectUB(4),
                     );
                     break;
@@ -849,10 +849,10 @@ readonly class SwfRec
                         angle: $this->io->collectFixed(),
                         distance: $this->io->collectFixed(),
                         strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1),
-                        knockout: $this->io->collectUB(1),
-                        compositeSource: $this->io->collectUB(1),
-                        onTop: $this->io->collectUB(1),
+                        innerShadow: $this->io->collectUB(1) === 1,
+                        knockout: $this->io->collectUB(1) === 1,
+                        compositeSource: $this->io->collectUB(1) === 1,
+                        onTop: $this->io->collectUB(1) === 1,
                         passes: $this->io->collectUB(4),
                     );
                     break;

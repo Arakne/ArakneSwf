@@ -146,7 +146,7 @@ final readonly class Processor
     private function getVariable(State $state): void
     {
         $index = count($state->stack) - 1;
-        assert($index > 0);
+        assert($index >= 0);
 
         // @phpstan-ignore assign.propertyType
         $state->stack[$index] = $state->variables[$state->stack[$index]] ?? null;

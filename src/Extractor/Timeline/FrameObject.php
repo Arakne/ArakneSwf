@@ -78,7 +78,6 @@ final readonly class FrameObject
          * @var list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
          */
         public array $filters = [],
-
         public BlendMode $blendMode = BlendMode::Normal,
     ) {}
 
@@ -125,7 +124,7 @@ final readonly class FrameObject
      * @param DrawableInterface|null $object
      * @param Rectangle|null $bounds
      * @param Matrix|null $matrix
-     * @param array<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>|null $filters
+     * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>|null $filters
      * @param BlendMode|null $blendMode
      *
      * @return self
