@@ -39,6 +39,14 @@ use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\FillStyle;
+use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ConvolutionFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\DropShadowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GlowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientBevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\GradientRecord;
 use Arakne\Swf\Parser\Structure\Record\LineStyle;
@@ -688,125 +696,169 @@ readonly class SwfRec
     }
 
     /**
-     * @return list<mixed>
+     * @return list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
      */
     public function collectFilterList(): array
     {
         $filterList = [];
         $numberOfFilters = $this->io->collectUI8();
+
         for ($f = 0; $f < $numberOfFilters; $f++) {
-            $filter = [];
-            $filter['filterId'] = $this->io->collectUI8();
-            switch ($filter['filterId']) {
+            $filterId = $this->io->collectUI8();
+
+            switch ($filterId) {
                 case 0: // DropShadowFilter
-                    $filter['dropShadowColor'] = $this->collectRGBA();
-                    $filter['blurX'] = $this->io->collectFixed();
-                    $filter['blurY'] = $this->io->collectFixed();
-                    $filter['angle'] = $this->io->collectFixed();
-                    $filter['distance'] = $this->io->collectFixed();
-                    $filter['strength'] = $this->io->collectFixed8();
-                    $filter['innerShadow'] = $this->io->collectUB(1);
-                    $filter['knockout'] = $this->io->collectUB(1);
-                    $filter['compositeSource'] = $this->io->collectUB(1);
-                    $filter['passes'] = $this->io->collectUB(5);
+                    $filterList[] = new DropShadowFilter(
+                        filterId: $filterId,
+                        dropShadowColor: $this->collectRGBA(),
+                        blurX: $this->io->collectFixed(),
+                        blurY: $this->io->collectFixed(),
+                        angle: $this->io->collectFixed(),
+                        distance: $this->io->collectFixed(),
+                        strength: $this->io->collectFixed8(),
+                        innerShadow: $this->io->collectUB(1),
+                        knockout: $this->io->collectUB(1),
+                        compositeSource: $this->io->collectUB(1),
+                        passes: $this->io->collectUB(5),
+                    );
                     break;
                 case 1: // BlurFilter
-                    $filter['blurX'] = $this->io->collectFixed();
-                    $filter['blurY'] = $this->io->collectFixed();
-                    $filter['passes'] = $this->io->collectUB(5);
-                    $this->io->collectUB(3); // Reserved, must be 0
+                    $filterList[] = new BlurFilter(
+                        filterId: $filterId,
+                        blurX: $this->io->collectFixed(),
+                        blurY: $this->io->collectFixed(),
+                        passes: $this->io->collectUB(5),
+                        reserved: $this->io->collectUB(3),
+                    );
                     break;
                 case 2: // GlowFilter
-                    $filter['glowColor'] = $this->collectRGBA();
-                    $filter['blurX'] = $this->io->collectFixed();
-                    $filter['blurY'] = $this->io->collectFixed();
-                    $filter['strength'] = $this->io->collectFixed8();
-                    $filter['innerGlow'] = $this->io->collectUB(1);
-                    $filter['knockout'] = $this->io->collectUB(1);
-                    $filter['compositeSource'] = $this->io->collectUB(1);
-                    $filter['passes'] = $this->io->collectUB(5);
+                    $filterList[] = new GlowFilter(
+                        filterId: $filterId,
+                        glowColor: $this->collectRGBA(),
+                        blurX: $this->io->collectFixed(),
+                        blurY: $this->io->collectFixed(),
+                        strength: $this->io->collectFixed8(),
+                        innerGlow: $this->io->collectUB(1) === 1,
+                        knockout: $this->io->collectUB(1) === 1,
+                        compositeSource: $this->io->collectUB(1) === 1,
+                        passes: $this->io->collectUB(5),
+                    );
                     break;
                 case 3: // BevelFilter
-                    $filter['hadowColor'] = $this->collectRGBA();
-                    $filter['highlightColor'] = $this->collectRGBA();
-                    $filter['blurX'] = $this->io->collectFixed();
-                    $filter['blurY'] = $this->io->collectFixed();
-                    $filter['angle'] = $this->io->collectFixed();
-                    $filter['distance'] = $this->io->collectFixed();
-                    $filter['strength'] = $this->io->collectFixed8();
-                    $filter['innerShadow'] = $this->io->collectUB(1);
-                    $filter['knockout'] = $this->io->collectUB(1);
-                    $filter['compositeSource'] = $this->io->collectUB(1);
-                    $filter['onTop'] = $this->io->collectUB(1);
-                    $filter['passes'] = $this->io->collectUB(4);
+                    $filterList[] = new BevelFilter(
+                        filterId: $filterId,
+                        shadowColor: $this->collectRGBA(),
+                        highlightColor: $this->collectRGBA(),
+                        blurX: $this->io->collectFixed(),
+                        blurY: $this->io->collectFixed(),
+                        angle: $this->io->collectFixed(),
+                        distance: $this->io->collectFixed(),
+                        strength: $this->io->collectFixed8(),
+                        innerShadow: $this->io->collectUB(1),
+                        knockout: $this->io->collectUB(1),
+                        compositeSource: $this->io->collectUB(1),
+                        onTop: $this->io->collectUB(1),
+                        passes: $this->io->collectUB(4),
+                    );
                     break;
                 case 4: // GradientGlowFilter
-                    $filter['numColors'] = $this->io->collectUI8();
-                    $filter['gradientColors'] = [];
-                    for ($i = 0; $i < $filter['numColors']; $i++) {
-                        $filter['gradientColors'][] = $this->collectRGBA();
+                    $numColors = $this->io->collectUI8();
+                    $gradientColors = [];
+                    $gradientRatio = [];
+
+                    for ($i = 0; $i < $numColors; $i++) {
+                        $gradientColors[] = $this->collectRGBA();
                     }
-                    $filter['gradientRatio'] = [];
-                    for ($i = 0; $i < $filter['numColors']; $i++) {
-                        $filter['gradientRatio'][] = $this->io->collectUI8();
+
+                    for ($i = 0; $i < $numColors; $i++) {
+                        $gradientRatio[] = $this->io->collectUI8();
                     }
-                    $filter['blurX'] = $this->io->collectFixed();
-                    $filter['blurY'] = $this->io->collectFixed();
-                    $filter['angle'] = $this->io->collectFixed();
-                    $filter['distance'] = $this->io->collectFixed();
-                    $filter['strength'] = $this->io->collectFixed8();
-                    $filter['innerShadow'] = $this->io->collectUB(1);
-                    $filter['knockout'] = $this->io->collectUB(1);
-                    $filter['compositeSource'] = $this->io->collectUB(1);
-                    $filter['onTop'] = $this->io->collectUB(1);
-                    $filter['passes'] = $this->io->collectUB(4);
+
+                    $filterList[] = new GradientGlowFilter(
+                        filterId: $filterId,
+                        numColors: $numColors,
+                        gradientColors: $gradientColors,
+                        gradientRatio: $gradientRatio,
+                        blurX: $this->io->collectFixed(),
+                        blurY: $this->io->collectFixed(),
+                        angle: $this->io->collectFixed(),
+                        distance: $this->io->collectFixed(),
+                        strength: $this->io->collectFixed8(),
+                        innerShadow: $this->io->collectUB(1),
+                        knockout: $this->io->collectUB(1),
+                        compositeSource: $this->io->collectUB(1),
+                        onTop: $this->io->collectUB(1),
+                        passes: $this->io->collectUB(4),
+                    );
                     break;
                 case 5: // ConvolutionFilter
-                    $filter['matrixX'] = $this->io->collectUI8();
-                    $filter['matrixY'] = $this->io->collectUI8();
-                    $filter['divisor'] = $this->io->collectFloat();
-                    $filter['bias'] = $this->io->collectFloat();
-                    $filter['matrix'] = [];
-                    for ($i = 0; $i < $filter['matrixX'] * $filter['matrixY']; $i++) {
+                    $matrixX = $this->io->collectUI8();
+                    $matrixY = $this->io->collectUI8();
+                    $divisor = $this->io->collectFloat();
+                    $bias = $this->io->collectFloat();
+                    $matrix = [];
+
+                    for ($i = 0; $i < $matrixX * $matrixY; $i++) {
                         $filter['matrix'][] = $this->io->collectFloat();
                     }
-                    $filter['defaultColor'] = $this->collectRGBA();
-                    $this->io->collectUB(6);
-                    $filter['clamp'] = $this->io->collectUB(1);
-                    $filter['preservedAlpha'] = $this->io->collectUB(1);
+
+                    $filterList[] = new ConvolutionFilter(
+                        filterId: $filterId,
+                        matrixX: $matrixX,
+                        matrixY: $matrixY,
+                        divisor: $divisor,
+                        bias: $bias,
+                        matrix: $matrix,
+                        defaultColor: $this->collectRGBA(),
+                        reserved: $this->io->collectUB(6),
+                        clamp: $this->io->collectUB(1) === 1,
+                        preserveAlpha: $this->io->collectUB(1) === 1,
+                    );
                     break;
                 case 6: // ColorMatrixFilter
                     $matrix = [];
                     for ($i = 0; $i < 20; $i++) {
                         $matrix[$i] = $this->io->collectFloat();
                     }
-                    $filter['matrix'] = $matrix;
+
+                    $filterList[] = new ColorMatrixFilter(
+                        filterId: $filterId,
+                        matrix: $matrix,
+                    );
                     break;
                 case 7: // GradientBevelFilter
-                    $filter['numColors'] = $this->io->collectUI8();
-                    $filter['gradientColors'] = [];
-                    for ($i = 0; $i < $filter['numColors']; $i++) {
-                        $filter['gradientColors'][] = $this->collectRGBA();
+                    $numColors = $this->io->collectUI8();
+                    $gradientColors = [];
+                    $gradientRatio = [];
+
+                    for ($i = 0; $i < $numColors; $i++) {
+                        $gradientColors[] = $this->collectRGBA();
                     }
-                    $filter['gradientRatio'] = [];
-                    for ($i = 0; $i < $filter['numColors']; $i++) {
-                        $filter['gradientRatio'][] = $this->io->collectUI8();
+
+                    for ($i = 0; $i < $numColors; $i++) {
+                        $gradientRatio[] = $this->io->collectUI8();
                     }
-                    $filter['blurX'] = $this->io->collectFixed();
-                    $filter['blurY'] = $this->io->collectFixed();
-                    $filter['angle'] = $this->io->collectFixed();
-                    $filter['distance'] = $this->io->collectFixed();
-                    $filter['strength'] = $this->io->collectFixed8();
-                    $filter['innerShadow'] = $this->io->collectUB(1);
-                    $filter['knockout'] = $this->io->collectUB(1);
-                    $filter['compositeSource'] = $this->io->collectUB(1);
-                    $filter['onTop'] = $this->io->collectUB(1);
-                    $filter['passes'] = $this->io->collectUB(4);
+
+                    $filterList[] = new GradientBevelFilter(
+                        filterId: $filterId,
+                        numColors: $numColors,
+                        gradientColors: $gradientColors,
+                        gradientRatio: $gradientRatio,
+                        blurX: $this->io->collectFixed(),
+                        blurY: $this->io->collectFixed(),
+                        angle: $this->io->collectFixed(),
+                        distance: $this->io->collectFixed(),
+                        strength: $this->io->collectFixed8(),
+                        innerShadow: $this->io->collectUB(1),
+                        knockout: $this->io->collectUB(1),
+                        compositeSource: $this->io->collectUB(1),
+                        onTop: $this->io->collectUB(1),
+                        passes: $this->io->collectUB(4),
+                    );
                     break;
                 default:
-                    throw new Exception(sprintf('Internal error: filterId=%d', $filter['filterId']));
+                    throw new Exception(sprintf('Internal error: filterId=%d', $filterId));
             }
-            $filterList[] = $filter;
         }
         return $filterList;
     }

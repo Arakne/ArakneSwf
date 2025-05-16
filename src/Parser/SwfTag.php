@@ -676,7 +676,7 @@ final readonly class SwfTag
         $placeFlagMove = $this->io->collectUB(1) === 1;
 
         return new PlaceObject2Tag(
-            placeFlagMove: $placeFlagMove,
+            move: $placeFlagMove,
             depth: $this->io->collectUI16(),
             characterId: $placeFlagHasCharacter ? $this->io->collectUI16() : null,
             matrix: $placeFlagHasMatrix ? $this->rec->collectMatrix() : null,

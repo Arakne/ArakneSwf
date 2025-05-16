@@ -20,11 +20,20 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Drawer\Svg;
 
+use Arakne\Swf\Extractor\Drawer\Svg\Filter\SvgFilterBuilder;
 use Arakne\Swf\Extractor\Shape\FillType\Bitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
 use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Extractor\Shape\Path;
+use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ConvolutionFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\DropShadowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GlowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientBevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use SimpleXMLElement;
 
@@ -94,6 +103,19 @@ final class SvgBuilder
         $path->draw(new SvgPathDrawer($pathElement));
 
         return $pathElement;
+    }
+
+    /**
+     * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter> $filters
+     * @param string $id The id of the filter element to create
+     */
+    public function addFilter(array $filters, string $id): void
+    {
+        $filterBuilder = SvgFilterBuilder::create($this->svg, $id);
+
+        foreach ($filters as $filter) {
+            $filterBuilder->apply($filter);
+        }
     }
 
     /**

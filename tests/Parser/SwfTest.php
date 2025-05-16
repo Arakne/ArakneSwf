@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Parser;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
+use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
@@ -204,10 +205,9 @@ class SwfTest extends TestCase
         foreach ($tag->tags as $placeObject) {
             if (
                 $placeObject instanceof PlaceObject3Tag
-                && isset($placeObject->surfaceFilterList[0]['filterId'])
-                && $placeObject->surfaceFilterList[0]['filterId'] === 6
+                && $placeObject->surfaceFilterList[0] instanceof ColorMatrixFilter
             ) {
-                $matrix = $placeObject->surfaceFilterList[0]['matrix'];
+                $matrix = $placeObject->surfaceFilterList[0]->matrix;
             }
         }
 

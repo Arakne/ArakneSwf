@@ -24,6 +24,15 @@ use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\Shape;
+use Arakne\Swf\Extractor\Timeline\BlendMode;
+use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ConvolutionFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\DropShadowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GlowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientBevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
@@ -63,8 +72,9 @@ interface DrawerInterface
      * @param DrawableInterface $object
      * @param Matrix $matrix
      * @param non-negative-int $frame The frame to draw.
+     * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter> $filters
      */
-    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0): void;
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void;
 
     /**
      * Draw a path

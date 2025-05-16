@@ -129,13 +129,17 @@ final readonly class TimelineProcessor
                 continue;
             }
 
-            if (!$frameDisplayTag instanceof PlaceObject2Tag) {
+            if (!$frameDisplayTag instanceof PlaceObjectTag // @todo test with PlaceObjectTag
+                && !$frameDisplayTag instanceof PlaceObject2Tag
+                && !$frameDisplayTag instanceof PlaceObject3Tag
+            ) {
                 // @todo use error collector
                 throw new \Exception('Invalid tag ' . get_class($frameDisplayTag));
                 //var_dump('Invalid tag ' . get_class($frameDisplayTag));
                 //continue;
             }
 
+            // @todo handle PlaceObject3Tag::className if present
             if ($frameDisplayTag->characterId !== null) {
                 // New character at the given depth
                 $objectProperties = $this->placeNewObject($frameDisplayTag);
@@ -188,10 +192,10 @@ final readonly class TimelineProcessor
     /**
      * Handle display of a new object
      *
-     * @param PlaceObject2Tag $tag
+     * @param PlaceObjectTag|PlaceObject2Tag|PlaceObject3Tag $tag
      * @return FrameObject
      */
-    private function placeNewObject(PlaceObject2Tag $tag): FrameObject
+    private function placeNewObject(PlaceObjectTag|PlaceObject2Tag|PlaceObject3Tag $tag): FrameObject
     {
         assert($tag->characterId !== null);
         $object = $this->extractor->character($tag->characterId);
@@ -219,24 +223,33 @@ final readonly class TimelineProcessor
             $object,
             $currentObjectBounds,
             $newMatrix,
+            filters: $tag->surfaceFilterList ?? [],
+            blendMode: BlendMode::tryFrom($tag->blendMode ?? 1) ?? BlendMode::Normal,
         );
     }
 
     /**
      * Handle movement/change properties of an already displayed object
      *
-     * @param PlaceObject2Tag $tag
+     * @param PlaceObject2Tag|PlaceObject3Tag $tag
      * @param FrameObject $objectProperties
      * @return FrameObject
      */
-    private function modifyObject(PlaceObject2Tag $tag, FrameObject $objectProperties): FrameObject
+    private function modifyObject(PlaceObject2Tag|PlaceObject3Tag $tag, FrameObject $objectProperties): FrameObject
     {
-
         if ($tag->matrix) {
             $currentObjectBounds = $objectProperties->object->bounds();
             $objectProperties = $objectProperties->with(
                 bounds: $currentObjectBounds->transform($tag->matrix),
                 matrix: $tag->matrix->translate($currentObjectBounds->xmin, $currentObjectBounds->ymin),
+            );
+        }
+
+        // PlaceObject3Tag properties
+        if (isset($tag->blendMode) || isset($tag->surfaceFilterList)) {
+            $objectProperties = $objectProperties->with(
+                filters: $tag->surfaceFilterList ?? null,
+                blendMode: $tag->blendMode !== null ? (BlendMode::tryFrom($tag->blendMode) ?? BlendMode::Normal) : null,
             );
         }
 

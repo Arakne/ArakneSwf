@@ -25,6 +25,7 @@ use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\Shape;
+use Arakne\Swf\Extractor\Timeline\BlendMode;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use LogicException;
@@ -76,7 +77,7 @@ final class SvgCanvas implements DrawerInterface
     }
 
     #[Override]
-    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0): void
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void
     {
         $included = new IncludedSvgCanvas(
             $this,
@@ -87,12 +88,27 @@ final class SvgCanvas implements DrawerInterface
 
         $g = $this->g ??= $this->builder->addGroup($object->bounds());
 
+        if ($filters && $included->ids) {
+            $filterId = 'filter-' . $included->ids[0];
+            $this->builder->addFilter($filters, $filterId);
+        } else {
+            $filterId = null;
+        }
+
         foreach ($included->ids as $id) {
             $use = $g->addChild('use');
             $use->addAttribute('href', '#' . $id);
             $use->addAttribute('width', (string) ($object->bounds()->width() / 20));
             $use->addAttribute('height', (string) ($object->bounds()->height() / 20));
             $use->addAttribute('transform', $matrix->toSvgTransformation());
+
+            if ($filterId) {
+                $use->addAttribute('filter', 'url(#' . $filterId . ')');
+            }
+
+            if ($cssBlendMode = $blendMode->toCssValue()) {
+                $use->addAttribute('style', 'mix-blend-mode: ' . $cssBlendMode);
+            }
         }
     }
 

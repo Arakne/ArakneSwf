@@ -19,25 +19,25 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
-use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Arakne\Swf\Parser\Structure\Record\Color;
 
-final readonly class PlaceObject2Tag
+final readonly class BevelFilter
 {
-    public const int TYPE = 26;
-
     public function __construct(
-        public bool $move,
-        public int $depth,
-        public ?int $characterId,
-        public ?Matrix $matrix,
-        public ?ColorTransform $colorTransform,
-        public ?int $ratio,
-        public ?string $name,
-        public ?int $clipDepth,
-        /** @var array<string, mixed>|null */
-        public ?array $clipActions,
+        public int $filterId,
+        public Color $shadowColor,
+        public Color $highlightColor,
+        public float $blurX,
+        public float $blurY,
+        public float $angle,
+        public float $distance,
+        public float $strength,
+        public bool $innerShadow,
+        public bool $knockout,
+        public bool $compositeSource,
+        public bool $onTop,
+        public int $passes,
     ) {}
 }

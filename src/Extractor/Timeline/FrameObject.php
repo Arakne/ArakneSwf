@@ -22,6 +22,14 @@ namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\ConvolutionFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\DropShadowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GlowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientBevelFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
@@ -65,6 +73,13 @@ final readonly class FrameObject
          * @var ColorTransform[]
          */
         public array $colorTransforms = [],
+
+        /**
+         * @var list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
+         */
+        public array $filters = [],
+
+        public BlendMode $blendMode = BlendMode::Normal,
     ) {}
 
     /**
@@ -99,6 +114,8 @@ final readonly class FrameObject
             $this->bounds,
             $this->matrix,
             [...$this->colorTransforms, $colorTransform],
+            $this->filters,
+            $this->blendMode,
         );
     }
 
@@ -108,17 +125,27 @@ final readonly class FrameObject
      * @param DrawableInterface|null $object
      * @param Rectangle|null $bounds
      * @param Matrix|null $matrix
+     * @param array<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>|null $filters
+     * @param BlendMode|null $blendMode
      *
      * @return self
      */
-    public function with(?DrawableInterface $object = null, ?Rectangle $bounds = null, ?Matrix $matrix = null): self
-    {
+    public function with(
+        ?DrawableInterface $object = null,
+        ?Rectangle $bounds = null,
+        ?Matrix $matrix = null,
+        ?array $filters = null,
+        ?BlendMode $blendMode = null,
+    ): self {
         return new self(
             $this->characterId,
             $this->depth,
             $object ?? $this->object,
             $bounds ?? $this->bounds,
             $matrix ?? $this->matrix,
+            $this->colorTransforms,
+            $filters ?? $this->filters,
+            $blendMode ?? $this->blendMode,
         );
     }
 }

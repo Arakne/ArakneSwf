@@ -19,25 +19,34 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
-use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Arakne\Swf\Parser\Structure\Record\Color;
 
-final readonly class PlaceObject2Tag
+use function assert;
+use function count;
+
+final readonly class GradientGlowFilter
 {
-    public const int TYPE = 26;
-
     public function __construct(
-        public bool $move,
-        public int $depth,
-        public ?int $characterId,
-        public ?Matrix $matrix,
-        public ?ColorTransform $colorTransform,
-        public ?int $ratio,
-        public ?string $name,
-        public ?int $clipDepth,
-        /** @var array<string, mixed>|null */
-        public ?array $clipActions,
-    ) {}
+        public int $filterId,
+        public int $numColors,
+        /** @var list<Color> */
+        public array $gradientColors,
+        /** @var list<int> */
+        public array $gradientRatio,
+        public float $blurX,
+        public float $blurY,
+        public float $angle,
+        public float $distance,
+        public float $strength,
+        public bool $innerShadow,
+        public bool $knockout,
+        public bool $compositeSource,
+        public bool $onTop,
+        public int $passes,
+    ) {
+        assert(count($this->gradientColors) === $this->numColors);
+        assert(count($this->gradientRatio) === $this->numColors);
+    }
 }

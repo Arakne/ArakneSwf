@@ -19,25 +19,30 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
-use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Arakne\Swf\Parser\Structure\Record\Color;
 
-final readonly class PlaceObject2Tag
+use function assert;
+use function count;
+
+final readonly class ConvolutionFilter
 {
-    public const int TYPE = 26;
-
     public function __construct(
-        public bool $move,
-        public int $depth,
-        public ?int $characterId,
-        public ?Matrix $matrix,
-        public ?ColorTransform $colorTransform,
-        public ?int $ratio,
-        public ?string $name,
-        public ?int $clipDepth,
-        /** @var array<string, mixed>|null */
-        public ?array $clipActions,
-    ) {}
+        public int $filterId,
+        public int $matrixX,
+        public int $matrixY,
+        public float $divisor,
+        public float $bias,
+        /**
+         * @var list<float>
+         */
+        public array $matrix,
+        public Color $defaultColor,
+        public int $reserved,
+        public bool $clamp,
+        public bool $preserveAlpha,
+    ) {
+        assert(count($this->matrix) === $this->matrixX * $this->matrixY);
+    }
 }

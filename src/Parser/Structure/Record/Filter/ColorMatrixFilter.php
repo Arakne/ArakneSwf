@@ -19,25 +19,20 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
-use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
+use function assert;
+use function count;
 
-final readonly class PlaceObject2Tag
+final readonly class ColorMatrixFilter
 {
-    public const int TYPE = 26;
-
     public function __construct(
-        public bool $move,
-        public int $depth,
-        public ?int $characterId,
-        public ?Matrix $matrix,
-        public ?ColorTransform $colorTransform,
-        public ?int $ratio,
-        public ?string $name,
-        public ?int $clipDepth,
-        /** @var array<string, mixed>|null */
-        public ?array $clipActions,
-    ) {}
+        public int $filterId,
+        /**
+         * @var list<float> Size must be 20
+         */
+        public array $matrix,
+    ) {
+        assert(count($this->matrix) === 20);
+    }
 }

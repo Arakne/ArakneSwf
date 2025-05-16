@@ -19,25 +19,15 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
-use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
-
-final readonly class PlaceObject2Tag
+final readonly class BlurFilter
 {
-    public const int TYPE = 26;
-
     public function __construct(
-        public bool $move,
-        public int $depth,
-        public ?int $characterId,
-        public ?Matrix $matrix,
-        public ?ColorTransform $colorTransform,
-        public ?int $ratio,
-        public ?string $name,
-        public ?int $clipDepth,
-        /** @var array<string, mixed>|null */
-        public ?array $clipActions,
+        public int $filterId,
+        public float $blurX,
+        public float $blurY,
+        public int $passes,
+        public int $reserved,
     ) {}
 }

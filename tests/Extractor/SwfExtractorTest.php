@@ -241,4 +241,15 @@ class SwfExtractorTest extends ImageTestCase
         $svg = $sprite->toSvg();
         $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1305/anim0R.svg', $svg);
     }
+
+    #[Test]
+    public function withPlaceObject3Filters()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/62/62.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline(false);
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/62/timeline.svg', $timeline->toSvg());
+    }
 }
