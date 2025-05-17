@@ -40,6 +40,7 @@ use function imagecreate;
 use function imagecreatefromstring;
 use function imagecreatetruecolor;
 use function imagedestroy;
+use function imageistruecolor;
 use function imagejpeg;
 use function imagepalettetotruecolor;
 use function imagepng;
@@ -67,7 +68,9 @@ final class GD
 
     private function __construct(
         public readonly GdImage $image,
+        /** @var positive-int */
         public readonly int $width,
+        /** @var positive-int */
         public readonly int $height,
     ) {}
 
@@ -189,13 +192,13 @@ final class GD
         imagealphablending($img, false);
         imagesavealpha($img, true);
 
-        $redMult = $matrix->redMult / 256;
+        $redMult = $matrix->redMult;
         $redAdd = $matrix->redAdd;
-        $greenMult = $matrix->greenMult / 256;
+        $greenMult = $matrix->greenMult;
         $greenAdd = $matrix->greenAdd;
-        $blueMult = $matrix->blueMult / 256;
+        $blueMult = $matrix->blueMult;
         $blueAdd = $matrix->blueAdd;
-        $alphaMult = $matrix->alphaMult / 256;
+        $alphaMult = $matrix->alphaMult;
         $alphaAdd = $matrix->alphaAdd;
 
         for ($y = 0; $y < $height; ++$y) {
@@ -209,10 +212,10 @@ final class GD
                 $g = ($color >> 8) & 0xFF;
                 $b = $color & 0xFF;
 
-                $r = (int) ($r * $redMult + $redAdd);
-                $g = (int) ($g * $greenMult + $greenAdd);
-                $b = (int) ($b * $blueMult + $blueAdd);
-                $a = (int) ($a * $alphaMult + $alphaAdd);
+                $r = (($r * $redMult) >> 8) + $redAdd;
+                $g = (($g * $greenMult) >> 8) + $greenAdd;
+                $b = (($b * $blueMult) >> 8) + $blueAdd;
+                $a = (($a * $alphaMult) >> 8) + $alphaAdd;
 
                 // Do not use min and max for performance reasons
                 $r = $r > 255 ? 255 : $r;
@@ -278,6 +281,24 @@ final class GD
     public function __destruct()
     {
         imagedestroy($this->image);
+    }
+
+    public function __clone(): void
+    {
+        $width = $this->width;
+        $height = $this->height;
+
+        $newImage = imageistruecolor($this->image)
+            ? imagecreatetruecolor($width, $height)
+            : imagecreate($width, $height)
+        ;
+
+        imagealphablending($newImage, false);
+        imagesavealpha($newImage, true);
+        imagecopy($newImage, $this->image, 0, 0, 0, 0, $width, $height);
+
+        // @phpstan-ignore property.readOnlyAssignNotInConstructor
+        $this->image = $newImage;
     }
 
     /**

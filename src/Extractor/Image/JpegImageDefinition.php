@@ -31,6 +31,7 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
 use BadMethodCallException;
 use Override;
 use RuntimeException;
+use WeakMap;
 
 use function base64_encode;
 use function getimagesizefromstring;
@@ -46,6 +47,15 @@ final class JpegImageDefinition implements ImageCharacterInterface
 {
     public readonly int $characterId;
     private ?Rectangle $bounds = null;
+    private ?GD $gd = null;
+
+    /**
+     * Cache last transformed image with its color transform.
+     * WeakMap is used to avoid memory leaks.
+     *
+     * @var WeakMap<TransformedImage, ColorTransform>|null
+     */
+    private ?WeakMap $colorTransformCache = null;
 
     public function __construct(
         public readonly DefineBitsJPEG2Tag|DefineBitsJPEG3Tag|DefineBitsJPEG4Tag $tag,
@@ -80,11 +90,27 @@ final class JpegImageDefinition implements ImageCharacterInterface
     #[Override]
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
-        if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
-            return TransformedImage::createFromJpeg($this->characterId, $this->bounds(), $colorTransform, $this->tag->imageData);
+        /**
+         * @var WeakMap<TransformedImage, ColorTransform> $cache
+         * @phpstan-ignore assign.propertyType
+         */
+        $cache = $this->colorTransformCache ??= new WeakMap();
+
+        foreach ($cache as $image => $otherTransform) {
+            if ($otherTransform == $colorTransform) {
+                return $image;
+            }
         }
 
-        return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, $this->toGD());
+        if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
+            $transformed = TransformedImage::createFromJpeg($this->characterId, $this->bounds(), $colorTransform, $this->tag->imageData);
+        } else {
+            $transformed = TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, clone $this->toGD());
+        }
+
+        $cache[$transformed] = $colorTransform;
+
+        return $transformed;
     }
 
     #[Override]
@@ -128,7 +154,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
     private function toGD(): GD
     {
         // @todo handle deblockParam on v4 tag
-        return match ($this->tag->type) {
+        return $this->gd ??= match ($this->tag->type) {
             ImageDataType::Png => GD::fromPng($this->tag->imageData),
             ImageDataType::Gif89a => $this->parseGifData(),
             ImageDataType::Jpeg => $this->parseJpegData(),

@@ -172,6 +172,26 @@ class JpegImageDefinitionTest extends ImageTestCase
     }
 
     #[Test]
+    public function transformColorsCache()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        /** @var DefineBitsJPEG3Tag $tag */
+        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+            if ($tag->characterId === 507) {
+                $image = new JpegImageDefinition($tag);
+                break;
+            }
+        }
+
+        $transformed = $image->transformColors(new ColorTransform(redMult: 0, blueMult: 0));
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507-green.png', $transformed->toPng());
+
+        $this->assertSame($transformed, $image->transformColors(new ColorTransform(redMult: 0, blueMult: 0)));
+        $this->assertNotSame($transformed, $image->transformColors(new ColorTransform(redMult: 0, blueMult: 100)));
+    }
+
+    #[Test]
     public function draw()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');

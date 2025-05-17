@@ -261,4 +261,14 @@ class SwfExtractorTest extends ImageTestCase
 
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/54/timeline.svg', $timeline->toSvg());
     }
+
+    #[Test]
+    public function perfIssueWithBitmapTransformedMultipleTimes()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/60/60.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $sprite = $extractor->timeline();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/60/timeline.svg', $sprite->toSvg());
+    }
 }
