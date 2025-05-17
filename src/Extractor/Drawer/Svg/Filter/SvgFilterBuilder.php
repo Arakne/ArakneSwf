@@ -54,6 +54,7 @@ final class SvgFilterBuilder
             $filter instanceof ColorMatrixFilter => SvgColorMatrixFilter::apply($this, $filter, $this->lastResult),
             $filter instanceof BlurFilter => SvgBlurFilter::apply($this, $filter, $this->lastResult),
             $filter instanceof GlowFilter => SvgGlowFilter::apply($this, $filter, $this->lastResult),
+            $filter instanceof DropShadowFilter => SvgDropShadowFilter::apply($this, $filter, $this->lastResult),
             default => throw new \RuntimeException('Unsupported filter type: ' . $filter::class),
         };
     }
@@ -107,6 +108,7 @@ final class SvgFilterBuilder
     {
         $filter = $root->addChild('filter');
         $filter->addAttribute('id', $id);
+        $filter->addAttribute('filterUnits', 'userSpaceOnUse'); // Allow overflow
 
         return new self($filter);
     }

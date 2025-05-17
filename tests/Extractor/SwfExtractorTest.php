@@ -16,8 +16,6 @@ use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
 
 use function array_keys;
-use function chmod;
-use function file_put_contents;
 
 class SwfExtractorTest extends ImageTestCase
 {
@@ -251,5 +249,16 @@ class SwfExtractorTest extends ImageTestCase
         $timeline = $extractor->timeline(false);
 
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/62/timeline.svg', $timeline->toSvg());
+    }
+
+    #[Test]
+    public function withDropShadowFilter()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/54/54.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline(false);
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/54/timeline.svg', $timeline->toSvg());
     }
 }

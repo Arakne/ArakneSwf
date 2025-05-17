@@ -222,7 +222,10 @@ final class SwfFile
     /**
      * Get all exported assets, and return them as an associative array indexed by their name.
      *
-     * @return array<string, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
+     * Note: Due to the way PHP handles array keys, numeric keys will be converted to integers.
+     *       So don't forget to cast them to string if you need to use them as strings.
+     *
+     * @return array<array-key, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
      *
      * @see SwfExtractor::exported()
      * @see SwfExtractor::character()

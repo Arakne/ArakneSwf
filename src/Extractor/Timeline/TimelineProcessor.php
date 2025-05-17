@@ -32,6 +32,7 @@ use Arakne\Swf\Parser\Structure\Tag\PlaceObjectTag;
 use Arakne\Swf\Parser\Structure\Tag\RemoveObject2Tag;
 use Arakne\Swf\Parser\Structure\Tag\RemoveObjectTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
+use Arakne\Swf\Parser\Structure\Tag\SoundStreamHeadTag;
 
 use function assert;
 use function ksort;
@@ -126,6 +127,11 @@ final readonly class TimelineProcessor
 
             if ($frameDisplayTag instanceof RemoveObject2Tag || $frameDisplayTag instanceof RemoveObjectTag) {
                 unset($objectsByDepth[$frameDisplayTag->depth]);
+                continue;
+            }
+
+            // Ignore sounds: we only care about display objects
+            if ($frameDisplayTag instanceof SoundStreamHeadTag) {
                 continue;
             }
 

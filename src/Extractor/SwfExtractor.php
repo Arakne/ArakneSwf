@@ -74,7 +74,7 @@ final class SwfExtractor
     /**
      * Exported asset name to character ID.
      *
-     * @var array<string, int>|null
+     * @var array<array-key, int>|null
      */
     private ?array $exported = null;
     private ?Timeline $timeline = null;
@@ -216,7 +216,9 @@ final class SwfExtractor
     /**
      * Get all exported tag names to character ID.
      *
-     * @return array<string, int>
+     * Note: Due to the way PHP handles array keys, numeric keys will be converted to integers.
+     *
+     * @return array<array-key, int>
      */
     public function exported(): array
     {

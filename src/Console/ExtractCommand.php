@@ -119,6 +119,7 @@ final readonly class ExtractCommand
                                       - {name}: The name or id of the character / exported symbol
                                       - {ext}: The file extension (png, svg, json, etc.)
                                       - {frame}/{_frame}: The frame number (1-based). {_frame} will prefix with "_" if needed
+                                      - {dirname}: The name of the directory containing the SWF file
 
             Arguments:
                 <file>      The SWF file to extract resources from. Multiple files can be specified.
@@ -163,7 +164,7 @@ final readonly class ExtractCommand
             if ($options->allExported) {
                 foreach ($extractor->exported() as $name => $id) {
                     $character = $extractor->character($id);
-                    $success = $this->processCharacter($options, $file, $name, $character) && $success;
+                    $success = $this->processCharacter($options, $file, (string) $name, $character) && $success;
                 }
             }
 
@@ -265,6 +266,7 @@ final readonly class ExtractCommand
             '{ext}' => $ext,
             '{frame}' => $frame !== null ? (string) $frame : '',
             '{_frame}' => $frame !== null ? '_' . (string) $frame : '',
+            '{dirname}' => basename(dirname($file)),
         ]);
 
         if (file_exists($outputFile)) {
