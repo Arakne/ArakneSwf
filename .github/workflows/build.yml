@@ -28,7 +28,7 @@ jobs:
             - name: Check PHP Version
               run: php -v
 
-            - nam: Check SVG support
+            - name: Check SVG support
               run: |
                 php -r "echo (new Imagick())->queryFormats('SVG') ? 'SVG supported' : 'SVG not supported';"
 
