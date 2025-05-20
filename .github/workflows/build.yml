@@ -17,10 +17,10 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Install RSVG
+            - name: Install Inkscape
               run: |
                 sudo apt-get update
-                sudo apt-get install -y librsvg2-bin
+                sudo apt-get install -y inkscape
 
             - name: Install PHP
               uses: shivammathur/setup-php@v2
@@ -52,10 +52,10 @@ jobs:
               with:
                   timezoneLinux: "Europe/Paris"
 
-            - name: Install RSVG
+            - name: Install Inkscape
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y librsvg2-bin
+                  sudo apt-get install -y inkscape
 
             - name: Install PHP
               uses: shivammathur/setup-php@v2
