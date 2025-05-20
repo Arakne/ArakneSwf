@@ -17,17 +17,15 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Install Imagick dependencies
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y imagemagick librsvg2-bin librsvg2-dev libmagickwand-dev inkscape
-
             - name: Install PHP
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-versions }}
-                  extensions: json, gd, imagick-3.8.0
+                  extensions: json, gd, imagick
                   ini-values: date.timezone=Europe/Paris
+              env:
+                  IMAGICK_CONFIGURE_OPTS: --with-gslib --with-rsvg --with-magickwand
+                  IMAGICK_LIBS: gslib librsvg2-dev libmagickwand-dev imagemagick inkscape
             - name: Check PHP Version
               run: php -v
 
@@ -103,8 +101,11 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: 8.4
-                  extensions: json, gd, imagick-3.8.0
+                  extensions: json, gd, imagick
                   ini-values: date.timezone=Europe/Paris
+              env:
+                  IMAGICK_CONFIGURE_OPTS: --with-gslib --with-rsvg --with-magickwand
+                  IMAGICK_LIBS: gslib librsvg2-dev libmagickwand-dev imagemagick inkscape
 
             - name: Install dependencies
               run: composer install --prefer-dist --no-progress
