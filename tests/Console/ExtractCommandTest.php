@@ -4,12 +4,17 @@ namespace Arakne\Tests\Swf\Console;
 
 use Arakne\Swf\Console\ExtractCommand;
 use Arakne\Swf\Console\ExtractOptions;
+use Arakne\Swf\Extractor\Drawer\Converter\DrawableFormater;
+use Arakne\Swf\Extractor\Drawer\Converter\ImageFormat;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+
+use Vtiful\Kernel\Format;
 
 use function array_diff;
 use function array_values;
@@ -19,6 +24,7 @@ use function is_dir;
 use function natsort;
 use function ob_start;
 use function scandir;
+use function var_dump;
 
 class ExtractCommandTest extends ImageTestCase
 {
@@ -191,6 +197,32 @@ class ExtractCommandTest extends ImageTestCase
     }
 
     #[Test]
+    public function spriteWithCustomFormat()
+    {
+        $this->exec(new ExtractOptions(
+            files: [__DIR__ . '/../Extractor/Fixtures/1047/1047.swf'],
+            output: $this->outputDir,
+            characters: [65],
+            frames: [6],
+            frameFormat: [
+                new DrawableFormater(ImageFormat::Webp),
+                new DrawableFormater(ImageFormat::Png),
+            ]
+        ));
+        $this->assertCount(2, glob($this->outputDir.'/1047/*.*'));
+
+        $this->assertImageStringEqualsImageFile(
+            __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5.png',
+            file_get_contents($this->outputDir.'/1047/65_6.png')
+        );
+
+        $this->assertImageStringEqualsImageFile(
+            __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5.webp',
+            file_get_contents($this->outputDir.'/1047/65_6.webp')
+        );
+    }
+
+    #[Test]
     public function spriteAnimationEmbeddedWithFullAnimation()
     {
         $this->exec(new ExtractOptions(files: [__DIR__ . '/../Extractor/Fixtures/1047/1047.swf'], output: $this->outputDir, exported: ['anim0R']));
@@ -225,17 +257,21 @@ class ExtractCommandTest extends ImageTestCase
         );
     }
 
-    #[Test]
-    public function customFilename()
+    #[
+        Test,
+        TestWith(['{basename}.{ext}', '/1047.svg']),
+        TestWith(['{dirname}-{name}.{ext}', '/1047-anim0R.svg']),
+    ]
+    public function customFilename(string $format, string $expected)
     {
         $this->exec(new ExtractOptions(
             files: [__DIR__ . '/../Extractor/Fixtures/1047/1047.swf'],
             output: $this->outputDir,
-            outputFilename: '{basename}.{ext}',
+            outputFilename: $format,
             exported: ['anim0R'],
         ));
 
-        $this->assertEquals([$this->outputDir.'/1047.svg'], glob($this->outputDir.'/*.svg'));
+        $this->assertEquals([$this->outputDir.$expected], glob($this->outputDir.'/*.svg'));
     }
 
     #[Test]

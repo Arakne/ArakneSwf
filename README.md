@@ -25,6 +25,7 @@ It may also require some PHP extensions, depending on the features you want to u
 - `gd` for image processing
 - `json` to export variables in JSON format
 - `xml` for sprite export (performed in SVG format)
+- `Imagick` to convert SVG to PNG or JPEG format
 
 ```bash
 git clone https://github.com/Arakne/ArakneSwf
@@ -49,7 +50,10 @@ bin/swf-extract -e label sprites/*.swf export
 bin/swf-extract --all-exported sprites/*.swf export
 
 # Extract all sprites from foo.swf, using a custom filename format
-bin/swf-extract --all-sprites foo.swf --output-filename '{name}.{ext}' export
+bin/swf-extract --all-sprites foo.swf --output-filename '{name}.{ext}' foo.swf export
+
+# Same as above, but export as PNG with maximum size of 128x128 pixels
+bin/swf-extract --all-sprites foo.swf --frame-format png@128 --output-filename '{name}.{ext}' foo.swf export
 
 # Try to resolve variable defined in ActionScript 2 and export them in JSON format
 bin/swf-extract --variables swf/*.swf export

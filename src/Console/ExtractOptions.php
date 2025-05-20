@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Console;
 
+use Arakne\Swf\Extractor\Drawer\Converter\DrawableFormater;
+use Arakne\Swf\Extractor\Drawer\Converter\FitSizeResizer;
+use Arakne\Swf\Extractor\Drawer\Converter\ImageFormat;
+use InvalidArgumentException;
 use RuntimeException;
 
 use function array_map;
@@ -34,6 +38,7 @@ use function is_string;
 use function mkdir;
 use function range;
 use function realpath;
+use function sprintf;
 use function strtolower;
 
 /**
@@ -129,6 +134,14 @@ final readonly class ExtractOptions
          * Extract action script variables to JSON
          */
         public bool $variables = false,
+
+        /**
+         * The format to use for render the frames/sprites.
+         * If not set, the default format will be used (SVG)
+         *
+         * @var list<DrawableFormater>
+         */
+        public array $frameFormat = [new DrawableFormater(ImageFormat::Svg)],
     ) {}
 
     /**
@@ -148,6 +161,7 @@ final readonly class ExtractOptions
             [
                 'help', 'character:', 'all-sprites', 'all-exported', 'variables',
                 'timeline', 'exported:', 'output-filename:', 'frames:', 'full-animation',
+                'frame-format:',
             ],
             $argsOffset
         );
@@ -184,21 +198,26 @@ final readonly class ExtractOptions
             }
         }
 
-        return new self(
-            $cmd,
-            help: isset($options['h']) || isset($options['help']),
-            files: $arguments,
-            output: $output,
-            outputFilename: $outputFilename,
-            characters: array_map(intval(...), [...(array)($options['c'] ?? []), ...(array)($options['character'] ?? [])]),
-            exported: array_map(strval(...), [...(array)($options['e'] ?? []), ...(array)($options['exported'] ?? [])]),
-            frames: self::parseFramesOption($options),
-            fullAnimation: isset($options['full-animation']),
-            allSprites: isset($options['all-sprites']),
-            allExported: isset($options['all-exported']),
-            timeline: isset($options['timeline']),
-            variables: isset($options['variables']),
-        );
+        try {
+            return new self(
+                $cmd,
+                help: isset($options['h']) || isset($options['help']),
+                files: $arguments,
+                output: $output,
+                outputFilename: $outputFilename,
+                characters: array_map(intval(...), [...(array)($options['c'] ?? []), ...(array)($options['character'] ?? [])]),
+                exported: array_map(strval(...), [...(array)($options['e'] ?? []), ...(array)($options['exported'] ?? [])]),
+                frames: self::parseFramesOption($options),
+                fullAnimation: isset($options['full-animation']),
+                allSprites: isset($options['all-sprites']),
+                allExported: isset($options['all-exported']),
+                timeline: isset($options['timeline']),
+                variables: isset($options['variables']),
+                frameFormat: self::parseFormatOption($options, 'frame-format') ?: [new DrawableFormater(ImageFormat::Svg)],
+            );
+        } catch (InvalidArgumentException $e) {
+            return new self($cmd, error: $e->getMessage());
+        }
     }
 
     /**
@@ -237,5 +256,36 @@ final readonly class ExtractOptions
         }
 
         return $frames;
+    }
+
+    /**
+     * @param array<string, string|bool|list<string|bool>> $options
+     * @param string $optionName
+     *
+     * @return list<DrawableFormater>
+     */
+    private static function parseFormatOption(array $options, string $optionName): array
+    {
+        $formatters = [];
+
+        foreach ((array) ($options[$optionName] ?? []) as $format) {
+            $formatStr = explode('@', strtolower((string) $format), 2);
+            $format = ImageFormat::tryFrom($formatStr[0]) ?? throw new InvalidArgumentException(sprintf('Invalid value for option --%s: the format %s is not supported', $optionName, $formatStr[0]));
+
+            if (isset($formatStr[1])) {
+                $size = explode('x', $formatStr[1], 2);
+
+                $width = max((int) $size[0], 1);
+                $height = max((int) ($size[1] ?? $size[0]), 1);
+
+                $resizer = new FitSizeResizer($width, $height);
+            } else {
+                $resizer = null;
+            }
+
+            $formatters[] = new DrawableFormater($format, $resizer);
+        }
+
+        return $formatters;
     }
 }

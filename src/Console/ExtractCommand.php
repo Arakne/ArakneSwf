@@ -120,10 +120,27 @@ final readonly class ExtractCommand
                                       - {ext}: The file extension (png, svg, json, etc.)
                                       - {frame}/{_frame}: The frame number (1-based). {_frame} will prefix with "_" if needed
                                       - {dirname}: The name of the directory containing the SWF file
+                --frame-format <format>
+                                      Specify the format to use for the sprite or timeline frames. This option is repeatable.
+                                      The format of this option is <filetype>@<width>x<height>, where:
+                                      - <filetype> is the type of file to generate (svg, png, gif, webp)
+                                      - <width> is the width of the output image (optional)
+                                      - <height> is the height of the output image (optional). 
+                                          If only the width is specified, the height will be set to the same value.
 
             Arguments:
                 <file>      The SWF file to extract resources from. Multiple files can be specified.
                 <output>    The output directory where the extracted resources will be saved.
+            
+            Examples:
+                Extract all exported symbols from a SWF file
+                    {$options->command} --all-exported --output-filename myfile.swf export
+                    
+                Extract the first frame of the main timeline of a SWF file as PNG of size 128x128
+                    {$options->command} --timeline --frames 1 --frame-format png@128x128 --output-filename {basename}.{ext} myfile.swf export
+
+                Extract a single sprite animation, with all its sub-animations
+                    {$options->command} -e myAnim --full-animation --output-filename {basename}/{frame}.{ext} myfile.swf export
 
             EOT;
     }
@@ -214,15 +231,14 @@ final readonly class ExtractCommand
         $framesCount = $timeline->framesCount($options->fullAnimation);
 
         if ($framesCount === 1) {
-            return $this->writeToOutputDir($timeline->toSvg(), $file, $options, $name, 'svg');
+            return $this->processTimelineFrame($options, $file, $name, $timeline);
         }
 
         if ($options->frames === null) {
             $success = true;
 
             for ($frame = 0; $frame < $framesCount; $frame++) {
-                $svg = $timeline->toSvg($frame);
-                $success = $this->writeToOutputDir($svg, $file, $options, $name, 'svg', $frame + 1) && $success;
+                $success = $this->processTimelineFrame($options, $file, $name, $timeline, $frame) && $success;
             }
 
             return $success;
@@ -235,8 +251,27 @@ final readonly class ExtractCommand
                 break;
             }
 
-            $svg = $timeline->toSvg($frame - 1);
-            $success = $this->writeToOutputDir($svg, $file, $options, $name, 'svg', $frame) && $success;
+            $success = $this->processTimelineFrame($options, $file, $name, $timeline, $frame - 1) && $success;
+        }
+
+        return $success;
+    }
+
+    /**
+     * @param ExtractOptions $options
+     * @param string $file
+     * @param string $name
+     * @param Timeline $timeline
+     * @param non-negative-int|null $frame
+     *
+     * @return bool
+     */
+    private function processTimelineFrame(ExtractOptions $options, string $file, string $name, Timeline $timeline, ?int $frame = null): bool
+    {
+        $success = true;
+
+        foreach ($options->frameFormat as $formater) {
+            $success = $this->writeToOutputDir($formater->format($timeline, $frame ?? 0), $file, $options, $name, $formater->extension(), $frame !== null ? $frame + 1 : null) && $success;
         }
 
         return $success;
