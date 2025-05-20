@@ -34,7 +34,7 @@ jobs:
             - name: Install Imagick PHP extension
               run: |
                   pecl install imagick
-                  echo "extension=imagick.so" > ${{ runner.tool_cache }}/php.ini.d/imagick.ini
+                  echo "extension=imagick.so" >> "${{ php --ini | grep 'Scan for additional .ini' | sed -e 's|.*:\s*||'}"
 
             - name: Validate composer.json and composer.lock
               run: composer validate --strict
@@ -114,7 +114,7 @@ jobs:
             - name: Install Imagick PHP extension
               run: |
                   pecl install imagick
-                  echo "extension=imagick.so" > ${{ runner.tool_cache }}/php.ini.d/imagick.ini
+                  echo "extension=imagick.so" >> "${{ php --ini | grep 'Scan for additional .ini' | sed -e 's|.*:\s*||'}"
 
             - name: Install dependencies
               run: composer install --prefer-dist --no-progress
