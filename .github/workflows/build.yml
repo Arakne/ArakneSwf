@@ -24,10 +24,13 @@ jobs:
                   extensions: json, gd, imagick-imagick/imagick@3.8.0
                   ini-values: date.timezone=Europe/Paris
               env:
-                  IMAGICK_CONFIGURE_OPTS: --with-gslib --with-rsvg --with-magickwand
-                  IMAGICK_LIBS: gslib librsvg2-dev libmagickwand-dev imagemagick inkscape
+                  IMAGICK_LIBS: librsvg2-dev libmagickwand-dev imagemagick inkscape libmagickcore-dev
             - name: Check PHP Version
               run: php -v
+
+            - nam: Check SVG support
+              run: |
+                php -r "echo (new Imagick())->queryFormats('SVG') ? 'SVG supported' : 'SVG not supported';"
 
             - name: Validate composer.json and composer.lock
               run: composer validate --strict
@@ -49,11 +52,6 @@ jobs:
               uses: szenius/set-timezone@v1.0
               with:
                   timezoneLinux: "Europe/Paris"
-
-            - name: Install Imagick dependencies
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y imagemagick librsvg2-bin librsvg2-dev libmagickwand-dev inkscape
 
             - name: Install PHP
               uses: shivammathur/setup-php@v2
@@ -104,8 +102,7 @@ jobs:
                   extensions: json, gd, imagick-imagick/imagick@3.8.0
                   ini-values: date.timezone=Europe/Paris
               env:
-                  IMAGICK_CONFIGURE_OPTS: --with-gslib --with-rsvg --with-magickwand
-                  IMAGICK_LIBS: gslib librsvg2-dev libmagickwand-dev imagemagick inkscape
+                  IMAGICK_LIBS: librsvg2-dev libmagickwand-dev imagemagick inkscape libmagickcore-dev
 
             - name: Install dependencies
               run: composer install --prefer-dist --no-progress
