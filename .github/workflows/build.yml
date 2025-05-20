@@ -26,10 +26,15 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-versions }}
-                  extensions: json, gd, imagick
+                  extensions: json, gd, :imagick
                   ini-values: date.timezone=Europe/Paris
             - name: Check PHP Version
               run: php -v
+
+            - name: Install Imagick PHP extension
+              run: |
+                  pecl install imagick
+                  echo "extension=imagick.so" > ${{ runner.tool_cache }}/php.ini.d/imagick.ini
 
             - name: Validate composer.json and composer.lock
               run: composer validate --strict
@@ -103,8 +108,13 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: 8.4
-                  extensions: json
+                  extensions: json, gd, :imagick
                   ini-values: date.timezone=Europe/Paris
+
+            - name: Install Imagick PHP extension
+              run: |
+                  pecl install imagick
+                  echo "extension=imagick.so" > ${{ runner.tool_cache }}/php.ini.d/imagick.ini
 
             - name: Install dependencies
               run: composer install --prefer-dist --no-progress
