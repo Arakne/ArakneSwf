@@ -17,6 +17,11 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            - name: Install RSVG
+              run: |
+                sudo apt-get update
+                sudo apt-get install -y librsvg2-bin
+
             - name: Install PHP
               uses: shivammathur/setup-php@v2
               with:
@@ -46,6 +51,11 @@ jobs:
               uses: szenius/set-timezone@v1.0
               with:
                   timezoneLinux: "Europe/Paris"
+
+            - name: Install RSVG
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y librsvg2-bin
 
             - name: Install PHP
               uses: shivammathur/setup-php@v2
