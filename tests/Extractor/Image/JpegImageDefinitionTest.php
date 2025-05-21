@@ -210,6 +210,6 @@ class JpegImageDefinitionTest extends ImageTestCase
         $svg = new SimpleXMLElement($svg->render());
 
         $this->assertSame('matrix(1, 0, 0, 1, 0, 0)', (string) $svg->g['transform']);
-        $this->assertSame($image->toBase64Data(), (string) $svg->g->image['href']);
+        $this->assertSame($image->toBase64Data(), (string) $svg->g->image->attributes('xlink', true)->href);
     }
 }

@@ -212,13 +212,23 @@ class ExtractCommandTest extends ImageTestCase
         $this->assertCount(2, glob($this->outputDir.'/1047/*.*'));
 
         $this->assertImageStringEqualsImageFile(
-            __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5.png',
-            file_get_contents($this->outputDir.'/1047/65_6.png')
+            [
+                __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5.png',
+                __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5-rsvg.png',
+                __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5-inkscape12.png',
+            ],
+            file_get_contents($this->outputDir.'/1047/65_6.png'),
+            0.05
         );
 
         $this->assertImageStringEqualsImageFile(
-            __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5.webp',
-            file_get_contents($this->outputDir.'/1047/65_6.webp')
+            [
+                __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5-lossless.webp',
+                __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5-rsvg.webp',
+                __DIR__ . '/../Extractor/Fixtures/1047/65_frames/65-5-inkscape12.webp',
+            ],
+            file_get_contents($this->outputDir.'/1047/65_6.webp'),
+            0.02
         );
     }
 

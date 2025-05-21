@@ -42,7 +42,7 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertXmlStringEqualsXmlString(
             <<<'SVG'
             <?xml version="1.0"?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="25.3px" height="4.8px">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25.3px" height="4.8px">
                 <g transform="matrix(1, 0, 0, 1, -0.05, 0)">
                     <path fill="#000000" stroke="none" fill-rule="evenodd" d="M25.35 2.4Q25.3 3.4 21.6 4.1L12.7 4.8L3.75 4.1Q0 3.4 0.05 2.4Q0 1.4 3.75 0.7L12.7 0L21.6 0.7Q25.3 1.4 25.35 2.4"/>
                 </g>
@@ -80,7 +80,7 @@ class SwfExtractorTest extends ImageTestCase
 
         $this->assertXmlStringEqualsXmlString(<<<'SVG'
         <?xml version="1.0"?>
-        <svg xmlns="http://www.w3.org/2000/svg" height="0px" width="0px"/>
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="0px" width="0px"/>
         SVG, $drawer->render());
     }
 

@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Drawer\Converter;
 
-use Imagick;
 use Override;
 
 use function max;
@@ -39,26 +38,6 @@ final readonly class FitSizeResizer implements ImageResizerInterface
         /** @var positive-int */
         public int $height,
     ) {}
-
-    #[Override]
-    public function apply(Imagick $image, string $svg): Imagick
-    {
-        $factor = max(
-            $image->getImageWidth() / $this->width,
-            $image->getImageHeight() / $this->height,
-        );
-        $res = $image->getImageResolution();
-
-        $image->setResolution(
-            (int) ($res['x'] / $factor),
-            (int) ($res['y'] / $factor),
-        );
-
-        $image->removeImage();
-        $image->readImageBlob($svg);
-
-        return $image;
-    }
 
     #[Override]
     public function scale(float $width, float $height): array

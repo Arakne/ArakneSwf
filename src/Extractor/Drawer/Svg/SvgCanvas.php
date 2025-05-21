@@ -34,6 +34,8 @@ use SimpleXMLElement;
 
 /**
  * Drawer implementation for generate SVG XML
+ *
+ * @todo use xlink (xmlns:xlink="http://www.w3.org/1999/xlink") for href. inkscape < 1.3 does not support href
  */
 final class SvgCanvas implements DrawerInterface
 {
@@ -45,7 +47,7 @@ final class SvgCanvas implements DrawerInterface
 
     public function __construct(Rectangle $bounds)
     {
-        $this->root = $root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+        $this->root = $root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>');
         $this->builder = new SvgBuilder($root);
 
         $root->addAttribute('width', ($bounds->width() / 20) . 'px');
@@ -73,7 +75,7 @@ final class SvgCanvas implements DrawerInterface
     {
         $g = $this->g = $this->builder->addGroup($image->bounds());
         $tag = $g->addChild('image');
-        $tag->addAttribute('href', $image->toBase64Data());
+        $tag->addAttribute('xlink:href', $image->toBase64Data(), SvgBuilder::XLINK_NS);
     }
 
     #[Override]
@@ -97,7 +99,7 @@ final class SvgCanvas implements DrawerInterface
 
         foreach ($included->ids as $id) {
             $use = $g->addChild('use');
-            $use->addAttribute('href', '#' . $id);
+            $use->addAttribute('xlink:href', '#' . $id, SvgBuilder::XLINK_NS);
             $use->addAttribute('width', (string) ($object->bounds()->width() / 20));
             $use->addAttribute('height', (string) ($object->bounds()->height() / 20));
             $use->addAttribute('transform', $matrix->toSvgTransformation());

@@ -4,25 +4,26 @@ namespace Arakne\Tests\Swf\Extractor\Drawer\Converter;
 
 use Arakne\Swf\Extractor\Drawer\Converter\Converter;
 use Arakne\Swf\Extractor\Drawer\Converter\FitSizeResizer;
+use Arakne\Swf\Extractor\Drawer\Converter\ImageResizerInterface;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
-
 use SimpleXMLElement;
 
 use function file_get_contents;
-use function file_put_contents;
 use function getimagesizefromstring;
-use function imagecreatefromstring;
-use function imagesx;
 
 class ConverterTest extends ImageTestCase
 {
+    protected function createConverter(?ImageResizerInterface $resizer = null, string $backgroundColor = 'transparent'): Converter
+    {
+        return new Converter($resizer, $backgroundColor);
+    }
+
     #[Test]
     public function toSvgSimple()
     {
-        $converter = new Converter();
+        $converter = $this->createConverter();
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $svg = $converter->toSvg($drawable, 5);
 
@@ -32,7 +33,7 @@ class ConverterTest extends ImageTestCase
     #[Test]
     public function toSvgWithResize()
     {
-        $converter = new Converter(new FitSizeResizer(128, 128));
+        $converter = $this->createConverter(new FitSizeResizer(128, 128));
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $svg = $converter->toSvg($drawable, 5);
 
@@ -50,11 +51,16 @@ class ConverterTest extends ImageTestCase
     #[Test]
     public function toPngSimple()
     {
-        $converter = new Converter();
+        $converter = $this->createConverter();
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $png = $converter->toPng($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5.png', $png);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5.png',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-inkscape12.png',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-inkscape14.png',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-rsvg.png',
+        ], $png, 0.05);
 
         $info = getimagesizefromstring($png);
 
@@ -66,7 +72,7 @@ class ConverterTest extends ImageTestCase
     #[Test]
     public function toPngWithSize()
     {
-        $converter = new Converter(new FitSizeResizer(128, 128));
+        $converter = $this->createConverter(new FitSizeResizer(128, 128));
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $png = $converter->toPng($drawable, 5);
 
@@ -76,17 +82,21 @@ class ConverterTest extends ImageTestCase
 
         $this->assertSame('image/png', $info['mime']);
         $this->assertSame(121, $info[0]);
-        $this->assertSame(127, $info[1]);
+        $this->assertSame(128, $info[1]);
     }
 
     #[Test]
     public function toGifSimple()
     {
-        $converter = new Converter(backgroundColor: '#333333');
+        $converter = $this->createConverter(backgroundColor: '#333333');
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $gif = $converter->toGif($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5.gif', $gif);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5.gif',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-rsvg.gif',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-inkscape12.gif',
+        ], $gif, 0.02);
 
         $info = getimagesizefromstring($gif);
 
@@ -98,27 +108,33 @@ class ConverterTest extends ImageTestCase
     #[Test]
     public function toGifWithSize()
     {
-        $converter = new Converter(new FitSizeResizer(128, 128), backgroundColor: '#333333');
+        $converter = $this->createConverter(new FitSizeResizer(128, 128), backgroundColor: '#333333');
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $gif = $converter->toGif($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5@128.gif', $gif);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5@128.gif',
+        ], $gif);
 
         $info = getimagesizefromstring($gif);
 
         $this->assertSame('image/gif', $info['mime']);
         $this->assertSame(121, $info[0]);
-        $this->assertSame(127, $info[1]);
+        $this->assertSame(128, $info[1]);
     }
 
     #[Test]
     public function toWebpSimple()
     {
-        $converter = new Converter();
+        $converter = $this->createConverter();
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $webp = $converter->toWebp($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5.webp', $webp);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5.webp',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-inkscape12.webp',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-rsvg.webp',
+        ], $webp, 0.05);
 
         $info = getimagesizefromstring($webp);
 
@@ -130,27 +146,34 @@ class ConverterTest extends ImageTestCase
     #[Test]
     public function toWebpWithSize()
     {
-        $converter = new Converter(new FitSizeResizer(128, 128));
+        $converter = $this->createConverter(new FitSizeResizer(128, 128));
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $webp = $converter->toWebp($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5@128.webp', $webp);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5@128.webp',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-rsvg@128.webp',
+        ], $webp, 0.005);
 
         $info = getimagesizefromstring($webp);
 
         $this->assertSame('image/webp', $info['mime']);
         $this->assertSame(121, $info[0]);
-        $this->assertSame(127, $info[1]);
+        $this->assertSame(128, $info[1]);
     }
 
     #[Test]
     public function toJpegSimple()
     {
-        $converter = new Converter(backgroundColor: '#333333');
+        $converter = $this->createConverter(backgroundColor: '#333333');
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $jpeg = $converter->toJpeg($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5.jpeg', $jpeg);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5.jpeg',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-rsvg.jpeg',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-inkscape12.jpeg',
+        ], $jpeg, 0.02);
 
         $info = getimagesizefromstring($jpeg);
 
@@ -162,7 +185,7 @@ class ConverterTest extends ImageTestCase
     #[Test]
     public function toJpegWithSize()
     {
-        $converter = new Converter(new FitSizeResizer(128, 128), backgroundColor: '#333333');
+        $converter = $this->createConverter(new FitSizeResizer(128, 128), backgroundColor: '#333333');
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $jpeg = $converter->toJpeg($drawable, 5);
 
@@ -172,6 +195,6 @@ class ConverterTest extends ImageTestCase
 
         $this->assertSame('image/jpeg', $info['mime']);
         $this->assertSame(121, $info[0]);
-        $this->assertSame(127, $info[1]);
+        $this->assertSame(128, $info[1]);
     }
 }

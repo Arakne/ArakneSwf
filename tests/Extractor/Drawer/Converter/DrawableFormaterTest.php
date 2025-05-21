@@ -26,7 +26,7 @@ class DrawableFormaterTest extends ImageTestCase
 
         $this->assertSame('image/png', $info['mime']);
         $this->assertSame(121, $info[0]);
-        $this->assertSame(127, $info[1]);
+        $this->assertSame(128, $info[1]);
         $this->assertSame('png', $formater->extension());
     }
 }

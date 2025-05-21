@@ -45,6 +45,8 @@ use function sprintf;
  */
 final class SvgBuilder
 {
+    public const string XLINK_NS = 'http://www.w3.org/1999/xlink';
+
     /**
      * @var array<string, SimpleXmlElement>
      */
@@ -239,7 +241,7 @@ final class SvgBuilder
         }
 
         $image = $pattern->addChild('image');
-        $image->addAttribute('href', $style->bitmap->toBase64Data());
+        $image->addAttribute('xlink:href', $style->bitmap->toBase64Data(), self::XLINK_NS);
 
         $path->addAttribute($attribute, 'url(#'.$pattern['id'].')');
     }

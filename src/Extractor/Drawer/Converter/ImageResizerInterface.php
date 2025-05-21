@@ -20,23 +20,11 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Drawer\Converter;
 
-use Imagick;
-
 /**
- * Base type for resize Imagick images.
+ * Base type for compute new image size.
  */
 interface ImageResizerInterface
 {
-    /**
-     * Applies the resize operation to the given image.
-     *
-     * @param Imagick $image The image to resize.
-     * @param string $svg The original SVG data.
-     *
-     * @return Imagick The resized image. Can be the same instance as the input image.
-     */
-    public function apply(Imagick $image, string $svg): Imagick;
-
     /**
      * Returns the width of the resized image.
      *

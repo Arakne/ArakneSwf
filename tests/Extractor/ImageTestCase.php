@@ -12,37 +12,46 @@ use function file_put_contents;
 use function imagecreatefromstring;
 use function imagesx;
 use function sprintf;
-use function var_dump;
 
 class ImageTestCase extends TestCase
 {
-    public function assertImageStringEqualsImageFile(string $expectedFile, string $imageString, float $delta = 0): void
+    public function assertImageStringEqualsImageFile(string|array $expectedFiles, string $imageString, float $delta = 0): void
     {
-        $this->assertFileExists($expectedFile);
+        $bestDiff = 1;
 
-        $imageComparator = new ImageComparator();
+        foreach ((array) $expectedFiles as $expectedFile) {
+            $this->assertFileExists($expectedFile);
 
-        file_put_contents($testfile = __DIR__.'/Fixtures/test.png', $imageString);
-        chmod($testfile, 0666);
+            $imageComparator = new ImageComparator();
 
-        $expectedGd = imagecreatefromstring(file_get_contents($expectedFile));
-        $actualGd = imagecreatefromstring($imageString);
+            file_put_contents($testfile = __DIR__.'/Fixtures/test.png', $imageString);
+            chmod($testfile, 0666);
 
-        $this->assertInstanceOf(GdImage::class, $expectedGd, 'The expected image is not a valid image');
-        $this->assertInstanceOf(GdImage::class, $actualGd, 'The actual image is not a valid image');
+            $expectedGd = imagecreatefromstring(file_get_contents($expectedFile));
+            $actualGd = imagecreatefromstring($imageString);
 
-        $expectedSize = [imagesx($expectedGd), imagesy($expectedGd)];
-        $actualSize = [imagesx($actualGd), imagesy($actualGd)];
+            $this->assertInstanceOf(GdImage::class, $expectedGd, 'The expected image is not a valid image');
+            $this->assertInstanceOf(GdImage::class, $actualGd, 'The actual image is not a valid image');
 
-        if ($expectedSize !== $actualSize) {
-            $this->fail(sprintf('Image size differ. Expected: %dx%d Actual: %dx%d', $expectedSize[0], $expectedSize[1], $actualSize[0], $actualSize[1]));
+            $expectedSize = [imagesx($expectedGd), imagesy($expectedGd)];
+            $actualSize = [imagesx($actualGd), imagesy($actualGd)];
+
+            if ($expectedSize !== $actualSize) {
+                $this->fail(sprintf('Image size differ. Expected: %dx%d Actual: %dx%d', $expectedSize[0], $expectedSize[1], $actualSize[0], $actualSize[1]));
+            }
+
+            $similarity = $imageComparator->compare($expectedFile, $actualGd);
+            $diff = (100 - $similarity) / 100;
+
+            if ($diff <= $delta) {
+                return;
+            }
+
+            if ($diff < $bestDiff) {
+                $bestDiff = $diff;
+            }
         }
 
-        $similarity = $imageComparator->compare($expectedFile, $actualGd);
-        $diff = (100 - $similarity) / 100;
-
-        if ($diff > $delta) {
-            $this->fail('The images are different (diff ratio: '.$diff.')');
-        }
+        $this->fail('The images are different (diff ratio: '.$bestDiff.')');
     }
 }

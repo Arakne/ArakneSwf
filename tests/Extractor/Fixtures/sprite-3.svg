@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="59.7px" height="17.9px">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="59.7px" height="17.9px">
     <g transform="matrix(1, 0, 0, 1, 29.85, 8.95)">
-        <use href="#object-0" width="59.7" height="17.9" transform="matrix(1, 0, 0, 1, -29.85, -8.95)"/>
+        <use xlink:href="#object-0" width="59.7" height="17.9" transform="matrix(1, 0, 0, 1, -29.85, -8.95)"/>
     </g>
     <defs>
         <g xmlns="http://www.w3.org/2000/svg" transform="matrix(1, 0, 0, 1, 29.85, 8.95)" id="object-0">

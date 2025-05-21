@@ -21,9 +21,10 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\Drawer\Converter;
 
 use Arakne\Swf\Extractor\DrawableInterface;
+use Arakne\Swf\Extractor\Drawer\Converter\Renderer\ImagickSvgRendererInterface;
+use Arakne\Swf\Extractor\Drawer\Converter\Renderer\ImagickSvgRendererResolver;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Imagick;
-use ImagickPixel;
 use RuntimeException;
 use SimpleXMLElement;
 
@@ -38,8 +39,6 @@ use function sprintf;
  */
 final readonly class Converter
 {
-    private ImagickPixel $backgroundColor;
-
     public function __construct(
         /**
          * The size to apply to the image.
@@ -50,10 +49,14 @@ final readonly class Converter
         /**
          * The background color to use for the image.
          */
-        string $backgroundColor = 'transparent',
-    ) {
-        $this->backgroundColor = new ImagickPixel($backgroundColor); // @todo do not use ImagickPixel: svg do not use Imagick
-    }
+        private string $backgroundColor = 'transparent',
+
+        /**
+         * The svg renderer to use, when raster image is requested.
+         * If null, the best available renderer will be used.
+         */
+        private ?ImagickSvgRendererInterface $svgRenderer = null,
+    ) {}
 
     /**
      * Convert the object to SVG, and apply the resizer if needed.
@@ -145,7 +148,7 @@ final readonly class Converter
     public function toWebp(DrawableInterface $drawable, int $frame = 0): string
     {
         $img = $this->toImagick($drawable, $frame);
-        //$img->setOption('webp:lossless', 'true'); // @todo add options
+        $img->setOption('webp:lossless', 'true'); // @todo add options
         $img->setFormat('webp');
 
         return $img->getImageBlob();
@@ -179,16 +182,8 @@ final readonly class Converter
             throw new RuntimeException('Imagick is not installed');
         }
 
-        $svg = $drawable->draw(new SvgCanvas($drawable->bounds()), $frame)->render();
+        $svg = $this->toSvg($drawable, $frame);
 
-        $img = new Imagick();
-        $img->setBackgroundColor($this->backgroundColor);
-        $img->readImageBlob($svg);
-
-        if ($this->resizer) {
-            $img = $this->resizer->apply($img, $svg);
-        }
-
-        return $img;
+        return ($this->svgRenderer ?? ImagickSvgRendererResolver::get())->open($svg, $this->backgroundColor);
     }
 }

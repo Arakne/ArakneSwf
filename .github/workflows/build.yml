@@ -21,16 +21,15 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-versions }}
-                  extensions: json, gd, imagick-imagick/imagick@3.8.0
+                  extensions: json, gd, imagick
                   ini-values: date.timezone=Europe/Paris
-              env:
-                  IMAGICK_LIBS: librsvg2-dev libmagickwand-dev imagemagick inkscape libmagickcore-dev
             - name: Check PHP Version
               run: php -v
 
-            - name: Check SVG support
+            - name: Install SVG renderer commands
               run: |
-                php -r "echo (new Imagick())->queryFormats('SVG') ? 'SVG supported' : 'SVG not supported';"
+                sudo apt-get update
+                sudo apt-get install -y inkscape librsvg2-bin
 
             - name: Validate composer.json and composer.lock
               run: composer validate --strict
@@ -99,10 +98,13 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: 8.4
-                  extensions: json, gd, imagick-imagick/imagick@3.8.0
+                  extensions: json, gd, imagick
                   ini-values: date.timezone=Europe/Paris
-              env:
-                  IMAGICK_LIBS: librsvg2-dev libmagickwand-dev imagemagick inkscape libmagickcore-dev
+
+            - name: Install SVG renderer commands
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y inkscape librsvg2-bin
 
             - name: Install dependencies
               run: composer install --prefer-dist --no-progress

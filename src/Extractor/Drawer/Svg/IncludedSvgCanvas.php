@@ -84,7 +84,7 @@ final class IncludedSvgCanvas implements DrawerInterface
     {
         $g = $this->g = $this->builder->addGroup($image->bounds());
         $tag = $g->addChild('image');
-        $tag->addAttribute('href', $image->toBase64Data());
+        $tag->addAttribute('xlink:href', $image->toBase64Data(), SvgBuilder::XLINK_NS);
     }
 
     #[Override]
@@ -111,7 +111,7 @@ final class IncludedSvgCanvas implements DrawerInterface
 
         foreach ($included->ids as $id) {
             $use = $g->addChild('use');
-            $use->addAttribute('href', '#' . $id);
+            $use->addAttribute('xlink:href', '#' . $id, SvgBuilder::XLINK_NS);
             $use->addAttribute('width', (string) ($bounds->width() / 20));
             $use->addAttribute('height', (string) ($bounds->height() / 20));
             $use->addAttribute('transform', $matrix->toSvgTransformation());
