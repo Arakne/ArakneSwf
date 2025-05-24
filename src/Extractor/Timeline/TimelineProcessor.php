@@ -89,6 +89,8 @@ final readonly class TimelineProcessor
          */
         $frames = [];
 
+        $empty = true;
+
         // Bounds of the sprite
         $xmin = PHP_INT_MAX;
         $ymin = PHP_INT_MAX;
@@ -145,7 +147,10 @@ final readonly class TimelineProcessor
                 //continue;
             }
 
+            $empty = false;
+
             // @todo handle PlaceObject3Tag::className if present
+            // @todo use move flag instead of check the characterId: the character can be changed even on an existing object
             if ($frameDisplayTag->characterId !== null) {
                 // New character at the given depth
                 $objectProperties = $this->placeNewObject($frameDisplayTag);
@@ -181,7 +186,7 @@ final readonly class TimelineProcessor
             }
         }
 
-        $spriteBounds = $objectsByDepth ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0); // Empty sprite, use empty bounds
+        $spriteBounds = !$empty ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0); // Empty sprite, use empty bounds
 
         // Use same bounds on all frames
         foreach ($frames as $i => $frame) {

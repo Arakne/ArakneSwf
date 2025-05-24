@@ -27,6 +27,11 @@ It may also require some PHP extensions, depending on the features you want to u
 - `xml` for sprite export (performed in SVG format)
 - `Imagick` to convert SVG to PNG or JPEG format
 
+> [!NOTE]
+> On some systems, the `Imagick` extension does not support well the SVG format, so the conversion may result in a weird image.
+> In this case, try to install `rsvg-convert` command (package `librsvg2-bin` on Debian/Ubuntu, `librsvg2-tools` on Fedora) or `inkscape`.
+> Inkscape is slower than rsvg, but may produce better results.
+
 ```bash
 git clone https://github.com/Arakne/ArakneSwf
 cd ArakneSwf

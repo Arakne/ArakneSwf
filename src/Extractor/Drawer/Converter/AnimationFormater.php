@@ -23,9 +23,9 @@ namespace Arakne\Swf\Extractor\Drawer\Converter;
 use Arakne\Swf\Extractor\DrawableInterface;
 
 /**
- * Formats a drawable to a specific image format.
+ * Formats a drawable as an animated image.
  */
-final class DrawableFormater
+final class AnimationFormater
 {
     private ?Converter $converter = null;
 
@@ -40,15 +40,16 @@ final class DrawableFormater
      * Render the drawable to the specified image format.
      *
      * @param DrawableInterface $drawable The drawable to render.
-     * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
+     * @param positive-int $fps The frame rate of the animation
+     * @param bool $recursive If true, will count the frames of all children recursively
      *
      * @return string The image blob in the specified format.
      */
-    public function format(DrawableInterface $drawable, int $frame = 0): string
+    public function format(DrawableInterface $drawable, int $fps, bool $recursive = false): string
     {
         $converter = $this->converter ??= new Converter($this->size);
 
-        return $this->format->convert($converter, $drawable, $frame);
+        return $this->format->animation($converter, $drawable, $fps, $recursive);
     }
 
     /**

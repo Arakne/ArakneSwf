@@ -271,4 +271,15 @@ class SwfExtractorTest extends ImageTestCase
         $sprite = $extractor->timeline();
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/60/timeline.svg', $sprite->toSvg());
     }
+
+    #[Test]
+    public function bugZeroSizeSpriteWhenLastFrameIsEmpty()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/1058/1058.swf');
+        $extractor = new SwfExtractor($swf);
+        $sprite = $extractor->byName('anim0R');
+
+        $this->assertEquals(new Rectangle(-817, 1430, -2299, 921), $sprite->bounds());
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1058/anim0R.svg', $sprite->toSvg());
+    }
 }

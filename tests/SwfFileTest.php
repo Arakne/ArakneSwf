@@ -9,6 +9,7 @@ use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\TagParseError;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Error\TagParseException;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
@@ -23,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 
 use function array_map;
 use function iterator_to_array;
+use function var_dump;
 
 class SwfFileTest extends TestCase
 {
@@ -282,5 +284,26 @@ class SwfFileTest extends TestCase
         foreach ($timeline->toSvgAll() as $f => $svg) {
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/Extractor/Fixtures/1/frame_'.$f.'.svg', $svg);
         }
+    }
+
+    #[Test]
+    public function header()
+    {
+        $swf = new SwfFile(__DIR__.'/Extractor/Fixtures/1/1.swf');
+        $header = $swf->header();
+
+        $this->assertSame('CWS', $header->signature);
+        $this->assertSame(7, $header->version);
+        $this->assertSame(2564, $header->fileLength);
+        $this->assertEquals(new Rectangle(0, 20, 0, 20), $header->frameSize);
+        $this->assertSame(12.0, $header->frameRate);
+        $this->assertSame(1, $header->frameCount);
+    }
+
+    #[Test]
+    public function frameRate()
+    {
+        $swf = new SwfFile(__DIR__.'/Extractor/Fixtures/1/1.swf');
+        $this->assertSame(12, $swf->frameRate());
     }
 }

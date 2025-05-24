@@ -123,8 +123,10 @@ final readonly class ExtractCommand
                 --frame-format <format>
                                       Specify the format to use for the sprite or timeline frames. This option is repeatable.
                                       The format of this option is <filetype>@<width>x<height>, where:
-                                      - <filetype> is the type of file to generate (svg, png, gif, webp)
-                                      - <width> is the width of the output image (optional)
+                                      - <filetype> is the type of file to generate (svg, png, gif, webp).
+                                          It can be prefixed with "a:"/"anim:" to generate an animated file (only for gif and webp).
+                                          When an animated file is requested, all frames will be exported, even if the --frames option is used.
+                                      - <width> is the width of the output image (optional).
                                       - <height> is the height of the output image (optional). 
                                           If only the width is specified, the height will be set to the same value.
 
@@ -159,13 +161,13 @@ final readonly class ExtractCommand
 
         try {
             foreach ($options->characters as $characterId) {
-                $success = $this->processCharacter($options, $file, (string)$characterId, $extractor->character($characterId)) && $success;
+                $success = $this->processCharacter($options, $swf, (string)$characterId, $extractor->character($characterId)) && $success;
             }
 
             foreach ($options->exported as $name) {
                 try {
                     $character = $extractor->byName($name);
-                    $success = $this->processCharacter($options, $file, $name, $character) && $success;
+                    $success = $this->processCharacter($options, $swf, $name, $character) && $success;
                 } catch (InvalidArgumentException) {
                     echo "The character $name is not exported in the SWF file", PHP_EOL;
                     $success = false;
@@ -174,23 +176,23 @@ final readonly class ExtractCommand
 
             if ($options->allSprites) {
                 foreach ($extractor->sprites() as $id => $sprite) {
-                    $success = $this->processCharacter($options, $file, (string)$id, $sprite) && $success;
+                    $success = $this->processCharacter($options, $swf, (string)$id, $sprite) && $success;
                 }
             }
 
             if ($options->allExported) {
                 foreach ($extractor->exported() as $name => $id) {
                     $character = $extractor->character($id);
-                    $success = $this->processCharacter($options, $file, (string) $name, $character) && $success;
+                    $success = $this->processCharacter($options, $swf, (string) $name, $character) && $success;
                 }
             }
 
             if ($options->timeline) {
-                $success = $this->processCharacter($options, $file, 'timeline', $extractor->timeline(false)) && $success;
+                $success = $this->processCharacter($options, $swf, 'timeline', $extractor->timeline(false)) && $success;
             }
 
             if ($options->variables) {
-                $success = $this->processVariables($options, $file, 'variables', $swf) && $success;
+                $success = $this->processVariables($options, 'variables', $swf) && $success;
             }
         } finally {
             $extractor->release();
@@ -199,18 +201,18 @@ final readonly class ExtractCommand
         return $success;
     }
 
-    private function processCharacter(ExtractOptions $options, string $file, string $name, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
+    private function processCharacter(ExtractOptions $options, SwfFile $file, string $name, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
     {
         return match (true) {
             $character instanceof Timeline => $this->processTimeline($options, $file, $name, $character),
             $character instanceof SpriteDefinition => $this->processSprite($options, $file, $name, $character),
-            $character instanceof ImageCharacterInterface => $this->processImage($options, $file, $name, $character),
-            $character instanceof ShapeDefinition => $this->processShape($options, $file, $name, $character),
+            $character instanceof ImageCharacterInterface => $this->processImage($options, $file->path, $name, $character),
+            $character instanceof ShapeDefinition => $this->processShape($options, $file->path, $name, $character),
             $character instanceof MissingCharacter => (print "The character $name is missing in the SWF file" . PHP_EOL) && false,
         };
     }
 
-    private function processVariables(ExtractOptions $options, string $file, string $name, SwfFile $swf): bool
+    private function processVariables(ExtractOptions $options, string $name, SwfFile $swf): bool
     {
         $variables = $swf->variables();
         $content = json_encode($variables, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -219,39 +221,47 @@ final readonly class ExtractCommand
 
         return $this->writeToOutputDir(
             $content,
-            $file,
+            $swf->path,
             $options,
             $name,
             'json'
         );
     }
 
-    private function processTimeline(ExtractOptions $options, string $file, string $name, Timeline $timeline): bool
+    private function processTimeline(ExtractOptions $options, SwfFile $file, string $name, Timeline $timeline): bool
     {
+        $success = true;
+
+        foreach ($options->animationFormat as $formater) {
+            $success = $this->writeToOutputDir(
+                $formater->format($timeline, $file->frameRate(), $options->fullAnimation),
+                $file->path,
+                $options,
+                $name,
+                $formater->extension()
+            ) && $success;
+        }
+
         $framesCount = $timeline->framesCount($options->fullAnimation);
 
         if ($framesCount === 1) {
-            return $this->processTimelineFrame($options, $file, $name, $timeline);
+            return $this->processTimelineFrame($options, $file->path, $name, $timeline) && $success;
         }
 
         if ($options->frames === null) {
-            $success = true;
-
             for ($frame = 0; $frame < $framesCount; $frame++) {
-                $success = $this->processTimelineFrame($options, $file, $name, $timeline, $frame) && $success;
+                $success = $this->processTimelineFrame($options, $file->path, $name, $timeline, $frame) && $success;
             }
 
             return $success;
         }
-
-        $success = true;
 
         foreach ($options->frames as $frame) {
             if ($frame > $framesCount) {
                 break;
             }
 
-            $success = $this->processTimelineFrame($options, $file, $name, $timeline, $frame - 1) && $success;
+            $success = $this->processTimelineFrame($options, $file->path, $name, $timeline, $frame - 1) && $success;
         }
 
         return $success;
@@ -283,7 +293,7 @@ final readonly class ExtractCommand
         return $this->writeToOutputDir($image->toPng(), $file, $options, $name, 'png');
     }
 
-    private function processSprite(ExtractOptions $options, string $file, string $name, SpriteDefinition $sprite): bool
+    private function processSprite(ExtractOptions $options, SwfFile $file, string $name, SpriteDefinition $sprite): bool
     {
         return $this->processTimeline($options, $file, $name, $sprite->timeline());
     }

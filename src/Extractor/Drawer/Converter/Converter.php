@@ -31,6 +31,10 @@ use SimpleXMLElement;
 use function assert;
 use function ceil;
 use function class_exists;
+use function fopen;
+use function max;
+use function rewind;
+use function round;
 use function sprintf;
 
 /**
@@ -127,6 +131,8 @@ final readonly class Converter
      * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
      *
      * @return string The image blob in GIF format.
+     *
+     * @see Converter::toAnimatedGif() to generate animated GIFs.
      */
     public function toGif(DrawableInterface $drawable, int $frame = 0): string
     {
@@ -137,12 +143,31 @@ final readonly class Converter
     }
 
     /**
+     * Render all frames of the drawable as an animated GIF image.
+     *
+     * @param DrawableInterface $drawable The drawable to render.
+     * @param positive-int $fps The frame rate of the animation
+     * @param bool $recursive If true, will count the frames of all children recursively
+     *
+     * @return string The image blob in GIF format.
+     */
+    public function toAnimatedGif(DrawableInterface $drawable, int $fps, bool $recursive): string
+    {
+        $gif = new Imagick();
+        $gif->setFormat('gif');
+
+        return $this->renderAnimatedImage($gif, 'gif', $drawable, $fps, $recursive);
+    }
+
+    /**
      * Render the drawable to WebP format.
      *
      * @param DrawableInterface $drawable The drawable to render.
      * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
      *
      * @return string The image blob in WebP format.
+     *
+     * @see Converter::toAnimatedWebp() to generate animated WebP images.
      */
     // @todo allow to pass options to webp and other formats
     public function toWebp(DrawableInterface $drawable, int $frame = 0): string
@@ -152,6 +177,24 @@ final readonly class Converter
         $img->setFormat('webp');
 
         return $img->getImageBlob();
+    }
+
+    /**
+     * Render all frames of the drawable as an animated WebP image.
+     *
+     * @param DrawableInterface $drawable The drawable to render.
+     * @param positive-int $fps The frame rate of the animation
+     * @param bool $recursive If true, will count the frames of all children recursively
+     *
+     * @return string The image blob in WebP format.
+     */
+    public function toAnimatedWebp(DrawableInterface $drawable, int $fps, bool $recursive): string
+    {
+        $anim = new Imagick();
+        $anim->setFormat('webp');
+        $anim->setOption('webp:lossless', 'true');
+
+        return $this->renderAnimatedImage($anim, 'webp', $drawable, $fps, $recursive);
     }
 
     /**
@@ -185,5 +228,35 @@ final readonly class Converter
         $svg = $this->toSvg($drawable, $frame);
 
         return ($this->svgRenderer ?? ImagickSvgRendererResolver::get())->open($svg, $this->backgroundColor);
+    }
+
+    private function renderAnimatedImage(Imagick $target, string $format, DrawableInterface $drawable, int $fps, bool $recursive): string
+    {
+        $count = $drawable->framesCount($recursive);
+        $delay = (int) max(round(100 / $fps), 1);
+
+        for ($frame = 0; $frame < $count; $frame++) {
+            $img = $this->toImagick($drawable, $frame);
+            $img->setImageFormat($format);
+            $img->setImageDelay($delay);
+            $img->setImageDispose(2);
+
+            $target->addImage($img);
+        }
+
+        $out = fopen('php://memory', 'w+');
+        assert($out !== false);
+
+        try {
+            $target->writeImagesFile($out);
+
+            rewind($out);
+            $content = stream_get_contents($out);
+            assert(!empty($content));
+        } finally {
+            fclose($out);
+        }
+
+        return $content;
     }
 }

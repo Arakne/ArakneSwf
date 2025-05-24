@@ -32,7 +32,6 @@ enum ImageFormat: string
     case Jpeg = 'jpeg';
     case Gif = 'gif';
     case Webp = 'webp';
-    // @todo animated formats
 
     /**
      * Call the converter to convert the drawable to the specified format.
@@ -47,6 +46,25 @@ enum ImageFormat: string
             self::Jpeg => $converter->toJpeg($drawable, $frame),
             self::Gif => $converter->toGif($drawable, $frame),
             self::Webp => $converter->toWebp($drawable, $frame),
+        };
+    }
+
+    /**
+     * Render the character as an animated image.
+     *
+     * @param Converter $converter The converter to use
+     * @param DrawableInterface $drawable The drawable to render
+     * @param positive-int $fps The frame rate of the animation
+     * @param bool $recursive If true, will count the frames of all children recursively
+     *
+     * @return string The image blob in the specified format.
+     */
+    public function animation(Converter $converter, DrawableInterface $drawable, int $fps, bool $recursive = false): string
+    {
+        return match ($this) {
+            self::Gif => $converter->toAnimatedGif($drawable, $fps, $recursive),
+            self::Webp => $converter->toAnimatedWebp($drawable, $fps, $recursive),
+            default => throw new \RuntimeException('Animation not supported for this format'),
         };
     }
 

@@ -32,6 +32,7 @@ use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Swf;
@@ -48,6 +49,8 @@ use function strlen;
  */
 final class SwfFile
 {
+    public const int MAX_FRAME_RATE = 120;
+
     private ?Swf $parser = null;
 
     public function __construct(
@@ -106,11 +109,39 @@ final class SwfFile
     }
 
     /**
+     * Get the SWF file header.
+     */
+    public function header(): SwfHeader
+    {
+        return $this->parser()->header;
+    }
+
+    /**
      * Get the display size of SWF file frames.
      */
     public function displayBounds(): Rectangle
     {
         return $this->parser()->header->frameSize;
+    }
+
+    /**
+     * Get the frame rate of the SWF file.
+     *
+     * @return positive-int
+     */
+    public function frameRate(): int
+    {
+        $rate = (int) $this->parser()->header->frameRate;
+
+        // When the frame rate is 0, it should be considered as the maximum frame rate.
+        // See: https://www.m2osw.com/swf_tag_file_header#comment-1345
+        // Negative values are possible due to the usage of fixed8, but older specs define it as UI16,
+        // so we consider them same as 0.
+        if ($rate <= 0) {
+            return self::MAX_FRAME_RATE;
+        }
+
+        return $rate > self::MAX_FRAME_RATE ? self::MAX_FRAME_RATE : $rate;
     }
 
     /**

@@ -20,12 +20,13 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Console;
 
+use Arakne\Swf\Extractor\Drawer\Converter\AnimationFormater;
 use Arakne\Swf\Extractor\Drawer\Converter\DrawableFormater;
 use Arakne\Swf\Extractor\Drawer\Converter\FitSizeResizer;
 use Arakne\Swf\Extractor\Drawer\Converter\ImageFormat;
 use InvalidArgumentException;
-use RuntimeException;
 
+use function array_fill_keys;
 use function array_map;
 use function array_pop;
 use function array_push;
@@ -142,6 +143,13 @@ final readonly class ExtractOptions
          * @var list<DrawableFormater>
          */
         public array $frameFormat = [new DrawableFormater(ImageFormat::Svg)],
+
+        /**
+         * The format to use for render the frames/sprites as an animated image.
+         *
+         * @var list<AnimationFormater>
+         */
+        public array $animationFormat = [],
     ) {}
 
     /**
@@ -199,6 +207,8 @@ final readonly class ExtractOptions
         }
 
         try {
+            [$frameFormat, $animationFormat] = self::parseFormatOption($options, 'frame-format');
+
             return new self(
                 $cmd,
                 help: isset($options['h']) || isset($options['help']),
@@ -213,7 +223,8 @@ final readonly class ExtractOptions
                 allExported: isset($options['all-exported']),
                 timeline: isset($options['timeline']),
                 variables: isset($options['variables']),
-                frameFormat: self::parseFormatOption($options, 'frame-format') ?: [new DrawableFormater(ImageFormat::Svg)],
+                frameFormat: $frameFormat,
+                animationFormat: $animationFormat,
             );
         } catch (InvalidArgumentException $e) {
             return new self($cmd, error: $e->getMessage());
@@ -262,15 +273,21 @@ final readonly class ExtractOptions
      * @param array<string, string|bool|list<string|bool>> $options
      * @param string $optionName
      *
-     * @return list<DrawableFormater>
+     * @return list{list<DrawableFormater>, list<AnimationFormater>}
      */
     private static function parseFormatOption(array $options, string $optionName): array
     {
-        $formatters = [];
+        $frameFormatters = [];
+        $animationFormatters = [];
 
         foreach ((array) ($options[$optionName] ?? []) as $format) {
             $formatStr = explode('@', strtolower((string) $format), 2);
-            $format = ImageFormat::tryFrom($formatStr[0]) ?? throw new InvalidArgumentException(sprintf('Invalid value for option --%s: the format %s is not supported', $optionName, $formatStr[0]));
+            $formatAndFlags = explode(':', $formatStr[0]);
+            $formatName = array_pop($formatAndFlags);
+            $options = array_fill_keys($formatAndFlags, true);
+            $isAnimation = isset($options['a']) || isset($options['anim']) || isset($options['animated']) || isset($options['animation']);
+
+            $format = ImageFormat::tryFrom($formatName) ?? throw new InvalidArgumentException(sprintf('Invalid value for option --%s: the format %s is not supported', $optionName, $formatName));
 
             if (isset($formatStr[1])) {
                 $size = explode('x', $formatStr[1], 2);
@@ -283,9 +300,17 @@ final readonly class ExtractOptions
                 $resizer = null;
             }
 
-            $formatters[] = new DrawableFormater($format, $resizer);
+            if ($isAnimation) {
+                $animationFormatters[] = new AnimationFormater($format, $resizer, $options);
+            } else {
+                $frameFormatters[] = new DrawableFormater($format, $resizer, $options);
+            }
         }
 
-        return $formatters;
+        if (!$frameFormatters && !$animationFormatters) {
+            $frameFormatters[] = new DrawableFormater(ImageFormat::Svg);
+        }
+
+        return [$frameFormatters, $animationFormatters];
     }
 }

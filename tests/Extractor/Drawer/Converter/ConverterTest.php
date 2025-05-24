@@ -197,4 +197,63 @@ class ConverterTest extends ImageTestCase
         $this->assertSame(121, $info[0]);
         $this->assertSame(128, $info[1]);
     }
+
+    #[Test]
+    public function toAnimatedGif()
+    {
+        $converter = $this->createConverter();
+        $drawable = (new SwfFile(__DIR__.'/../../Fixtures/mob-leponge/mob-leponge.swf'))->assetByName('walkR');
+        $gif = $converter->toAnimatedGif($drawable, 20, true);
+
+        $this->assertAnimatedImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/mob-leponge/walkR.gif',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg.gif',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape12.gif',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14.gif',
+        ], $gif, 0.01);
+    }
+
+    #[Test]
+    public function toAnimatedGifWithSize()
+    {
+        $converter = $this->createConverter(new FitSizeResizer(128, 128));
+        $drawable = (new SwfFile(__DIR__.'/../../Fixtures/mob-leponge/mob-leponge.swf'))->assetByName('walkR');
+        $gif = $converter->toAnimatedGif($drawable, 20, true);
+
+        $this->assertAnimatedImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/mob-leponge/walkR@128.gif',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg@128.gif',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape12@128.gif',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14@128.gif',
+        ], $gif, 0.01);
+    }
+
+    #[Test]
+    public function toAnimatedWebp()
+    {
+        $converter = $this->createConverter();
+        $drawable = (new SwfFile(__DIR__.'/../../Fixtures/mob-leponge/mob-leponge.swf'))->assetByName('walkR');
+        $webp = $converter->toAnimatedWebp($drawable, 20, true);
+
+        $this->assertAnimatedImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/mob-leponge/walkR.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14.webp',
+        ], $webp, 0.01);
+    }
+
+    #[Test]
+    public function toAnimatedWebpWithSize()
+    {
+        $converter = $this->createConverter(new FitSizeResizer(128, 128));
+        $drawable = (new SwfFile(__DIR__.'/../../Fixtures/mob-leponge/mob-leponge.swf'))->assetByName('walkR');
+        $webp = $converter->toAnimatedWebp($drawable, 20, true);
+
+        $this->assertAnimatedImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/mob-leponge/walkR@128.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg@128.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape12@128.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14@128.webp',
+        ], $webp, 0.01);
+    }
 }

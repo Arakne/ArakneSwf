@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__.'/../../../src/Console/ExtractOptions.php';
+require_once __DIR__.'/../../../src/Extractor/Drawer/Converter/AnimationFormater.php';
 require_once __DIR__.'/../../../src/Extractor/Drawer/Converter/DrawableFormater.php';
 require_once __DIR__.'/../../../src/Extractor/Drawer/Converter/ImageFormat.php';
 require_once __DIR__.'/../../../src/Extractor/Drawer/Converter/ImageResizerInterface.php';

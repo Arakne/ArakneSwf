@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Console;
 
 use Arakne\Swf\Console\ExtractCommand;
 use Arakne\Swf\Console\ExtractOptions;
+use Arakne\Swf\Extractor\Drawer\Converter\AnimationFormater;
 use Arakne\Swf\Extractor\Drawer\Converter\DrawableFormater;
 use Arakne\Swf\Extractor\Drawer\Converter\ImageFormat;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
@@ -229,6 +230,32 @@ class ExtractCommandTest extends ImageTestCase
             ],
             file_get_contents($this->outputDir.'/1047/65_6.webp'),
             0.02
+        );
+    }
+
+    #[Test]
+    public function spriteAnimationAsAnimatedImage()
+    {
+        $this->exec(new ExtractOptions(
+            files: [__DIR__ . '/../Extractor/Fixtures/mob-leponge/mob-leponge.swf'],
+            output: $this->outputDir,
+            exported: ['walkR'],
+            fullAnimation: true,
+            frameFormat: [],
+            animationFormat: [
+                new AnimationFormater(ImageFormat::Webp),
+            ]
+        ));
+        $this->assertCount(1, glob($this->outputDir.'/mob-leponge/*.*'));
+
+        $this->assertAnimatedImageStringEqualsImageFile(
+            [
+                __DIR__ . '/../Extractor/Fixtures/mob-leponge/walkR.webp',
+                __DIR__ . '/../Extractor/Fixtures/mob-leponge/walkR-rsvg.webp',
+                __DIR__ . '/../Extractor/Fixtures/mob-leponge/walkR-inkscape14.webp',
+            ],
+            file_get_contents($this->outputDir.'/mob-leponge/walkR.webp'),
+            0.05
         );
     }
 
