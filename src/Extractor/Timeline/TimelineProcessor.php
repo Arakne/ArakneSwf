@@ -147,11 +147,19 @@ final readonly class TimelineProcessor
                 //continue;
             }
 
+            $isNewObject = !($frameDisplayTag->move ?? true);
+
+            // New object without characterId is not allowed
+            if ($isNewObject && $frameDisplayTag->characterId === null) {
+                // @todo: handle PlaceObject3Tag::className if present
+                continue;
+            }
+
             $empty = false;
 
             // @todo handle PlaceObject3Tag::className if present
             // @todo use move flag instead of check the characterId: the character can be changed even on an existing object
-            if ($frameDisplayTag->characterId !== null) {
+            if ($isNewObject) {
                 // New character at the given depth
                 $objectProperties = $this->placeNewObject($frameDisplayTag);
             } else {
@@ -225,16 +233,13 @@ final readonly class TimelineProcessor
             );
         }
 
-        if ($tag->colorTransform) {
-            $object = $object->transformColors($tag->colorTransform);
-        }
-
         return new FrameObject(
             $tag->characterId,
             $tag->depth,
             $object,
             $currentObjectBounds,
             $newMatrix,
+            $tag->colorTransform,
             filters: $tag->surfaceFilterList ?? [],
             blendMode: BlendMode::tryFrom($tag->blendMode ?? 1) ?? BlendMode::Normal,
         );
@@ -249,7 +254,20 @@ final readonly class TimelineProcessor
      */
     private function modifyObject(PlaceObject2Tag|PlaceObject3Tag $tag, FrameObject $objectProperties): FrameObject
     {
-        if ($tag->matrix) {
+        if ($tag->characterId !== null) {
+            // New object to display, so we need to modify the bounds and matrix according to the new object bounds
+            $oldObjectBounds = $objectProperties->object->bounds();
+            $newObject = $this->extractor->character($tag->characterId);
+            $matrix = $tag->matrix ?? $objectProperties->matrix->translate(-$oldObjectBounds->xmin, -$oldObjectBounds->ymin);
+            $newObjectBounds = $newObject->bounds();
+
+            $objectProperties = $objectProperties->with(
+                characterId: $tag->characterId,
+                object: $newObject,
+                bounds: $newObjectBounds->transform($matrix),
+                matrix: $matrix->translate($newObjectBounds->xmin, $newObjectBounds->ymin),
+            );
+        } elseif ($tag->matrix) {
             $currentObjectBounds = $objectProperties->object->bounds();
             $objectProperties = $objectProperties->with(
                 bounds: $currentObjectBounds->transform($tag->matrix),
@@ -266,13 +284,7 @@ final readonly class TimelineProcessor
         }
 
         if ($tag->colorTransform) {
-            // Because the color transform is already applied to the previous object, we need to load the original object
-            // And apply the color transform to it
-            $objectProperties = $objectProperties->with(
-                object: $this->extractor
-                    ->character($objectProperties->characterId)
-                    ->transformColors($tag->colorTransform),
-            );
+            $objectProperties = $objectProperties->with(colorTransform: $tag->colorTransform);
         }
 
         return $objectProperties;

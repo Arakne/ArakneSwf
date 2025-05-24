@@ -109,8 +109,8 @@ final readonly class Frame implements DrawableInterface
     {
         $objects = [];
 
-        foreach ($this->objects as $object) {
-            $objects[] = $object->transformColors($colorTransform);
+        foreach ($this->objects as $depth => $object) {
+            $objects[$depth] = $object->transformColors($colorTransform);
         }
 
         return new self(

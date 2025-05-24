@@ -33,6 +33,8 @@ use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
+use function assert;
+
 /**
  * Single object displayed in a frame
  */
@@ -68,17 +70,30 @@ final readonly class FrameObject
         public Matrix $matrix,
 
         /**
-         * Color transformations to apply to the object
-         *
-         * @var ColorTransform[]
+         * Color transformation property to apply to the object.
          */
-        public array $colorTransforms = [],
+        public ?ColorTransform $colorTransform = null,
 
         /**
          * @var list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
          */
         public array $filters = [],
         public BlendMode $blendMode = BlendMode::Normal,
+
+        /**
+         * Color transformations to apply to the object
+         *
+         * This property is fill by the `transformColors()` method,
+         * and only used internally to apply lazily the color transformations, which can be costly when transformations
+         * are applied recursively on sprites.
+         *
+         * It should not be confused with the `colorTransform` property,
+         * which is always applied first, and can be changed by the `with()` method, in context of a PlaceObjectXTag
+         * with move flag set to true.
+         *
+         * @var ColorTransform[]
+         */
+        private array $colorTransforms = [],
     ) {}
 
     /**
@@ -87,6 +102,10 @@ final readonly class FrameObject
     public function transformedObject(): DrawableInterface
     {
         $object = $this->object;
+
+        if ($this->colorTransform) {
+            $object = $object->transformColors($this->colorTransform);
+        }
 
         // Apply each color transformation to the object
         // Note: it's not possible to create a single composite color transformation
@@ -112,39 +131,48 @@ final readonly class FrameObject
             $this->object,
             $this->bounds,
             $this->matrix,
-            [...$this->colorTransforms, $colorTransform],
+            $this->colorTransform,
             $this->filters,
             $this->blendMode,
+            [...$this->colorTransforms, $colorTransform],
         );
     }
 
     /**
      * Modify the object properties and return a new object
      *
+     * @param int|null $characterId
      * @param DrawableInterface|null $object
      * @param Rectangle|null $bounds
      * @param Matrix|null $matrix
+     * @param ColorTransform|null $colorTransform
      * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>|null $filters
      * @param BlendMode|null $blendMode
      *
      * @return self
      */
     public function with(
+        ?int $characterId = null,
         ?DrawableInterface $object = null,
         ?Rectangle $bounds = null,
         ?Matrix $matrix = null,
+        ?ColorTransform $colorTransform = null,
         ?array $filters = null,
         ?BlendMode $blendMode = null,
     ): self {
+        // When a new character ID is provided, a new object must be provided too
+        assert($characterId === null || $object !== null);
+
         return new self(
-            $this->characterId,
+            $characterId ?? $this->characterId,
             $this->depth,
             $object ?? $this->object,
             $bounds ?? $this->bounds,
             $matrix ?? $this->matrix,
-            $this->colorTransforms,
+            $colorTransform ?? $this->colorTransform,
             $filters ?? $this->filters,
             $blendMode ?? $this->blendMode,
+            $this->colorTransforms,
         );
     }
 }

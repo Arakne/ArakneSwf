@@ -279,7 +279,30 @@ class SwfExtractorTest extends ImageTestCase
         $extractor = new SwfExtractor($swf);
         $sprite = $extractor->byName('anim0R');
 
-        $this->assertEquals(new Rectangle(-817, 1430, -2299, 921), $sprite->bounds());
+        $this->assertEquals(new Rectangle(-817, 1430, -2299, 816), $sprite->bounds());
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1058/anim0R.svg', $sprite->toSvg());
+    }
+
+    #[Test]
+    public function moveWithNewCharacter()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/1601/1601.swf');
+        $extractor = new SwfExtractor($swf);
+        $sprite = $extractor->byName('anim0R');
+        $this->assertInstanceOf(SpriteDefinition::class, $sprite);
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1601/anim0R/17.svg', $sprite->toSvg(17));
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1601/anim0R/18.svg', $sprite->toSvg(18));
+
+        $innerAnim = $sprite->timeline()->frames[0]->objects[1]->object;
+
+        $this->assertEquals($innerAnim->timeline()->frames[17]->objects[86]->matrix->scaleX, $innerAnim->timeline()->frames[18]->objects[86]->matrix->scaleX);
+        $this->assertEquals($innerAnim->timeline()->frames[17]->objects[86]->matrix->scaleY, $innerAnim->timeline()->frames[18]->objects[86]->matrix->scaleY);
+        $this->assertEquals($innerAnim->timeline()->frames[17]->objects[86]->matrix->rotateSkew0, $innerAnim->timeline()->frames[18]->objects[86]->matrix->rotateSkew0);
+        $this->assertEquals($innerAnim->timeline()->frames[17]->objects[86]->matrix->rotateSkew1, $innerAnim->timeline()->frames[18]->objects[86]->matrix->rotateSkew1);
+        $this->assertEqualsWithDelta($innerAnim->timeline()->frames[17]->objects[86]->matrix->translateX, $innerAnim->timeline()->frames[18]->objects[86]->matrix->translateX, 100);
+        $this->assertEqualsWithDelta($innerAnim->timeline()->frames[17]->objects[86]->matrix->translateY, $innerAnim->timeline()->frames[18]->objects[86]->matrix->translateY, 100);
+        $this->assertEquals(118, $innerAnim->timeline()->frames[17]->objects[86]->characterId);
+        $this->assertEquals(119, $innerAnim->timeline()->frames[18]->objects[86]->characterId);
     }
 }
