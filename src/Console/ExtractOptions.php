@@ -176,7 +176,7 @@ final readonly class ExtractOptions
         $arguments = array_slice($argv, $argsOffset);
 
         // By default, show the help message
-        if (!$options && !$arguments) {
+        if ((!$options && !$arguments) || (isset($options['h']) || isset($options['help']))) {
             return new self($cmd, help: true);
         }
 

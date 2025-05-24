@@ -36,6 +36,29 @@ class ExtractOptionsTest extends TestCase
         ], $this->exec(''));
     }
 
+    #[Test, TestWith(['-h']), TestWith(['--help'])]
+    public function help(string $cliOption)
+    {
+        $this->assertEquals([
+            'command' => __DIR__.'/Fixture/extract-options-test.php',
+            'error' => null,
+            'help' => true,
+            'files' => [],
+            'output' => '',
+            'outputFilename' => ExtractOptions::DEFAULT_OUTPUT_FILENAME,
+            'characters' => [],
+            'exported' => [],
+            'frames' => null,
+            'fullAnimation' => false,
+            'allSprites' => false,
+            'allExported' => false,
+            'timeline' => false,
+            'variables' => false,
+            'frameFormat' => [['format' => 'svg', 'size' => null, 'options' => []]],
+            'animationFormat' => [],
+        ], $this->exec($cliOption));
+    }
+
     #[Test]
     public function missingOutput()
     {
@@ -84,8 +107,6 @@ class ExtractOptionsTest extends TestCase
 
     #[
         Test,
-        TestWith(['-h', 'help']),
-        TestWith(['--help', 'help']),
         TestWith(['--full-animation', 'fullAnimation']),
         TestWith(['--all-sprites', 'allSprites']),
         TestWith(['--all-exported', 'allExported']),
