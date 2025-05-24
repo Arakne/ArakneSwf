@@ -212,6 +212,50 @@ $extractor->release();
 If you want a custom rendering format, you can implement [`Arakne\Swf\Extractor\Drawer\DrawerInterface`](./src/Extractor/Drawer/DrawerInterface.php) 
 and pass it to the method `draw()` of the character.
 
+### Render as raster image or animated image
+
+You can also render sprites and shapes as raster images, and animations as animated images (GIF, WebP).
+The conversion from vector to raster image is done using the `Arakne\Swf\Extractor\Drawer\Converter\Converter` class.
+
+> [!INFO]
+> It internally uses `Imagick` to convert SVG to raster images, so you need to have the `Imagick` extension installed.
+
+```php
+use Arakne\Swf\SwfFile;
+use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Extractor\Drawer\Converter\Converter;
+use Arakne\Swf\Extractor\Drawer\Converter\FitSizeResizer;
+
+$file = new SwfFile('my_anim.swf');
+$extractor = new SwfExtractor($file);
+
+// Create the converter
+$converter = new Converter();
+
+foreach ($extractor->sprites() as $sprite) {
+    // Render the sprite to the desired format
+    $png = $converter->toPng($sprite);
+    $jpeg = $converter->toJpeg($sprite);
+    $gif = $converter->toGif($sprite);
+    $webp = $converter->toWebp($sprite);
+
+    // You can also specify the frame to render
+    $png = $converter->toPng($sprite, 21);
+}
+
+// If you want to render as animated image, you can use the `toAnimatedGif()` or `toAnimatedWebp()` methods.
+$anim = $converter->toAnimatedWebp($extractor->timeline(), $file->frameRate());
+
+// You can also specify the desired size of the image, and the background color (which is useful for format which don't support transparency)
+$converter = new Converter(
+    new FitSizeResizer(256, 256), // Resize to fit in a 256x256 box
+    '#333', // Background color. Supports hexadecimal format (e.g. '#FF0000' for red), named colors (e.g. 'red'), rgb() format (e.g. 'rgb(255, 0, 0)' for red), or rgba() format (e.g. 'rgba(255, 0, 0, 0.5)' for semi-transparent red)
+);
+
+// No more transparency issue: an opaque background is used
+$img = $converter->toJpeg($extractor->byName('staticR'));
+```
+
 ### Extract ActionScript 2 variables & AVM interpreter
 
 This library implements a simple AVM interpreter, which can be used to interpret variable declarations in ActionScript 2, 

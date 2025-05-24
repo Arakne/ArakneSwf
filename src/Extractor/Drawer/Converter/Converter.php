@@ -151,7 +151,7 @@ final readonly class Converter
      *
      * @return string The image blob in GIF format.
      */
-    public function toAnimatedGif(DrawableInterface $drawable, int $fps, bool $recursive): string
+    public function toAnimatedGif(DrawableInterface $drawable, int $fps = 24, bool $recursive = false): string
     {
         $gif = new Imagick();
         $gif->setFormat('gif');
@@ -188,7 +188,7 @@ final readonly class Converter
      *
      * @return string The image blob in WebP format.
      */
-    public function toAnimatedWebp(DrawableInterface $drawable, int $fps, bool $recursive): string
+    public function toAnimatedWebp(DrawableInterface $drawable, int $fps = 24, bool $recursive = false): string
     {
         $anim = new Imagick();
         $anim->setFormat('webp');
