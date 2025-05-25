@@ -43,6 +43,13 @@ use function ksort;
 final readonly class TimelineProcessor
 {
     /**
+     * Maximum bounds size for a sprite
+     * This value is arbitrary set to 8192 pixels.
+     * Any objects that result in a larger bounds will be added to the display list, but ignored for computing the sprite bounds.
+     */
+    private const int MAX_BOUNDS = 163_840;
+
+    /**
      * List of supported tag type ids
      */
     public const array TAG_TYPES = [
@@ -155,8 +162,6 @@ final readonly class TimelineProcessor
                 continue;
             }
 
-            $empty = false;
-
             // @todo handle PlaceObject3Tag::className if present
             // @todo use move flag instead of check the characterId: the character can be changed even on an existing object
             if ($isNewObject) {
@@ -176,6 +181,26 @@ final readonly class TimelineProcessor
 
             $objectsByDepth[$frameDisplayTag->depth] = $objectProperties;
             $currentObjectBounds = $objectProperties->bounds;
+
+            if ($currentObjectBounds->width() > self::MAX_BOUNDS || $currentObjectBounds->height() > self::MAX_BOUNDS) {
+                // Do not use this object for computing the sprite bounds
+                continue;
+            }
+
+            if (
+                !$empty && (
+                    $currentObjectBounds->xmax - $xmin > self::MAX_BOUNDS
+                    || $currentObjectBounds->ymax - $ymin > self::MAX_BOUNDS
+                    || $xmax - $currentObjectBounds->xmin > self::MAX_BOUNDS
+                    || $ymax - $currentObjectBounds->ymin > self::MAX_BOUNDS
+                )
+            ) {
+                // The placement of this object will result in a sprite that is too large
+                // So we ignore it for computing the sprite bounds
+                continue;
+            }
+
+            $empty = false;
 
             if ($currentObjectBounds->xmax > $xmax) {
                 $xmax = $currentObjectBounds->xmax;

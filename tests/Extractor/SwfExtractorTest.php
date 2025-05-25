@@ -305,4 +305,16 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertEquals(118, $innerAnim->timeline()->frames[17]->objects[86]->characterId);
         $this->assertEquals(119, $innerAnim->timeline()->frames[18]->objects[86]->characterId);
     }
+
+    #[Test]
+    public function ignoreFrameObjectWithTooHighBounds()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/1435/1435.swf');
+        $extractor = new SwfExtractor($swf);
+        $sprite = $extractor->byName('anim0R');
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1435/anim0R.svg', $sprite->toSvg(23));
+        $this->assertSame((int) (48.45*20), $sprite->bounds()->width());
+        $this->assertSame((int) (35.95*20), $sprite->bounds()->height());
+    }
 }

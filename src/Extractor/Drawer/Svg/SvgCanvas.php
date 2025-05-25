@@ -34,8 +34,6 @@ use SimpleXMLElement;
 
 /**
  * Drawer implementation for generate SVG XML
- *
- * @todo use xlink (xmlns:xlink="http://www.w3.org/1999/xlink") for href. inkscape < 1.3 does not support href
  */
 final class SvgCanvas implements DrawerInterface
 {
