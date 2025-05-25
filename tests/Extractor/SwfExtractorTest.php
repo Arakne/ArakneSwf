@@ -317,4 +317,15 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertSame((int) (48.45*20), $sprite->bounds()->width());
         $this->assertSame((int) (35.95*20), $sprite->bounds()->height());
     }
+
+    #[Test]
+    public function swf1FileWithPlaceObject()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/swf1/new_theater.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline();
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/swf1/new_theater_frame0.svg', $timeline->toSvg());
+    }
 }

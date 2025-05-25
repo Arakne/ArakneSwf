@@ -144,7 +144,7 @@ final readonly class TimelineProcessor
                 continue;
             }
 
-            if (!$frameDisplayTag instanceof PlaceObjectTag // @todo test with PlaceObjectTag
+            if (!$frameDisplayTag instanceof PlaceObjectTag
                 && !$frameDisplayTag instanceof PlaceObject2Tag
                 && !$frameDisplayTag instanceof PlaceObject3Tag
             ) {
@@ -154,7 +154,7 @@ final readonly class TimelineProcessor
                 //continue;
             }
 
-            $isNewObject = !($frameDisplayTag->move ?? true);
+            $isNewObject = !($frameDisplayTag->move ?? false);
 
             // New object without characterId is not allowed
             if ($isNewObject && $frameDisplayTag->characterId === null) {
