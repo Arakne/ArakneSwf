@@ -20,28 +20,17 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Drawer\Svg;
 
-use Arakne\Swf\Extractor\DrawableInterface;
-use Arakne\Swf\Extractor\Drawer\DrawerInterface;
-use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
-use Arakne\Swf\Extractor\Shape\Path;
-use Arakne\Swf\Extractor\Shape\Shape;
-use Arakne\Swf\Extractor\Timeline\BlendMode;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use BadMethodCallException;
-use LogicException;
 use Override;
 use SimpleXMLElement;
-
-use function implode;
-use function var_dump;
 
 /**
  * Drawer for SVG dependencies
  *
  * @internal Should only be used by {@see SvgCanvas}
  */
-final class IncludedSvgCanvas implements DrawerInterface
+final class IncludedSvgCanvas extends AbstractSvgCanvas
 {
     /**
      * List of ids of objects drawn in this canvas
@@ -50,162 +39,51 @@ final class IncludedSvgCanvas implements DrawerInterface
      * @var list<string>
      */
     public private(set) array $ids = [];
-    private readonly SvgBuilder $builder;
-    private ?SimpleXMLElement $g = null;
-    private ?Rectangle $bounds = null;
-    private ?SimpleXMLElement $currentTarget = null;
-    // @todo handle nested clips
 
     /**
-     * All active clipPath ids.
-     * The key is same as the value, and is the id of the clipPath element.
-     *
-     * @var array<string, string>
-     */
-    private array $activeClipPaths = [];
-
-    /**
-     * @param SvgCanvas $root The root canvas
+     * @param AbstractSvgCanvas $root The root canvas
      * @param SimpleXMLElement $defs The <defs> element of the root canvas
      */
     public function __construct(
-        private readonly SvgCanvas $root,
+        private readonly AbstractSvgCanvas $root,
         private readonly SimpleXMLElement $defs
     ) {
-        $this->builder = new SvgBuilder($defs);
-    }
-
-    #[Override]
-    public function area(Rectangle $bounds): void
-    {
-        $this->currentTarget = $this->g = $this->builder->addGroup($bounds);
-        $this->bounds = $bounds;
-        $this->g->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
-    }
-
-    #[Override]
-    public function shape(Shape $shape): void
-    {
-        $this->currentTarget = $this->builder->addGroupWithOffset($shape->xOffset, $shape->yOffset);
-        $this->currentTarget->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
-
-        foreach ($shape->paths as $path) {
-            $this->path($path);
-        }
-    }
-
-    #[Override]
-    public function image(ImageCharacterInterface $image): void
-    {
-        $g = $this->currentTarget = $this->builder->addGroup($image->bounds());
-        $tag = $g->addChild('image');
-        $tag->addAttribute('xlink:href', $image->toBase64Data(), SvgBuilder::XLINK_NS);
-    }
-
-    #[Override]
-    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void
-    {
-        $included = new IncludedSvgCanvas($this->root, $this->defs);
-
-        $object->draw($included, $frame);
-        $bounds = $object->bounds();
-
-        $g = $this->target($object->bounds());
-
-        if ($filters && $included->ids) {
-            $filterId = 'filter-' . $included->ids[0];
-            $this->builder->addFilter($filters, $filterId);
-        } else {
-            $filterId = null;
-        }
-
-        foreach ($included->ids as $id) {
-            $use = $g->addChild('use');
-            $use->addAttribute('xlink:href', '#' . $id, SvgBuilder::XLINK_NS);
-            $use->addAttribute('width', (string) ($bounds->width() / 20));
-            $use->addAttribute('height', (string) ($bounds->height() / 20));
-            $use->addAttribute('transform', $matrix->toSvgTransformation());
-
-            if ($filterId) {
-                $use->addAttribute('filter', 'url(#' . $filterId . ')');
-            }
-
-            if ($cssBlendMode = $blendMode->toCssValue()) {
-                $use->addAttribute('style', 'mix-blend-mode: ' . $cssBlendMode);
-            }
-        }
-    }
-
-    private function target(Rectangle $bounds): SimpleXMLElement
-    {
-        $target = $this->currentTarget;
-
-        if ($target !== null) {
-            return $target;
-        }
-
-        $rootGroup = $this->g;
-
-        if (!$rootGroup) {
-            $rootGroup = $this->builder->addGroup($this->bounds ?? $bounds);
-            $rootGroup->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
-        }
-
-        // No clipping: use the root group
-        if (!$this->activeClipPaths) {
-            return $this->currentTarget = $rootGroup;
-        }
-
-        // If there are active clip paths, we need to create a new group and apply the clip paths to it
-        $target = $rootGroup;
-
-        // Rebuild current group to apply nested clip paths
-        foreach ($this->activeClipPaths as $id => $_) {
-            $target = $target->addChild('g');
-            $target->addAttribute('clip-path', 'url(#' . $id . ')');
-        }
-
-        return $this->currentTarget = $target;
-    }
-
-    #[Override]
-    public function startClip(DrawableInterface $object, Matrix $matrix, int $frame): string
-    {
-        $group = $this->g ?? throw new LogicException('No group defined for clipping');
-        $clipPath = $group->addChild('clipPath');
-        $clipPath->addAttribute('id', $id = $this->root->nextObjectId());
-        $clipPath->addAttribute('transform', $matrix->toSvgTransformation());
-
-        $clipPathDrawer = new ClipPathBuilder($clipPath, $this->builder);
-
-        $object->draw($clipPathDrawer, $frame);
-        $this->activeClipPaths[$id] = $id;
-
-        // Reset the current target, so the next drawing will apply the clip path on a new group
-        $this->currentTarget = null;
-
-        return $id;
-    }
-
-    #[Override]
-    public function endClip(string $clipId): void
-    {
-        unset($this->activeClipPaths[$clipId]);
-
-        // Reset the current target, so the next drawing will apply the clip path on a new group
-        $this->currentTarget = null;
-    }
-
-    #[Override]
-    public function path(Path $path): void
-    {
-        $g = $this->currentTarget ?? throw new LogicException('No group defined');
-        $this->builder->addPath($g, $path);
+        parent::__construct(new SvgBuilder($this->defs));
     }
 
     #[Override]
     public function render(): string
     {
         throw new BadMethodCallException('This is an internal implementation, rendering is performed by the root canvas');
+    }
+
+    #[Override]
+    protected function nextObjectId(): string
+    {
+        return $this->root->nextObjectId();
+    }
+
+    #[Override]
+    protected function defs(): SimpleXMLElement
+    {
+        return $this->defs;
+    }
+
+    #[Override]
+    protected function newGroup(SvgBuilder $builder, Rectangle $bounds): SimpleXMLElement
+    {
+        $group = $builder->addGroup($bounds);
+        $group->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
+
+        return $group;
+    }
+
+    #[Override]
+    protected function newGroupWithOffset(SvgBuilder $builder, int $offsetX, int $offsetY): SimpleXMLElement
+    {
+        $group = $builder->addGroupWithOffset($offsetX, $offsetY);
+        $group->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
+
+        return $group;
     }
 }
