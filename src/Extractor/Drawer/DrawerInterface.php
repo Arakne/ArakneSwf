@@ -77,6 +77,27 @@ interface DrawerInterface
     public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void;
 
     /**
+     * Use the given object as a clipping mask
+     *
+     * This mask will be applied to all subsequent drawing operations, until {@see DrawableInterface::endClip()} is called.
+     * This method will return an id that can be used to end the clip later.
+     *
+     * @param DrawableInterface $object The shape or sprite to use as a clipping mask
+     * @param Matrix $matrix The matrix to apply to the object
+     * @param int $frame The frame to draw.
+     *
+     * @return string The id of the clip, which can be used to end the clip later
+     */
+    public function startClip(DrawableInterface $object, Matrix $matrix, int $frame): string;
+
+    /**
+     * Stop the given clipping mask
+     *
+     * @param string $clipId The id of the clip to end, as returned by {@see DrawableInterface::startClip()}
+     */
+    public function endClip(string $clipId): void;
+
+    /**
      * Draw a path
      *
      * @param Path $path

@@ -328,4 +328,28 @@ class SwfExtractorTest extends ImageTestCase
 
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/swf1/new_theater_frame0.svg', $timeline->toSvg());
     }
+
+    #[Test]
+    public function withSingleClipDepth()
+    {
+        $swf = new SwfFile(__DIR__ . '/Fixtures/mask/189.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mask/189.svg', $timeline->toSvg());
+    }
+
+    #[Test]
+    public function withNestedClipDepth()
+    {
+        $swf = new SwfFile(__DIR__ . '/Fixtures/mask/nested_masks.swf');
+        $extractor = new SwfExtractor($swf);
+        $timeline = $extractor->timeline();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mask/nested_masks.svg', $timeline->toSvg());
+
+        $swf = new SwfFile(__DIR__ . '/Fixtures/mask/nested_masks2.swf');
+        $extractor = new SwfExtractor($swf);
+        $timeline = $extractor->timeline();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mask/nested_masks2.svg', $timeline->toSvg());
+    }
 }

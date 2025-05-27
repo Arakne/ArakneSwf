@@ -265,6 +265,7 @@ final readonly class TimelineProcessor
             $currentObjectBounds,
             $newMatrix,
             $tag->colorTransform,
+            $tag->clipDepth ?? null,
             filters: $tag->surfaceFilterList ?? [],
             blendMode: BlendMode::tryFrom($tag->blendMode ?? 1) ?? BlendMode::Normal,
         );
@@ -308,8 +309,11 @@ final readonly class TimelineProcessor
             );
         }
 
-        if ($tag->colorTransform) {
-            $objectProperties = $objectProperties->with(colorTransform: $tag->colorTransform);
+        if ($tag->colorTransform || isset($tag->clipDepth)) {
+            $objectProperties = $objectProperties->with(
+                colorTransform: $tag->colorTransform,
+                clipDepth: $tag->clipDepth ?? null, // @todo test clipDepth update ?
+            );
         }
 
         return $objectProperties;

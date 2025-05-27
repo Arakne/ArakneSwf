@@ -75,6 +75,18 @@ final readonly class FrameObject
         public ?ColorTransform $colorTransform = null,
 
         /**
+         * Define the current object as a clipping mask.
+         *
+         * All objects from the current object's depth to the depth defined by this property
+         * will be clipped following the current object's shape (i.e. displayed only inside the current object's shape).
+         *
+         * If this value is not null, the current object must not be displayed.
+         *
+         * @var int|null
+         */
+        public ?int $clipDepth = null,
+
+        /**
          * @var list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
          */
         public array $filters = [],
@@ -132,6 +144,7 @@ final readonly class FrameObject
             $this->bounds,
             $this->matrix,
             $this->colorTransform,
+            $this->clipDepth,
             $this->filters,
             $this->blendMode,
             [...$this->colorTransforms, $colorTransform],
@@ -148,6 +161,7 @@ final readonly class FrameObject
      * @param ColorTransform|null $colorTransform
      * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>|null $filters
      * @param BlendMode|null $blendMode
+     * @param int|null $clipDepth
      *
      * @return self
      */
@@ -159,6 +173,7 @@ final readonly class FrameObject
         ?ColorTransform $colorTransform = null,
         ?array $filters = null,
         ?BlendMode $blendMode = null,
+        ?int $clipDepth = null,
     ): self {
         // When a new character ID is provided, a new object must be provided too
         assert($characterId === null || $object !== null);
@@ -170,6 +185,7 @@ final readonly class FrameObject
             $bounds ?? $this->bounds,
             $matrix ?? $this->matrix,
             $colorTransform ?? $this->colorTransform,
+            $clipDepth ?? $this->clipDepth,
             $filters ?? $this->filters,
             $blendMode ?? $this->blendMode,
             $this->colorTransforms,
