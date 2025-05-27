@@ -84,7 +84,7 @@ interface DrawerInterface
      *
      * @param DrawableInterface $object The shape or sprite to use as a clipping mask
      * @param Matrix $matrix The matrix to apply to the object
-     * @param int $frame The frame to draw.
+     * @param non-negative-int $frame The frame to draw.
      *
      * @return string The id of the clip, which can be used to end the clip later
      */

@@ -162,7 +162,8 @@ final class SvgCanvas implements DrawerInterface
     #[Override]
     public function startClip(DrawableInterface $object, Matrix $matrix, int $frame): string
     {
-        $clipPath = $this->g->addChild('clipPath'); // @todo handle g null
+        $group = $this->g ?? throw new LogicException('No group defined for clipping');
+        $clipPath = $group->addChild('clipPath'); // @todo handle g null
         $clipPath->addAttribute('id', $id = $this->nextObjectId());
         $clipPath->addAttribute('transform', $matrix->toSvgTransformation());
 
