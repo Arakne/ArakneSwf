@@ -255,6 +255,7 @@ class ConverterTest extends ImageTestCase
         $this->assertAnimatedImageStringEqualsImageFile([
             __DIR__.'/../../Fixtures/mob-leponge/walkR@128.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg@128.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg260@128.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape12@128.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14@128.webp',
         ], $webp, 0.01);

@@ -17,6 +17,7 @@ use function imagesx;
 use function imagesy;
 use function is_string;
 use function sprintf;
+use function var_dump;
 
 class ImageTestCase extends TestCase
 {
@@ -69,7 +70,13 @@ class ImageTestCase extends TestCase
             $lastError = null;
             $this->assertFileExists($expectedFile);
 
-            $expectedFrames = $this->getFrames(file_get_contents($expectedFile));
+            $expectedImageString = file_get_contents($expectedFile);
+
+            if ($expectedFile === $imageString) {
+                return;
+            }
+
+            $expectedFrames = $this->getFrames($expectedImageString);
 
             if (count($expectedFrames) !== count($actualFrames)) {
                 $this->fail(sprintf('The number of frames differ. Expected: %d Actual: %d', count($expectedFrames), count($actualFrames)));
