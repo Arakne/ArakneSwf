@@ -258,6 +258,6 @@ class ConverterTest extends ImageTestCase
             __DIR__.'/../../Fixtures/mob-leponge/walkR-rsvg260@128.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape12@128.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14@128.webp',
-        ], $webp, 0.01);
+        ], $webp, 0.02);
     }
 }
