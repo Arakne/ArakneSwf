@@ -29,7 +29,6 @@ use RuntimeException;
 use SimpleXMLElement;
 
 use function assert;
-use function ceil;
 use function class_exists;
 use function fopen;
 use function max;
@@ -84,20 +83,9 @@ final readonly class Converter
 
         [$newWidth, $newHeight] = $this->resizer->scale($width, $height);
 
-        $scaleX = $newWidth / $width;
-        $scaleY = $newHeight / $height;
-
         $xml['width'] = (string) $newWidth; // @phpstan-ignore offsetAssign.valueType
         $xml['height'] = (string) $newHeight;  // @phpstan-ignore offsetAssign.valueType
-        $xml['viewBox'] = sprintf('0 0 %d %d', ceil($newWidth), ceil($newHeight));  // @phpstan-ignore offsetAssign.valueType
-
-        foreach ($xml->g as $g) {
-            if (isset($g['transform'])) {
-                $g['transform'] = sprintf('scale(%f, %f) %s', $scaleX, $scaleY, $g['transform']);
-            } else {
-                $g['transform'] = sprintf('scale(%f, %f)', $scaleX, $scaleY);  // @phpstan-ignore offsetAssign.valueType
-            }
-        }
+        $xml['viewBox'] = sprintf('0 0 %h %h', $width, $height);  // @phpstan-ignore offsetAssign.valueType
 
         $svg = $xml->asXML();
         assert($svg !== false);

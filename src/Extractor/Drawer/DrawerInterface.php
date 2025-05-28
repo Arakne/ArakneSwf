@@ -67,14 +67,14 @@ interface DrawerInterface
     /**
      * Include a sprite or shape in the current drawing
      *
-     * @todo id parameter
-     *
      * @param DrawableInterface $object
      * @param Matrix $matrix
      * @param non-negative-int $frame The frame to draw.
      * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter> $filters
+     * @param BlendMode $blendMode The blend mode to use for this object
+     * @param null|string $name The name of the object.
      */
-    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void;
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal, ?string $name = null): void;
 
     /**
      * Use the given object as a clipping mask

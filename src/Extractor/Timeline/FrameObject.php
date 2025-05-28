@@ -87,6 +87,14 @@ final readonly class FrameObject
         public ?int $clipDepth = null,
 
         /**
+         * The name of the object.
+         *
+         * It must be unique in the current frame.
+         * This value can be used to reference the object, allowing to retrieve and modify it later.
+         */
+        public ?string $name = null,
+
+        /**
          * @var list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
          */
         public array $filters = [],
@@ -145,6 +153,7 @@ final readonly class FrameObject
             $this->matrix,
             $this->colorTransform,
             $this->clipDepth,
+            $this->name,
             $this->filters,
             $this->blendMode,
             [...$this->colorTransforms, $colorTransform],
@@ -162,6 +171,7 @@ final readonly class FrameObject
      * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>|null $filters
      * @param BlendMode|null $blendMode
      * @param int|null $clipDepth
+     * @param string|null $name
      *
      * @return self
      */
@@ -174,6 +184,7 @@ final readonly class FrameObject
         ?array $filters = null,
         ?BlendMode $blendMode = null,
         ?int $clipDepth = null,
+        ?string $name = null,
     ): self {
         // When a new character ID is provided, a new object must be provided too
         assert($characterId === null || $object !== null);
@@ -186,6 +197,7 @@ final readonly class FrameObject
             $matrix ?? $this->matrix,
             $colorTransform ?? $this->colorTransform,
             $clipDepth ?? $this->clipDepth,
+            $name ?? $this->name,
             $filters ?? $this->filters,
             $blendMode ?? $this->blendMode,
             $this->colorTransforms,

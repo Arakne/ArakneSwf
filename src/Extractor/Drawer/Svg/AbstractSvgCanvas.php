@@ -100,7 +100,7 @@ abstract class AbstractSvgCanvas implements DrawerInterface
     }
 
     #[Override]
-    final public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void
+    final public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal, ?string $name = null): void
     {
         $included = new IncludedSvgCanvas($this, $this->defs());
 
@@ -122,6 +122,10 @@ abstract class AbstractSvgCanvas implements DrawerInterface
             $use->addAttribute('width', (string) ($object->bounds()->width() / 20));
             $use->addAttribute('height', (string) ($object->bounds()->height() / 20));
             $use->addAttribute('transform', $matrix->toSvgTransformation());
+
+            if ($name) {
+                $use->addAttribute('id', $name);
+            }
 
             if ($filterId) {
                 $use->addAttribute('filter', 'url(#' . $filterId . ')');

@@ -42,8 +42,8 @@ class ConverterTest extends ImageTestCase
         $baseSvg = new SimpleXMLElement(file_get_contents(__DIR__.'/../../Fixtures/1047/65_frames/65-5.svg'));
         $baseSvg['width'] = '120.9821215733';
         $baseSvg['height'] = '128';
-        $baseSvg['viewBox'] = '0 0 121 128';
-        $baseSvg->g['transform'] = 'scale(3.051251, 3.051251) matrix(1, 0, 0, 1, 29.2, 38.6)';
+        $baseSvg['viewBox'] = '0 0 39.65 41.95';
+        $baseSvg->g['transform'] = 'matrix(1, 0, 0, 1, 29.2, 38.6)';
 
         $this->assertXmlStringEqualsXmlString($baseSvg->asXML(), $svg);
     }
@@ -189,7 +189,10 @@ class ConverterTest extends ImageTestCase
         $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1047/1047.swf'))->assetById(65);
         $jpeg = $converter->toJpeg($drawable, 5);
 
-        $this->assertImageStringEqualsImageFile(__DIR__.'/../../Fixtures/1047/65_frames/65-5@128.jpeg', $jpeg);
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5@128.jpeg',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-rsvg@128.jpeg',
+        ], $jpeg);
 
         $info = getimagesizefromstring($jpeg);
 

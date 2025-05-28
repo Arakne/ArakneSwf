@@ -120,6 +120,7 @@ final readonly class Frame implements DrawableInterface
                 $frame,
                 $object->filters,
                 $object->blendMode,
+                $object->name,
             );
         }
 

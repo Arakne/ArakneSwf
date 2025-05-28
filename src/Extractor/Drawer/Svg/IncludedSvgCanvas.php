@@ -46,7 +46,7 @@ final class IncludedSvgCanvas extends AbstractSvgCanvas
      */
     public function __construct(
         private readonly AbstractSvgCanvas $root,
-        private readonly SimpleXMLElement $defs
+        private readonly SimpleXMLElement $defs,
     ) {
         parent::__construct(new SvgBuilder($this->defs));
     }
@@ -73,7 +73,7 @@ final class IncludedSvgCanvas extends AbstractSvgCanvas
     protected function newGroup(SvgBuilder $builder, Rectangle $bounds): SimpleXMLElement
     {
         $group = $builder->addGroup($bounds);
-        $group->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
+        $group->addAttribute('id', $this->ids[] = $this->nextObjectId());
 
         return $group;
     }
@@ -82,7 +82,7 @@ final class IncludedSvgCanvas extends AbstractSvgCanvas
     protected function newGroupWithOffset(SvgBuilder $builder, int $offsetX, int $offsetY): SimpleXMLElement
     {
         $group = $builder->addGroupWithOffset($offsetX, $offsetY);
-        $group->addAttribute('id', $this->ids[] = $this->root->nextObjectId());
+        $group->addAttribute('id', $this->ids[] = $this->nextObjectId());
 
         return $group;
     }

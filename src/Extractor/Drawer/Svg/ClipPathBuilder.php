@@ -40,7 +40,7 @@ final readonly class ClipPathBuilder implements DrawerInterface
     public function image(ImageCharacterInterface $image): void {}
 
     #[Override]
-    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal): void {}
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal, ?string $name = null): void {}
 
     #[Override]
     public function startClip(DrawableInterface $object, Matrix $matrix, int $frame): string
