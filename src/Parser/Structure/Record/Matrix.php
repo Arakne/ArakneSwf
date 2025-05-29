@@ -118,12 +118,16 @@ final readonly class Matrix
     {
         $scaleX = $this->scaleX;
         $scaleY = $this->scaleY;
+        $rotateSkew0 = $this->rotateSkew0;
+        $rotateSkew1 = $this->rotateSkew1;
 
         if ($undoTwipScale) {
             $scaleX /= 20;
             $scaleY /= 20;
+            $rotateSkew0 /= 20;
+            $rotateSkew1 /= 20;
         }
 
-        return 'matrix(' . round($scaleX, 4) . ', ' . round($this->rotateSkew0, 4) . ', ' . round($this->rotateSkew1, 4) . ', ' . round($scaleY, 4) . ', ' . round($this->translateX / 20, 4) . ', ' . round($this->translateY / 20, 4) . ')';
+        return 'matrix(' . round($scaleX, 4) . ', ' . round($rotateSkew0, 4) . ', ' . round($rotateSkew1, 4) . ', ' . round($scaleY, 4) . ', ' . round($this->translateX / 20, 4) . ', ' . round($this->translateY / 20, 4) . ')';
     }
 }

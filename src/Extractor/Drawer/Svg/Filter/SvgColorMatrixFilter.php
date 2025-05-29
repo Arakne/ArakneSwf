@@ -53,8 +53,8 @@ final class SvgColorMatrixFilter
 
         $feColorMatrix->addAttribute('type', 'matrix');
         $feColorMatrix->addAttribute('values', $values);
+        $feColorMatrix->addAttribute('color-interpolation-filters', 'sRGB');
 
         return $resultId;
     }
-
 }
