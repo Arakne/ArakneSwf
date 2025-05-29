@@ -48,6 +48,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
     public readonly int $characterId;
     private ?Rectangle $bounds = null;
     private ?GD $gd = null;
+    private ?string $pngData = null;
 
     /**
      * Cache last transformed image with its color transform.
@@ -130,7 +131,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
             return $this->tag->imageData;
         }
 
-        return $this->toGD()->toPng();
+        return $this->pngData ??= $this->toGD()->toPng();
     }
 
     #[Override]

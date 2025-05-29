@@ -37,6 +37,11 @@ class PathTest extends TestCase
             {
                 $this->commands[] = ['curve', $controlX, $controlY, $toX, $toY];
             }
+
+            #[Override]
+            public function draw(): void
+            {
+            }
         };
     }
 

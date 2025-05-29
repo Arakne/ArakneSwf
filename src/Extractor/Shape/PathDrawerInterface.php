@@ -42,4 +42,9 @@ interface PathDrawerInterface
      * Draw a curve from the current cursor position to the given position, and update the cursor position
      */
     public function curve(int $controlX, int $controlY, int $toX, int $toY): void;
+
+    /**
+     * Finalize the path and draw it
+     */
+    public function draw(): void;
 }

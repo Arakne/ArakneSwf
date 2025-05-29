@@ -30,33 +30,36 @@ use SimpleXMLElement;
  *
  * @internal This class is not intended to be used outside of the library
  */
-final readonly class SvgPathDrawer implements PathDrawerInterface
+final class SvgPathDrawer implements PathDrawerInterface
 {
+    private string $d = '';
+
     public function __construct(
-        private SimpleXMLElement $element,
+        private readonly SimpleXMLElement $element,
     ) {}
 
     #[Override]
     public function move(int $x, int $y): void
     {
-        $this->push('M' . ($x / 20) . ' ' . ($y / 20));
+        $this->d .= 'M' . ($x / 20) . ' ' . ($y / 20);
     }
 
     #[Override]
     public function line(int $toX, int $toY): void
     {
-        $this->push('L' . ($toX / 20) . ' ' . ($toY / 20));
+        $this->d .= 'L' . ($toX / 20) . ' ' . ($toY / 20);
     }
 
     #[Override]
     public function curve(int $controlX, int $controlY, int $toX, int $toY): void
     {
-        $this->push('Q' . ($controlX / 20) . ' ' . ($controlY / 20) . ' ' . ($toX / 20) . ' ' . ($toY / 20));
+        $this->d .= 'Q' . ($controlX / 20) . ' ' . ($controlY / 20) . ' ' . ($toX / 20) . ' ' . ($toY / 20);
     }
 
-    private function push(string $command): void
+    #[Override]
+    public function draw(): void
     {
-        // @phpstan-ignore offsetAssign.valueType
-        ($this->element)['d'] .= $command;
+        $this->element->addAttribute('d', $this->d);
+        $this->d = '';
     }
 }

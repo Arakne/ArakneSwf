@@ -52,6 +52,8 @@ final class LosslessImageDefinition implements ImageCharacterInterface
 {
     public readonly int $characterId;
     private ?Rectangle $bounds = null;
+    private ?GD $gd = null;
+    private ?string $pngData = null;
 
     public function __construct(
         public readonly DefineBitsLosslessTag $tag,
@@ -74,7 +76,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     #[Override]
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
-        return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, $this->toGD());
+        return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, clone $this->toGD());
     }
 
     #[Override]
@@ -86,7 +88,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     #[Override]
     public function toPng(): string
     {
-        return $this->toGD()->toPng();
+        return $this->pngData ??= $this->toGD()->toPng();
     }
 
     #[Override]
@@ -105,6 +107,10 @@ final class LosslessImageDefinition implements ImageCharacterInterface
 
     private function toGD(): GD
     {
+        if ($this->gd) {
+            return $this->gd;
+        }
+
         $width = $this->tag->bitmapWidth;
         $height = $this->tag->bitmapHeight;
 
@@ -123,7 +129,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
             ImageBitmapType::Transparent32Bit => $this->decode32BitWithAlpha($gd, $width, $height),
         };
 
-        return $gd;
+        return $this->gd = $gd;
     }
 
     /**

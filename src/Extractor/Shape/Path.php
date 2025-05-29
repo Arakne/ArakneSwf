@@ -142,6 +142,8 @@ final class Path
             $lastX = $edge->toX;
             $lastY = $edge->toY;
         }
+
+        $drawer->draw();
     }
 
     public function transformColors(ColorTransform $colorTransform): self
