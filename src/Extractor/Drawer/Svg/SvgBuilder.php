@@ -225,10 +225,17 @@ final class SvgBuilder
 
     public function applyFillClippedBitmap(SimpleXMLElement $path, Bitmap $style, string $attribute): void
     {
-        $pattern = $this->svg->addChild('pattern');
+        $id = 'pattern-'.$style->hash();
+        $path->addAttribute($attribute, 'url(#'.$id.')');
+
+        if (isset($this->elementsById[$id])) {
+            return;
+        }
+
+        $this->elementsById[$id] = $pattern = $this->svg->addChild('pattern');
         assert($pattern instanceof SimpleXMLElement);
 
-        $pattern->addAttribute('id', 'pattern-'.$style->hash());
+        $pattern->addAttribute('id', $id);
         $pattern->addAttribute('overflow', 'visible');
         $pattern->addAttribute('patternUnits', 'userSpaceOnUse');
         $pattern->addAttribute('width', (string) ($style->bitmap->bounds()->width() / 20));
@@ -240,9 +247,16 @@ final class SvgBuilder
             $pattern->addAttribute('image-rendering', 'optimizeSpeed');
         }
 
-        $image = $pattern->addChild('image');
-        $image->addAttribute('xlink:href', $style->bitmap->toBase64Data(), self::XLINK_NS);
+        $b64 = $style->bitmap->toBase64Data();
+        $imageId = 'image-'.md5($b64);
 
-        $path->addAttribute($attribute, 'url(#'.$pattern['id'].')');
+        if (!isset($this->elementsById[$imageId])) {
+            $this->elementsById[$imageId] = $image = $pattern->addChild('image');
+            $image->addAttribute('xlink:href', $b64, self::XLINK_NS);
+            $image->addAttribute('id', $imageId);
+        } else {
+            $use = $pattern->addChild('use');
+            $use->addAttribute('xlink:href', '#'.$imageId, self::XLINK_NS);
+        }
     }
 }
