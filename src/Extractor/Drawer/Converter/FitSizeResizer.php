@@ -42,6 +42,18 @@ final readonly class FitSizeResizer implements ImageResizerInterface
     #[Override]
     public function scale(float $width, float $height): array
     {
+        if ($width === 0.0 && $height === 0.0) {
+            return [(float) $this->width, (float) $this->height];
+        }
+
+        if ($width === 0.0) {
+            return [0.0, (float) $this->height];
+        }
+
+        if ($height === 0.0) {
+            return [(float) $this->width, 0.0];
+        }
+
         $factor = max(
             $width / $this->width,
             $height / $this->height,

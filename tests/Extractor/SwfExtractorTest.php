@@ -352,4 +352,15 @@ class SwfExtractorTest extends ImageTestCase
         $timeline = $extractor->timeline();
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mask/nested_masks2.svg', $timeline->toSvg());
     }
+
+    #[Test]
+    public function blurFilterTooHigh()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/filters/146.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline();
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/filters/146.svg', $timeline->toSvg());
+    }
 }

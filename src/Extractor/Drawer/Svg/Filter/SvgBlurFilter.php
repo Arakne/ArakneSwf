@@ -28,6 +28,14 @@ use function substr;
 
 final class SvgBlurFilter
 {
+    // Limit the box blur radius to avoid crashes or performance issues.
+    // The limit is set to 9 because RSVG handle only 20x20 pixels for the convolution kernel,
+    // so 9 is the maximum radius that can be used without exceeding this limit.
+    public const int MAX_BOX_BLUR_RADIUS = 9;
+
+    // Use sqrt(3) which approximates the blur box variance
+    public const float BLUR_BOX_RADIUS_TO_GAUSSIAN_BLUR_RATIO = 1.732;
+
     /**
      * Apply the blur effect to the given filter builder.
      *
@@ -56,6 +64,19 @@ final class SvgBlurFilter
      */
     public static function blur(SvgFilterBuilder $builder, float $blurX, float $blurY, int $passes, string $in): string
     {
+        if ($blurX > self::MAX_BOX_BLUR_RADIUS || $blurY > self::MAX_BOX_BLUR_RADIUS) {
+            // The blur box is too large to use a convolution filter, so we use a Gaussian blur to approximate it.
+            $stdDevX = $blurX / self::BLUR_BOX_RADIUS_TO_GAUSSIAN_BLUR_RATIO;
+            $stdDevY = $blurY / self::BLUR_BOX_RADIUS_TO_GAUSSIAN_BLUR_RATIO;
+
+            $builder->addOffset($stdDevX * 3, $stdDevY * 3);
+
+            [$feGaussianBlur, $result] = $builder->addResultFilter('feGaussianBlur', $in);
+            $feGaussianBlur->addAttribute('stdDeviation', $stdDevX . ' ' . $stdDevY);
+
+            return $result;
+        }
+
         $blurX = (int) (2 * ceil($blurX) + 1);
         $blurY = (int) (2 * ceil($blurY) + 1);
 

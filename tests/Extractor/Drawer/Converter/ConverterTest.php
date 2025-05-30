@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Extractor\Drawer\Converter;
 use Arakne\Swf\Extractor\Drawer\Converter\Converter;
 use Arakne\Swf\Extractor\Drawer\Converter\FitSizeResizer;
 use Arakne\Swf\Extractor\Drawer\Converter\ImageResizerInterface;
+use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -259,5 +260,21 @@ class ConverterTest extends ImageTestCase
             __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape12@128.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-inkscape14@128.webp',
         ], $webp, 0.02);
+    }
+
+    #[Test]
+    public function toPngWithHighBlurFilter()
+    {
+        $converter = $this->createConverter();
+        $swf = new SwfFile(__DIR__.'/../../Fixtures/filters/146.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline();
+
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/filters/146.png',
+            __DIR__.'/../../Fixtures/filters/146-inkscape14.png', // note: Inkscape does not support well feConvolveMatrix, so the render is wrong
+            __DIR__.'/../../Fixtures/filters/146-rsvg.png',
+        ], $converter->toPng($timeline));
     }
 }

@@ -111,13 +111,15 @@ final class SvgBuilder
      * @param list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter> $filters
      * @param string $id The id of the filter element to create
      */
-    public function addFilter(array $filters, string $id): void
+    public function addFilter(array $filters, string $id, float $width, float $height): void
     {
-        $filterBuilder = SvgFilterBuilder::create($this->svg, $id);
+        $filterBuilder = SvgFilterBuilder::create($this->svg, $id, $width, $height);
 
         foreach ($filters as $filter) {
             $filterBuilder->apply($filter);
         }
+
+        $filterBuilder->finalize();
     }
 
     /**

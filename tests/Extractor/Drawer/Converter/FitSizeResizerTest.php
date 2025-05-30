@@ -17,5 +17,8 @@ class FitSizeResizerTest extends TestCase
         $this->assertSame([100.0, 200.0], $resizer->scale(100, 200));
         $this->assertSame([100.0, 200.0], $resizer->scale(50, 100));
         $this->assertSame([100.0, 20.0], $resizer->scale(500, 100));
+        $this->assertSame([100.0, 200.0], $resizer->scale(0, 0));
+        $this->assertSame([0.0, 200.0], $resizer->scale(0, 50));
+        $this->assertSame([100.0, 0.0], $resizer->scale(50, 0));
     }
 }

@@ -107,10 +107,12 @@ abstract class AbstractSvgCanvas implements DrawerInterface
         $object->draw($included, $frame);
 
         $g = $this->target($object->bounds());
+        $width = $object->bounds()->width() / 20;
+        $height = $object->bounds()->height() / 20;
 
         if ($filters && $included->ids) {
             $filterId = 'filter-' . $included->ids[0];
-            $this->builder->addFilter($filters, $filterId);
+            $this->builder->addFilter($filters, $filterId, $width, $height);
         } else {
             $filterId = null;
         }
@@ -119,8 +121,8 @@ abstract class AbstractSvgCanvas implements DrawerInterface
             $use = $g->addChild('use');
 
             $use->addAttribute('xlink:href', '#' . $id, SvgBuilder::XLINK_NS);
-            $use->addAttribute('width', (string) ($object->bounds()->width() / 20));
-            $use->addAttribute('height', (string) ($object->bounds()->height() / 20));
+            $use->addAttribute('width', (string) $width);
+            $use->addAttribute('height', (string) $height);
             $use->addAttribute('transform', $matrix->toSvgTransformation());
 
             if ($name) {

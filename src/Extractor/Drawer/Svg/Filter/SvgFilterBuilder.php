@@ -40,9 +40,13 @@ final class SvgFilterBuilder
 {
     private int $filterCount = 0;
     private string $lastResult = 'SourceGraphic';
+    private float $xOffset = 0;
+    private float $yOffset = 0;
 
-    public function __construct(
+    private function __construct(
         private readonly SimpleXMLElement $filter,
+        private readonly float $width,
+        private readonly float $height,
     ) {}
 
     /**
@@ -97,6 +101,30 @@ final class SvgFilterBuilder
     }
 
     /**
+     * Increase the offset of the filter element.
+     * The width and height of the filter will also be increased by the given offsets.
+     */
+    public function addOffset(float $x, float $y): void
+    {
+        $this->xOffset += $x;
+        $this->yOffset += $y;
+    }
+
+    /**
+     * Apply computed properties to the filter element.
+     * Must be called after all filters have been applied.
+     */
+    public function finalize(): void
+    {
+        if ($this->xOffset > 0 || $this->yOffset > 0) {
+            $this->filter->addAttribute('width', (string) ($this->width + $this->xOffset * 2));
+            $this->filter->addAttribute('height', (string) ($this->height + $this->yOffset * 2));
+            $this->filter->addAttribute('x', (string) -$this->xOffset);
+            $this->filter->addAttribute('y', (string) -$this->yOffset);
+        }
+    }
+
+    /**
      * Create a new filter builder, and its corresponding filter element.
      *
      * @param SimpleXMLElement $root The root element to which the filter will be added.
@@ -104,12 +132,12 @@ final class SvgFilterBuilder
      *
      * @return self
      */
-    public static function create(SimpleXMLElement $root, string $id): self
+    public static function create(SimpleXMLElement $root, string $id, float $width, float $height): self
     {
         $filter = $root->addChild('filter');
         $filter->addAttribute('id', $id);
         $filter->addAttribute('filterUnits', 'userSpaceOnUse'); // Allow overflow
 
-        return new self($filter);
+        return new self($filter, $width, $height);
     }
 }
