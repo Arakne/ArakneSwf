@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
@@ -94,6 +95,20 @@ class JpegImageDefinitionTest extends ImageTestCase
     }
 
     #[Test]
+    public function toBestFormatJpeg()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+
+        $image = new JpegImageDefinition($tag);
+
+        $data = $image->toBestFormat();
+
+        $this->assertSame(ImageDataType::Jpeg, $data->type);
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/core/jpeg-540.png', $data->data, 0.005);
+    }
+
+    #[Test]
     public function toPngAlphaJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
@@ -131,6 +146,26 @@ class JpegImageDefinitionTest extends ImageTestCase
         $this->assertStringStartsWith('data:image/png;base64,', $data);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507.png', base64_decode(substr($data, 22)));
+    }
+
+    #[Test]
+    public function toBestFormatAlphaJpeg()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+        $image = null;
+
+        /** @var DefineBitsJPEG3Tag $tag */
+        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+            if ($tag->characterId === 507) {
+                $image = new JpegImageDefinition($tag);
+                break;
+            }
+        }
+
+        $data = $image->toBestFormat();
+
+        $this->assertSame(ImageDataType::Png, $data->type);
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/jpeg-507.png', $data->data);
     }
 
     #[Test]

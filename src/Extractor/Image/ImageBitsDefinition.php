@@ -23,6 +23,7 @@ namespace Arakne\Swf\Extractor\Image;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\Util\GD;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
@@ -89,6 +90,12 @@ final class ImageBitsDefinition implements ImageCharacterInterface
     public function toJpeg(int $quality = -1): string
     {
         return $this->fixedJpegData ??= GD::fixJpegData($this->jpegTables->data . $this->tag->imageData);
+    }
+
+    #[Override]
+    public function toBestFormat(): ImageData
+    {
+        return new ImageData(ImageDataType::Jpeg, $this->toJpeg());
     }
 
     #[Override]

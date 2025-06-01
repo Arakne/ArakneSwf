@@ -24,6 +24,30 @@ enum ImageDataType
     private const string GIF89A_HEADER = "GIF89a";
 
     /**
+     * Get the MIME type of the image data.
+     */
+    public function mimeType(): string
+    {
+        return match ($this) {
+            self::Jpeg => 'image/jpeg',
+            self::Png => 'image/png',
+            self::Gif89a => 'image/gif',
+        };
+    }
+
+    /**
+     * Get the file extension of the image data.
+     */
+    public function extension(): string
+    {
+        return match ($this) {
+            self::Jpeg => 'jpg',
+            self::Png => 'png',
+            self::Gif89a => 'gif',
+        };
+    }
+
+    /**
      * Resolve the image data type from the image data header.
      *
      * @param string $imageData

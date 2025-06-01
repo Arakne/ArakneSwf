@@ -79,4 +79,9 @@ interface ImageCharacterInterface extends DrawableInterface
      *                     This parameter is ignored if the image is already a JPEG.
      */
     public function toJpeg(int $quality = -1): string;
+
+    /**
+     * Render the image as the best format for the current image data.
+     */
+    public function toBestFormat(): ImageData;
 }

@@ -6,6 +6,7 @@ use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use Arakne\Swf\SwfFile;
@@ -170,6 +171,20 @@ class LosslessImageDefinitionTest extends ImageTestCase
 
         $this->assertStringStartsWith('data:image/png;base64,', $data);
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.png', base64_decode(substr($data, 22)));
+    }
+
+    #[Test]
+    public function toBestFormat()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $image = new LosslessImageDefinition($tag);
+
+        $data = $image->toBestFormat();
+
+        $this->assertSame(ImageDataType::Png, $data->type);
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.png', $data->data);
     }
 
     #[Test]

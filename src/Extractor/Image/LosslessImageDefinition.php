@@ -24,6 +24,7 @@ use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\Util\GD;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use BadMethodCallException;
@@ -95,6 +96,12 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     public function toJpeg(int $quality = -1): string
     {
         return $this->toGD()->toJpeg($quality);
+    }
+
+    #[Override]
+    public function toBestFormat(): ImageData
+    {
+        return new ImageData(ImageDataType::Png, $this->toPng());
     }
 
     #[Override]

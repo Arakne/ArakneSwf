@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
@@ -83,6 +84,22 @@ class ImageBitsDefinitionTest extends ImageTestCase
             $this->assertStringStartsWith('data:image/jpeg;base64,', $data);
 
             $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', base64_decode(substr($data, 23)), 0.005);
+        }
+    }
+
+    #[Test]
+    public function toBestFormat()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+
+        /** @var DefineBitsTag $tag */
+        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+            $image = new ImageBitsDefinition($tag, $jpegTables);
+            $data = $image->toBestFormat();
+
+            $this->assertSame(ImageDataType::Jpeg, $data->type);
+            $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $data->data, 0.005);
         }
     }
 

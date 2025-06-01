@@ -289,8 +289,9 @@ final readonly class ExtractCommand
 
     private function processImage(ExtractOptions $options, string $file, string $name, ImageCharacterInterface $image): bool
     {
-        // @todo handle appropriate image format
-        return $this->writeToOutputDir($image->toPng(), $file, $options, $name, 'png');
+        $data = $image->toBestFormat();
+
+        return $this->writeToOutputDir($data->data, $file, $options, $name, $data->type->extension());
     }
 
     private function processSprite(ExtractOptions $options, SwfFile $file, string $name, SpriteDefinition $sprite): bool

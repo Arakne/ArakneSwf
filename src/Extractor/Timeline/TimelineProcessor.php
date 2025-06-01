@@ -163,7 +163,6 @@ final readonly class TimelineProcessor
             }
 
             // @todo handle PlaceObject3Tag::className if present
-            // @todo use move flag instead of check the characterId: the character can be changed even on an existing object
             if ($isNewObject) {
                 // New character at the given depth
                 $objectProperties = $this->placeNewObject($frameDisplayTag);

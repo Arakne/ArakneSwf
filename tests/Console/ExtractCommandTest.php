@@ -287,10 +287,14 @@ class ExtractCommandTest extends ImageTestCase
     #[Test]
     public function exportImage()
     {
-        $this->exec(new ExtractOptions(files: [__DIR__ . '/../Extractor/Fixtures/maps/0.swf'], output: $this->outputDir, characters: [507]));
+        $this->exec(new ExtractOptions(files: [__DIR__ . '/../Extractor/Fixtures/maps/0.swf'], output: $this->outputDir, characters: [507, 525]));
         $this->assertImageStringEqualsImageFile(
             __DIR__ . '/../Extractor/Fixtures/maps/jpeg-507.png',
             file_get_contents($this->outputDir.'/0/507.png')
+        );
+        $this->assertImageStringEqualsImageFile(
+            __DIR__ . '/../Extractor/Fixtures/maps/jpeg-525.jpg',
+            file_get_contents($this->outputDir.'/0/525.jpg')
         );
     }
 

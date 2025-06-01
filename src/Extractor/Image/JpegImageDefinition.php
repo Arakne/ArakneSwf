@@ -117,11 +117,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
     #[Override]
     public function toBase64Data(): string
     {
-        if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
-            return 'data:image/jpeg;base64,' . base64_encode(GD::fixJpegData($this->tag->imageData));
-        }
-
-        return 'data:image/png;base64,' . base64_encode($this->toPng());
+        return $this->toBestFormat()->toBase64Url();
     }
 
     #[Override]
@@ -142,6 +138,16 @@ final class JpegImageDefinition implements ImageCharacterInterface
         }
 
         return $this->toGD()->toJpeg($quality);
+    }
+
+    #[Override]
+    public function toBestFormat(): ImageData
+    {
+        if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
+            return new ImageData(ImageDataType::Jpeg, GD::fixJpegData($this->tag->imageData));
+        }
+
+        return new ImageData(ImageDataType::Png, $this->toPng());
     }
 
     #[Override]

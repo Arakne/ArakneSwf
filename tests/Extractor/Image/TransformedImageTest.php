@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\TransformedImage;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -90,6 +91,21 @@ class TransformedImageTest extends ImageTestCase
 
         $this->assertStringStartsWith('data:image/png;base64,', $image->toBase64Data());
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-283-no-red.png', base64_decode(substr($image->toBase64Data(), 22)));
+    }
+
+    #[Test]
+    public function toBestFormat()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            new ColorTransform(redMult: 0),
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+
+        $data = $image->toBestFormat();
+        $this->assertSame(ImageDataType::Png, $data->type);
+        $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-283-no-red.png', $data->data);
     }
 
     #[Test]
