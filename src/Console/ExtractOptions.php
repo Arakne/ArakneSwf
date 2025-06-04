@@ -26,7 +26,6 @@ use Arakne\Swf\Extractor\Drawer\Converter\FitSizeResizer;
 use Arakne\Swf\Extractor\Drawer\Converter\ImageFormat;
 use InvalidArgumentException;
 
-use function array_fill_keys;
 use function array_map;
 use function array_pop;
 use function array_push;
@@ -284,8 +283,19 @@ final readonly class ExtractOptions
             $formatStr = explode('@', strtolower((string) $format), 2);
             $formatAndFlags = explode(':', $formatStr[0]);
             $formatName = array_pop($formatAndFlags);
-            $options = array_fill_keys($formatAndFlags, true);
-            $isAnimation = isset($options['a']) || isset($options['anim']) || isset($options['animated']) || isset($options['animation']);
+            $imageOption = [];
+
+            foreach ($formatAndFlags as $flag) {
+                $flag = explode('=', strtolower($flag), 2);
+
+                if (count($flag) === 1) {
+                    $imageOption[$flag[0]] = true;
+                } else {
+                    $imageOption[$flag[0]] = $flag[1];
+                }
+            }
+
+            $isAnimation = isset($imageOption['a']) || isset($imageOption['anim']) || isset($imageOption['animated']) || isset($imageOption['animation']);
 
             $format = ImageFormat::tryFrom($formatName) ?? throw new InvalidArgumentException(sprintf('Invalid value for option --%s: the format %s is not supported', $optionName, $formatName));
 
@@ -301,9 +311,9 @@ final readonly class ExtractOptions
             }
 
             if ($isAnimation) {
-                $animationFormatters[] = new AnimationFormater($format, $resizer, $options);
+                $animationFormatters[] = new AnimationFormater($format, $resizer, $imageOption);
             } else {
-                $frameFormatters[] = new DrawableFormater($format, $resizer, $options);
+                $frameFormatters[] = new DrawableFormater($format, $resizer, $imageOption);
             }
         }
 

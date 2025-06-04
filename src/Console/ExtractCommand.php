@@ -122,13 +122,25 @@ final readonly class ExtractCommand
                                       - {dirname}: The name of the directory containing the SWF file
                 --frame-format <format>
                                       Specify the format to use for the sprite or timeline frames. This option is repeatable.
-                                      The format of this option is <filetype>@<width>x<height>, where:
+                                      The format is <options>:<filetype>@<width>x<height>, where:
+                                      - <options> are optional options to apply to the output, separated by ":".
                                       - <filetype> is the type of file to generate (svg, png, gif, webp).
-                                          It can be prefixed with "a:"/"anim:" to generate an animated file (only for gif and webp).
                                           When an animated file is requested, all frames will be exported, even if the --frames option is used.
                                       - <width> is the width of the output image (optional).
                                       - <height> is the height of the output image (optional). 
                                           If only the width is specified, the height will be set to the same value.
+                                      Availables options:
+                                      - a/anim/animated: (gif, webp) Export the frames as an animated file.
+                                                         When is requested, all frames will be exported, even if the --frames option is used.
+                                      - lossless: (webp) Use lossless compression for the output image.
+                                      - quality=<number>: (webp, jpeg) Set the quality (i.e. lossy compression) of the output image (0-100).
+                                      - compression=<number>: (png, webp) Set the compression level of the output image (0-6 for webp, 0-9 for png).
+                                      - format=<format>: (png) Set the PNG format to use (e.g. png8, png24, png32).
+                                      - bit-depth=<number>: (png) Set the bit depth of the output image.
+                                      - sampling=<string>: (jpeg) Set the sampling factor for the JPEG image (e.g. 420, 422, 444).
+                                      - size=<string>: (jpeg) Set the maximum file size for the JPEG image (e.g. 100k, 1M).
+                                      - loop=<number>: (gif) Set the number of loops for the GIF animation (0 for infinite loop).
+
 
             Arguments:
                 <file>      The SWF file to extract resources from. Multiple files can be specified.
@@ -143,6 +155,12 @@ final readonly class ExtractCommand
 
                 Extract a single sprite animation, with all its sub-animations
                     {$options->command} -e myAnim --full-animation --output-filename {basename}/{frame}.{ext} myfile.swf export
+
+                Extract an animation as lossless animated webp
+                    {$options->command} -e myAnim --full-animation --frame-format a:lossless:webp --output-filename {basename}/{frame}.{ext} myfile.swf export
+
+                Extract a character as jpeg with quality 80 and 4:2:0 sampling factors
+                    {$options->command} -c 123 --frame-format quality=80:sampling=420:jpeg myfile.swf export
 
             EOT;
     }

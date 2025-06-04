@@ -206,7 +206,7 @@ class ExtractCommandTest extends ImageTestCase
             characters: [65],
             frames: [6],
             frameFormat: [
-                new DrawableFormater(ImageFormat::Webp),
+                new DrawableFormater(ImageFormat::Webp, options: ['lossless' => true]),
                 new DrawableFormater(ImageFormat::Png),
             ]
         ));
@@ -243,7 +243,7 @@ class ExtractCommandTest extends ImageTestCase
             fullAnimation: true,
             frameFormat: [],
             animationFormat: [
-                new AnimationFormater(ImageFormat::Webp),
+                new AnimationFormater(ImageFormat::Webp, options: ['lossless' => true]),
             ]
         ));
         $this->assertCount(1, glob($this->outputDir.'/mob-leponge/*.*'));

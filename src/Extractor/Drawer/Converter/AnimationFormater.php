@@ -49,7 +49,7 @@ final class AnimationFormater
     {
         $converter = $this->converter ??= new Converter($this->size);
 
-        return $this->format->animation($converter, $drawable, $fps, $recursive);
+        return $this->format->animation($converter, $drawable, $fps, $recursive, $this->options);
     }
 
     /**

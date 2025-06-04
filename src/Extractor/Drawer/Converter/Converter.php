@@ -24,7 +24,9 @@ use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\Converter\Renderer\ImagickSvgRendererInterface;
 use Arakne\Swf\Extractor\Drawer\Converter\Renderer\ImagickSvgRendererResolver;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
+use Closure;
 use Imagick;
+use InvalidArgumentException;
 use RuntimeException;
 use SimpleXMLElement;
 
@@ -98,13 +100,19 @@ final readonly class Converter
      *
      * @param DrawableInterface $drawable The drawable to render.
      * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
+     * @param array{
+     *     compression?: scalar,
+     *     format?: scalar,
+     *     bit-depth?: scalar
+     * } $options Options to apply to the PNG image.
      *
      * @return string The image blob in PNG format.
      */
-    public function toPng(DrawableInterface $drawable, int $frame = 0): string
+    public function toPng(DrawableInterface $drawable, int $frame = 0, array $options = []): string
     {
         $img = $this->toImagick($drawable, $frame);
         $img->setFormat('png');
+        $this->applyPngOptions($img, $options);
 
         return $img->getImageBlob();
     }
@@ -117,15 +125,20 @@ final readonly class Converter
      *
      * @param DrawableInterface $drawable The drawable to render.
      * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
+     * @param array{
+     *     loop?: scalar,
+     *     optimize?: scalar
+     * } $options Options to apply to the GIF image.
      *
      * @return string The image blob in GIF format.
      *
      * @see Converter::toAnimatedGif() to generate animated GIFs.
      */
-    public function toGif(DrawableInterface $drawable, int $frame = 0): string
+    public function toGif(DrawableInterface $drawable, int $frame = 0, array $options = []): string
     {
         $img = $this->toImagick($drawable, $frame);
         $img->setFormat('gif');
+        $this->applyGifOptions($img, $options);
 
         return $img->getImageBlob();
     }
@@ -136,15 +149,19 @@ final readonly class Converter
      * @param DrawableInterface $drawable The drawable to render.
      * @param positive-int $fps The frame rate of the animation
      * @param bool $recursive If true, will count the frames of all children recursively
+     * @param array{
+     *     loop?: scalar,
+     *     optimize?: scalar
+     * } $options
      *
      * @return string The image blob in GIF format.
      */
-    public function toAnimatedGif(DrawableInterface $drawable, int $fps = 24, bool $recursive = false): string
+    public function toAnimatedGif(DrawableInterface $drawable, int $fps = 24, bool $recursive = false, array $options = []): string
     {
         $gif = new Imagick();
         $gif->setFormat('gif');
 
-        return $this->renderAnimatedImage($gif, 'gif', $drawable, $fps, $recursive);
+        return $this->renderAnimatedImage($gif, 'gif', $drawable, $fps, $recursive, fn (Imagick $img) => $this->applyGifOptions($img, $options));
     }
 
     /**
@@ -152,17 +169,21 @@ final readonly class Converter
      *
      * @param DrawableInterface $drawable The drawable to render.
      * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
+     * @param array{
+     *      lossless?: scalar,
+     *      compression?: scalar,
+     *      quality?: scalar
+     *  } $options
      *
      * @return string The image blob in WebP format.
      *
      * @see Converter::toAnimatedWebp() to generate animated WebP images.
      */
-    // @todo allow to pass options to webp and other formats
-    public function toWebp(DrawableInterface $drawable, int $frame = 0): string
+    public function toWebp(DrawableInterface $drawable, int $frame = 0, array $options = []): string
     {
         $img = $this->toImagick($drawable, $frame);
-        $img->setOption('webp:lossless', 'true'); // @todo add options
         $img->setFormat('webp');
+        $this->applyWebpOptions($img, $options);
 
         return $img->getImageBlob();
     }
@@ -173,16 +194,20 @@ final readonly class Converter
      * @param DrawableInterface $drawable The drawable to render.
      * @param positive-int $fps The frame rate of the animation
      * @param bool $recursive If true, will count the frames of all children recursively
+     * @param array{
+     *     lossless?: scalar,
+     *     compression?: scalar,
+     *     quality?: scalar
+     * } $options
      *
      * @return string The image blob in WebP format.
      */
-    public function toAnimatedWebp(DrawableInterface $drawable, int $fps = 24, bool $recursive = false): string
+    public function toAnimatedWebp(DrawableInterface $drawable, int $fps = 24, bool $recursive = false, array $options = []): string
     {
         $anim = new Imagick();
         $anim->setFormat('webp');
-        $anim->setOption('webp:lossless', 'true');
 
-        return $this->renderAnimatedImage($anim, 'webp', $drawable, $fps, $recursive);
+        return $this->renderAnimatedImage($anim, 'webp', $drawable, $fps, $recursive, fn (Imagick $img) => $this->applyWebpOptions($img, $options));
     }
 
     /**
@@ -191,13 +216,19 @@ final readonly class Converter
      *
      * @param DrawableInterface $drawable The drawable to render.
      * @param non-negative-int $frame The frame number to extract from the drawable. This value is 0-based.
+     * @param array{
+     *     quality?: scalar,
+     *     sampling?: scalar,
+     *     size?: scalar
+     *  } $options Options to apply to the JPEG image.
      *
      * @return string The image blob in JPEG format.
      */
-    public function toJpeg(DrawableInterface $drawable, int $frame = 0): string
+    public function toJpeg(DrawableInterface $drawable, int $frame = 0, array $options = []): string
     {
         $img = $this->toImagick($drawable, $frame);
         $img->setFormat('jpeg');
+        $this->applyJpegOptions($img, $options);
 
         return $img->getImageBlob();
     }
@@ -218,7 +249,7 @@ final readonly class Converter
         return ($this->svgRenderer ?? ImagickSvgRendererResolver::get())->open($svg, $this->backgroundColor);
     }
 
-    private function renderAnimatedImage(Imagick $target, string $format, DrawableInterface $drawable, int $fps, bool $recursive): string
+    private function renderAnimatedImage(Imagick $target, string $format, DrawableInterface $drawable, int $fps, bool $recursive, ?Closure $optionsConfigurator = null): string
     {
         $count = $drawable->framesCount($recursive);
         $delay = (int) max(round(100 / $fps), 1);
@@ -229,7 +260,15 @@ final readonly class Converter
             $img->setImageDelay($delay);
             $img->setImageDispose(2);
 
+            if ($optionsConfigurator) {
+                $optionsConfigurator($img);
+            }
+
             $target->addImage($img);
+        }
+
+        if ($optionsConfigurator) {
+            $optionsConfigurator($target);
         }
 
         $out = fopen('php://memory', 'w+');
@@ -246,5 +285,104 @@ final readonly class Converter
         }
 
         return $content;
+    }
+
+    /**
+     * @param Imagick $img
+     * @param array{
+     *     compression?: scalar,
+     *     format?: scalar,
+     *     bit-depth?: scalar
+     * } $options
+     * @return void
+     */
+    private function applyPngOptions(Imagick $img, array $options): void
+    {
+        if (isset($options['compression'])) {
+            $img->setOption('png:compression-level', (string) $options['compression']);
+        }
+
+        if (isset($options['format'])) {
+            $img->setOption('png:format', (string) $options['format']);
+        }
+
+        if (isset($options['bit-depth'])) {
+            $img->setOption('png:bit-depth', (string) $options['bit-depth']);
+            $img->setImageDepth((int) $options['bit-depth']);
+        }
+    }
+
+    /**
+     * @param Imagick $img
+     * @param array{
+     *     lossless?: scalar,
+     *     compression?: scalar,
+     *     quality?: scalar
+     * } $options
+     * @return void
+     */
+    private function applyWebpOptions(Imagick $img, array $options): void
+    {
+        if (!empty($options['lossless'])) {
+            $img->setOption('webp:lossless', 'true');
+        }
+
+        if (isset($options['quality'])) {
+            $img->setImageCompressionQuality((int) $options['quality']);
+        }
+
+        if (isset($options['compression'])) {
+            $img->setOption('webp:method', (string) $options['compression']);
+        }
+    }
+
+    /**
+     * @param Imagick $img
+     * @param array{
+     *     quality?: scalar,
+     *     sampling?: scalar,
+     *     size?: scalar
+     * } $options
+     * @return void
+     */
+    private function applyJpegOptions(Imagick $img, array $options): void
+    {
+        if (isset($options['quality'])) {
+            $img->setImageCompressionQuality((int) $options['quality']);
+        }
+
+        if (isset($options['sampling'])) {
+            match ($options['sampling']) {
+                '444' => $img->setSamplingFactors(['1x1', '1x1', '1x1']),
+                '422' => $img->setSamplingFactors(['2x1', '1x1', '1x1']),
+                '420' => $img->setSamplingFactors(['2x2', '1x1', '1x1']),
+                '411' => $img->setSamplingFactors(['4x1', '1x1', '1x1']),
+                default => throw new InvalidArgumentException('Invalid sampling factor: ' . $options['sampling']),
+            };
+        }
+
+        if (isset($options['size'])) {
+            $img->setOption('jpeg:extent', (string) $options['size']);
+        }
+    }
+
+    /**
+     * @param Imagick $img
+     * @param array{
+     *     loop?: scalar,
+     *     optimize?: scalar
+     * } $options
+     * @return void
+     * @throws \ImagickException
+     */
+    private function applyGifOptions(Imagick $img, array $options): void
+    {
+        if (isset($options['loop'])) {
+            $img->setImageIterations((int) $options['loop']);
+        }
+
+        if (isset($options['optimize'])) {
+            $img->setOption('gif:optimize', (string) $options['optimize']);
+        }
     }
 }

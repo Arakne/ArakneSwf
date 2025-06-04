@@ -279,6 +279,16 @@ class ExtractOptionsTest extends TestCase
             [],
             [['format' => 'webp', 'size' => null, 'options' => ['animated' => true]]],
         ]),
+        TestWith([
+            '--frame-format lossless:quality=70:webp',
+            [['format' => 'webp', 'size' => null, 'options' => ['lossless' => true, 'quality' => '70']]],
+            [],
+        ]),
+        TestWith([
+            '--frame-format a:lossless:quality=70:webp',
+            [],
+            [['format' => 'webp', 'size' => null, 'options' => ['a' => true, 'lossless' => true, 'quality' => '70']]],
+        ]),
     ]
     public function frameFormatSuccess(string $cliOption, array $expected, array $expectedAnim = [])
     {

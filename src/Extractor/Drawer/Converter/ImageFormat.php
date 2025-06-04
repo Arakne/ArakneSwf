@@ -37,15 +37,16 @@ enum ImageFormat: string
      * Call the converter to convert the drawable to the specified format.
      *
      * @param non-negative-int $frame
+     * @param array<string, string|bool> $options Additional options for the conversion
      */
-    public function convert(Converter $converter, DrawableInterface $drawable, int $frame = 0): string
+    public function convert(Converter $converter, DrawableInterface $drawable, int $frame = 0, array $options = []): string
     {
         return match ($this) {
             self::Svg => $converter->toSvg($drawable, $frame),
-            self::Png => $converter->toPng($drawable, $frame),
-            self::Jpeg => $converter->toJpeg($drawable, $frame),
-            self::Gif => $converter->toGif($drawable, $frame),
-            self::Webp => $converter->toWebp($drawable, $frame),
+            self::Png => $converter->toPng($drawable, $frame, $options),
+            self::Jpeg => $converter->toJpeg($drawable, $frame, $options),
+            self::Gif => $converter->toGif($drawable, $frame, $options),
+            self::Webp => $converter->toWebp($drawable, $frame, $options),
         };
     }
 
@@ -56,14 +57,15 @@ enum ImageFormat: string
      * @param DrawableInterface $drawable The drawable to render
      * @param positive-int $fps The frame rate of the animation
      * @param bool $recursive If true, will count the frames of all children recursively
+     * @param array<string, string|bool> $options Additional options for the conversion
      *
      * @return string The image blob in the specified format.
      */
-    public function animation(Converter $converter, DrawableInterface $drawable, int $fps, bool $recursive = false): string
+    public function animation(Converter $converter, DrawableInterface $drawable, int $fps, bool $recursive = false, array $options = []): string
     {
         return match ($this) {
-            self::Gif => $converter->toAnimatedGif($drawable, $fps, $recursive),
-            self::Webp => $converter->toAnimatedWebp($drawable, $fps, $recursive),
+            self::Gif => $converter->toAnimatedGif($drawable, $fps, $recursive, $options),
+            self::Webp => $converter->toAnimatedWebp($drawable, $fps, $recursive, $options),
             default => throw new \RuntimeException('Animation not supported for this format'),
         };
     }

@@ -48,7 +48,7 @@ final class DrawableFormater
     {
         $converter = $this->converter ??= new Converter($this->size);
 
-        return $this->format->convert($converter, $drawable, $frame);
+        return $this->format->convert($converter, $drawable, $frame, $this->options);
     }
 
     /**
