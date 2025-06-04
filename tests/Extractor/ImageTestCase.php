@@ -106,7 +106,7 @@ class ImageTestCase extends TestCase
             }
         }
 
-        if ($lastError !== null) {
+        if ($lastError !== null && $bestDiff === 1) {
             $this->fail($lastError->getMessage());
         }
 

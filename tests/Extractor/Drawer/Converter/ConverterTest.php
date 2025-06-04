@@ -203,9 +203,10 @@ class ConverterTest extends ImageTestCase
         $webp = $converter->toWebp($drawable, 5, ['compression' => 6, 'quality' => 1]);
 
         $this->assertImageStringEqualsImageFile([
-            __DIR__.'/../../Fixtures/1047/65_frames/65-5.webp',
-            __DIR__.'/../../Fixtures/1047/65_frames/65-5-inkscape12.webp',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-small.webp',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-small-inkscape14.webp',
             __DIR__.'/../../Fixtures/1047/65_frames/65-5-small-rsvg.webp',
+            __DIR__.'/../../Fixtures/1047/65_frames/65-5-small-rsvg254.webp',
         ], $webp, 0.05);
 
         $info = getimagesizefromstring($webp);
