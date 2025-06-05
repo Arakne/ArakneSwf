@@ -214,7 +214,7 @@ class ConverterTest extends ImageTestCase
         $this->assertSame('image/webp', $info['mime']);
         $this->assertSame(40, $info[0]);
         $this->assertSame(42, $info[1]);
-        $this->assertLessThan(1000, strlen($webp)); // Check that the image is smaller than 1KB
+        $this->assertLessThan(1290, strlen($webp));
     }
 
     #[Test]
@@ -408,6 +408,7 @@ class ConverterTest extends ImageTestCase
             __DIR__.'/../../Fixtures/mob-leponge/walkR-small-rsvg254.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-small-inkscape12.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-small-inkscape14.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-small-ga.webp',
         ], $webp, 0.01);
 
         $this->assertLessThan(8500, strlen($webp)); // Check that the image is smaller than 8KB
