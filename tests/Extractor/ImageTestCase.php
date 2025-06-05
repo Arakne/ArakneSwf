@@ -10,13 +10,18 @@ use SapientPro\ImageComparator\ImageComparator;
 
 use function chmod;
 use function count;
+use function explode;
 use function file_get_contents;
 use function file_put_contents;
+use function getimagesize;
+use function getimagesizefromstring;
 use function imagecreatefromstring;
 use function imagesx;
 use function imagesy;
 use function is_string;
 use function sprintf;
+use function strrchr;
+use function substr;
 use function var_dump;
 
 class ImageTestCase extends TestCase
@@ -49,7 +54,9 @@ class ImageTestCase extends TestCase
             }
         }
 
-        if ($lastError !== null) {
+        $this->saveGeneratedImage($imageString);
+
+        if ($lastError !== null && $bestDiff === 1) {
             $this->fail($lastError->getMessage());
         }
 
@@ -86,7 +93,7 @@ class ImageTestCase extends TestCase
 
             try {
                 foreach ($expectedFrames as $i => $expectedFrame) {
-                    $frameDiff = $this->imageDiff($actualFrames[$i], $expectedFrame);
+                    $frameDiff = $this->imageDiff($actualFrames[$i], $expectedFrame, $i === 0);
 
                     if ($frameDiff > $diff) {
                         $diff = $frameDiff;
@@ -106,6 +113,8 @@ class ImageTestCase extends TestCase
             }
         }
 
+        $this->saveGeneratedImage($expectedImageString);
+
         if ($lastError !== null && $bestDiff === 1) {
             $this->fail($lastError->getMessage());
         }
@@ -113,7 +122,7 @@ class ImageTestCase extends TestCase
         $this->fail('The images are different (diff ratio: '.$bestDiff.')');
     }
 
-    protected function imageDiff(string|GdImage $imageString, string|GdImage $expected): float
+    protected function imageDiff(string|GdImage $imageString, string|GdImage $expected, bool $compareSize = true): float
     {
         $imageComparator = new ImageComparator();
 
@@ -123,11 +132,13 @@ class ImageTestCase extends TestCase
         $this->assertInstanceOf(GdImage::class, $expectedGd, 'The expected image is not a valid image');
         $this->assertInstanceOf(GdImage::class, $actualGd, 'The actual image is not a valid image');
 
-        $expectedSize = [imagesx($expectedGd), imagesy($expectedGd)];
-        $actualSize = [imagesx($actualGd), imagesy($actualGd)];
+        if ($compareSize) {
+            $expectedSize = [imagesx($expectedGd), imagesy($expectedGd)];
+            $actualSize = [imagesx($actualGd), imagesy($actualGd)];
 
-        if ($expectedSize !== $actualSize) {
-            $this->fail(sprintf('Image size differ. Expected: %dx%d Actual: %dx%d', $expectedSize[0], $expectedSize[1], $actualSize[0], $actualSize[1]));
+            if ($expectedSize !== $actualSize) {
+                $this->fail(sprintf('Image size differ. Expected: %dx%d Actual: %dx%d', $expectedSize[0], $expectedSize[1], $actualSize[0], $actualSize[1]));
+            }
         }
 
         $similarity = $imageComparator->compare($expectedGd, $actualGd);
@@ -151,5 +162,19 @@ class ImageTestCase extends TestCase
         }
 
         return $frames;
+    }
+
+    protected function saveGeneratedImage(string $imageString): void
+    {
+        $dir = __DIR__.'/../../reports/failed_images';
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $name = substr(strrchr(static::class, '\\'), 1) . '-' . $this->name();
+        $ext = explode('/', getimagesizefromstring($imageString)['mime'])[1] ?? 'png';
+
+        file_put_contents($dir . '/' . $name . '.' . $ext, $imageString);
     }
 }
