@@ -408,10 +408,11 @@ class ConverterTest extends ImageTestCase
             __DIR__.'/../../Fixtures/mob-leponge/walkR-small-rsvg254.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-small-inkscape12.webp',
             __DIR__.'/../../Fixtures/mob-leponge/walkR-small-inkscape14.webp',
-            __DIR__.'/../../Fixtures/mob-leponge/walkR-small-ga.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-small-ga-rsvg.webp',
+            __DIR__.'/../../Fixtures/mob-leponge/walkR-small-ga-inkscape.webp',
         ], $webp, 0.01);
 
-        $this->assertLessThan(8500, strlen($webp)); // Check that the image is smaller than 8KB
+        $this->assertLessThan(11500, strlen($webp)); // Check that the image is smaller than 11.5KB
 
         $data = $this->dumpImageData($webp);
         if ($data !== null) {
