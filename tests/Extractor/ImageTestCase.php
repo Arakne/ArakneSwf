@@ -113,7 +113,7 @@ class ImageTestCase extends TestCase
             }
         }
 
-        $this->saveGeneratedImage($expectedImageString);
+        $this->saveGeneratedImage($imageString);
 
         if ($lastError !== null && $bestDiff === 1) {
             $this->fail($lastError->getMessage());
