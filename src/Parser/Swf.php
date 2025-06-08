@@ -40,7 +40,7 @@ readonly class Swf
      */
     public array $tags; // Tags
 
-    private SwfIO $io;
+    private SwfReader $io;
     private SwfRec $rec;
     private SwfHdr $hdr;
     private SwfTag $tag;
@@ -51,7 +51,7 @@ readonly class Swf
      */
     public function __construct(string $binary, ?ErrorCollector $errorCollector = null)
     {
-        $this->io = new SwfIO($binary);
+        $this->io = new SwfReader($binary);
         $this->rec = new SwfRec($this->io);
         $this->hdr = new SwfHdr($this->io, $this->rec);
         $this->header = $this->hdr->parseHeader();

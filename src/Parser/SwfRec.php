@@ -65,40 +65,40 @@ use function sprintf;
 readonly class SwfRec
 {
     public function __construct(
-        private SwfIO $io,
+        private SwfReader $io,
     ) {}
 
     public function collectRGB(): Color
     {
         return new Color(
-            $this->io->collectUI8(),
-            $this->io->collectUI8(),
-            $this->io->collectUI8(),
+            $this->io->readUI8(),
+            $this->io->readUI8(),
+            $this->io->readUI8(),
         );
     }
 
     public function collectRGBA(): Color
     {
         return new Color(
-            $this->io->collectUI8(),
-            $this->io->collectUI8(),
-            $this->io->collectUI8(),
-            $this->io->collectUI8(),
+            $this->io->readUI8(),
+            $this->io->readUI8(),
+            $this->io->readUI8(),
+            $this->io->readUI8(),
         );
     }
 
     public function collectRect(): Rectangle
     {
-        $nbits = $this->io->collectUB(5);
+        $nbits = $this->io->readUB(5);
 
         $ret = new Rectangle(
-            $this->io->collectSB($nbits),
-            $this->io->collectSB($nbits),
-            $this->io->collectSB($nbits),
-            $this->io->collectSB($nbits),
+            $this->io->readSB($nbits),
+            $this->io->readSB($nbits),
+            $this->io->readSB($nbits),
+            $this->io->readSB($nbits),
         );
 
-        $this->io->byteAlign();
+        $this->io->alignByte();
 
         return $ret;
     }
@@ -112,33 +112,33 @@ readonly class SwfRec
         $translateX = 0;
         $translateY = 0;
 
-        if (($hasScale = $this->io->collectUB(1)) != 0) {
-            $nScaleBits = $this->io->collectUB(5);
-            $scaleX = $this->io->collectFB($nScaleBits);
-            $scaleY = $this->io->collectFB($nScaleBits);
+        if ($this->io->readBool()) {
+            $nScaleBits = $this->io->readUB(5);
+            $scaleX = $this->io->readFB($nScaleBits);
+            $scaleY = $this->io->readFB($nScaleBits);
         }
 
-        if (($hasRotate = $this->io->collectUB(1)) != 0) {
-            $nRotateBits = $this->io->collectUB(5);
-            $rotateSkew0 = $this->io->collectFB($nRotateBits);
-            $rotateSkew1 = $this->io->collectFB($nRotateBits);
+        if ($this->io->readBool()) {
+            $nRotateBits = $this->io->readUB(5);
+            $rotateSkew0 = $this->io->readFB($nRotateBits);
+            $rotateSkew1 = $this->io->readFB($nRotateBits);
         }
 
-        if (($nTranslateBits = $this->io->collectUB(5)) != 0) {
-            $translateX = $this->io->collectSB($nTranslateBits);
-            $translateY = $this->io->collectSB($nTranslateBits);
+        if (($nTranslateBits = $this->io->readUB(5)) != 0) {
+            $translateX = $this->io->readSB($nTranslateBits);
+            $translateY = $this->io->readSB($nTranslateBits);
         }
 
-        $this->io->byteAlign();
+        $this->io->alignByte();
 
         return new Matrix($scaleX, $scaleY, $rotateSkew0, $rotateSkew1, $translateX, $translateY);
     }
 
     public function collectColorTransform(bool $withAlpha): ColorTransform
     {
-        $hasAddTerms = $this->io->collectUB(1);
-        $hasMultTerms = $this->io->collectUB(1);
-        $nbits = $this->io->collectUB(4);
+        $hasAddTerms = $this->io->readBool();
+        $hasMultTerms = $this->io->readBool();
+        $nbits = $this->io->readUB(4);
 
         $redMultTerm = 256;
         $greenMultTerm = 256;
@@ -150,24 +150,24 @@ readonly class SwfRec
         $alphaAddTerm = 0;
 
         if ($hasMultTerms != 0) {
-            $redMultTerm = $this->io->collectSB($nbits);
-            $greenMultTerm = $this->io->collectSB($nbits);
-            $blueMultTerm = $this->io->collectSB($nbits);
+            $redMultTerm = $this->io->readSB($nbits);
+            $greenMultTerm = $this->io->readSB($nbits);
+            $blueMultTerm = $this->io->readSB($nbits);
             if ($withAlpha) {
-                $alphaMultTerm = $this->io->collectSB($nbits);
+                $alphaMultTerm = $this->io->readSB($nbits);
             }
         }
 
         if ($hasAddTerms != 0) {
-            $redAddTerm = $this->io->collectSB($nbits);
-            $greenAddTerm = $this->io->collectSB($nbits);
-            $blueAddTerm = $this->io->collectSB($nbits);
+            $redAddTerm = $this->io->readSB($nbits);
+            $greenAddTerm = $this->io->readSB($nbits);
+            $blueAddTerm = $this->io->readSB($nbits);
             if ($withAlpha) {
-                $alphaAddTerm = $this->io->collectSB($nbits);
+                $alphaAddTerm = $this->io->readSB($nbits);
             }
         }
 
-        $this->io->byteAlign();
+        $this->io->alignByte();
 
         return new ColorTransform(
             $redMultTerm,
@@ -195,21 +195,21 @@ readonly class SwfRec
         $actions =  [];
 
         for (;;) {
-            if ($this->io->bytePos >= $bytePosEnd) {
+            if ($this->io->offset >= $bytePosEnd) {
                 break;
             }
 
-            $offset = $this->io->bytePos;
+            $offset = $this->io->offset;
             $actionLength = 0;
 
-            if (($actionCode = $this->io->collectUI8()) === 0) {
+            if (($actionCode = $this->io->readUI8()) === 0) {
                 // echo sprintf("%6d: Code=0x%02x, breaking\n", $offset, $actionCode);
                 $actions[] = new ActionRecord($offset, Opcode::Null, 0, null);
                 continue; // break;
             }
 
             if ($actionCode >= 0x80) {
-                $actionLength = $this->io->collectUI16();
+                $actionLength = $this->io->readUI16();
             }
 
             $opcode = Opcode::tryFrom($actionCode);
@@ -225,8 +225,8 @@ readonly class SwfRec
             $actions[] = new ActionRecord($offset, $opcode, $actionLength, $actionData);
         }
 
-        if ($this->io->bytePos !== $bytePosEnd) {
-            throw new Exception(sprintf('There are %d bytes left', $bytePosEnd - $this->io->bytePos));
+        if ($this->io->offset !== $bytePosEnd) {
+            throw new Exception(sprintf('There are %d bytes left', $bytePosEnd - $this->io->offset));
         }
 
         return $actions;
@@ -240,29 +240,29 @@ readonly class SwfRec
     public function collectActionData(Opcode $opcode, int $actionLength): mixed
     {
         return match ($opcode) {
-            Opcode::ActionGotoFrame => $this->io->collectUI16(),
+            Opcode::ActionGotoFrame => $this->io->readUI16(),
             Opcode::ActionGetURL => new GetURLData(
-                url: $this->io->collectString(),
-                target: $this->io->collectString(),
+                url: $this->io->readNullTerminatedString(),
+                target: $this->io->readNullTerminatedString(),
             ),
-            Opcode::ActionStoreRegister => $this->io->collectUI8(),
+            Opcode::ActionStoreRegister => $this->io->readUI8(),
             Opcode::ActionConstantPool => $this->collectConstantPool(),
             Opcode::ActionWaitForFrame => new WaitForFrameData(
-                frame: $this->io->collectUI16(),
-                skipCount: $this->io->collectUI8(),
+                frame: $this->io->readUI16(),
+                skipCount: $this->io->readUI8(),
             ),
-            Opcode::ActionSetTarget => $this->io->collectString(),
-            Opcode::ActionGoToLabel => $this->io->collectString(),
-            Opcode::ActionWaitForFrame2 => $this->io->collectUI8(),
+            Opcode::ActionSetTarget => $this->io->readNullTerminatedString(),
+            Opcode::ActionGoToLabel => $this->io->readNullTerminatedString(),
+            Opcode::ActionWaitForFrame2 => $this->io->readUI8(),
             Opcode::ActionDefineFunction2 => $this->collectDefineFunction2(),
-            Opcode::ActionWith => $this->io->collectBytes($this->io->collectUI16()),
+            Opcode::ActionWith => $this->io->readBytes($this->io->readUI16()),
             Opcode::ActionPush => $this->collectPush($actionLength),
-            Opcode::ActionJump, Opcode::ActionIf => $this->io->collectSI16(),
+            Opcode::ActionJump, Opcode::ActionIf => $this->io->readSI16(),
             Opcode::ActionGetURL2 => new GetURL2Data(
-                sendVarsMethod: $this->io->collectUB(2),
-                reserved: $this->io->collectUB(4),
-                loadTargetFlag: $this->io->collectUB(1) === 1,
-                loadVariablesFlag: $this->io->collectUB(1) === 1,
+                sendVarsMethod: $this->io->readUB(2),
+                reserved: $this->io->readUB(4),
+                loadTargetFlag: $this->io->readBool(),
+                loadVariablesFlag: $this->io->readBool(),
             ),
             Opcode::ActionDefineFunction => $this->collectDefineFunction(),
             Opcode::ActionGotoFrame2 => $this->collectGotoFrame2(),
@@ -276,10 +276,10 @@ readonly class SwfRec
     private function collectConstantPool(): array
     {
         $data = [];
-        $count = $this->io->collectUI16();
+        $count = $this->io->readUI16();
 
         for ($i = 0; $i < $count; $i++) {
-            $data[] = $this->io->collectString();
+            $data[] = $this->io->readNullTerminatedString();
         }
 
         return $data;
@@ -287,29 +287,29 @@ readonly class SwfRec
 
     private function collectDefineFunction2(): DefineFunction2Data
     {
-        $functionName = $this->io->collectString();
-        $numParams = $this->io->collectUI16();
-        $registerCount = $this->io->collectUI8();
-        $preloadParentFlag = $this->io->collectUB(1) === 1;
-        $preloadRootFlag = $this->io->collectUB(1) === 1;
-        $suppressSuperFlag = $this->io->collectUB(1) === 1;
-        $preloadSuperFlag = $this->io->collectUB(1) === 1;
-        $suppressArgumentsFlag = $this->io->collectUB(1) === 1;
-        $preloadArgumentsFlag = $this->io->collectUB(1) === 1;
-        $suppressThisFlag = $this->io->collectUB(1) === 1;
-        $preloadThisFlag = $this->io->collectUB(1) === 1;
-        $this->io->collectUB(7); // Reserved
-        $preloadGlobalFlag = $this->io->collectUB(1) === 1;
+        $functionName = $this->io->readNullTerminatedString();
+        $numParams = $this->io->readUI16();
+        $registerCount = $this->io->readUI8();
+        $preloadParentFlag = $this->io->readBool();
+        $preloadRootFlag = $this->io->readBool();
+        $suppressSuperFlag = $this->io->readBool();
+        $preloadSuperFlag = $this->io->readBool();
+        $suppressArgumentsFlag = $this->io->readBool();
+        $preloadArgumentsFlag = $this->io->readBool();
+        $suppressThisFlag = $this->io->readBool();
+        $preloadThisFlag = $this->io->readBool();
+        $this->io->skipBits(7); // Reserved
+        $preloadGlobalFlag = $this->io->readBool();
 
         $parameters = [];
         $registers = [];
 
         for ($i = 0; $i < $numParams; $i++) {
-            $registers[] = $this->io->collectUI8();
-            $parameters[] = $this->io->collectString();
+            $registers[] = $this->io->readUI8();
+            $parameters[] = $this->io->readNullTerminatedString();
         }
 
-        $codeSize = $this->io->collectUI16();
+        $codeSize = $this->io->readUI16();
 
         return new DefineFunction2Data(
             $functionName,
@@ -337,25 +337,25 @@ readonly class SwfRec
     private function collectPush(int $actionLength): array
     {
         $actionData = [];
-        $bytePosEnd = $this->io->bytePos + $actionLength;
+        $bytePosEnd = $this->io->offset + $actionLength;
 
-        while ($this->io->bytePos < $bytePosEnd) {
-            $typeId = $this->io->collectUI8();
+        while ($this->io->offset < $bytePosEnd) {
+            $typeId = $this->io->readUI8();
             $type = Type::tryFrom($typeId) ?? throw new Exception(sprintf("Internal error: typeId=%d", $typeId));
 
             $actionData[] = new Value(
                 $type,
                 match ($type) {
-                    Type::String => $this->io->collectString(),
-                    Type::Float => $this->io->collectFloat(),
+                    Type::String => $this->io->readNullTerminatedString(),
+                    Type::Float => $this->io->readFloat(),
                     Type::Null => null,
                     Type::Undefined => null,
-                    Type::Register => $this->io->collectUI8(),
-                    Type::Boolean => $this->io->collectUI8() === 1,
-                    Type::Double => $this->io->collectDouble(),
-                    Type::Integer => $this->io->collectSI32(),
-                    Type::Constant8 => $this->io->collectUI8(),
-                    Type::Constant16 => $this->io->collectUI16(),
+                    Type::Register => $this->io->readUI8(),
+                    Type::Boolean => $this->io->readUI8() === 1,
+                    Type::Double => $this->io->readDouble(),
+                    Type::Integer => $this->io->readSI32(),
+                    Type::Constant8 => $this->io->readUI8(),
+                    Type::Constant16 => $this->io->readUI16(),
                 }
             );
         }
@@ -365,26 +365,26 @@ readonly class SwfRec
 
     private function collectDefineFunction(): DefineFunctionData
     {
-        $name = $this->io->collectString();
+        $name = $this->io->readNullTerminatedString();
         $params = [];
-        $numParams = $this->io->collectUI16();
+        $numParams = $this->io->readUI16();
 
         for ($i = 0; $i < $numParams; $i++) {
-            $params[] = $this->io->collectString();
+            $params[] = $this->io->readNullTerminatedString();
         }
 
-        $codeSize = $this->io->collectUI16();
+        $codeSize = $this->io->readUI16();
 
         return new DefineFunctionData($name, $params, $codeSize);
     }
 
     private function collectGotoFrame2(): GotoFrame2Data
     {
-        $this->io->collectUB(6); // Reserved
+        $this->io->skipBits(6); // Reserved
 
-        $sceneBiasFlag = $this->io->collectUB(1) === 1;
-        $playFlag = $this->io->collectUB(1) === 1;
-        $sceneBias = $sceneBiasFlag ? $this->io->collectUI16() : null;
+        $sceneBiasFlag = $this->io->readBool();
+        $playFlag = $this->io->readBool();
+        $sceneBias = $sceneBiasFlag ? $this->io->readUI16() : null;
 
         return new GotoFrame2Data($sceneBiasFlag, $playFlag, $sceneBias);
     }
@@ -395,8 +395,8 @@ readonly class SwfRec
      */
     public function collectShape(int $shapeVersion): array
     {
-        $numFillBits = $this->io->collectUB(4);
-        $numLineBits = $this->io->collectUB(4);
+        $numFillBits = $this->io->readUB(4);
+        $numLineBits = $this->io->readUB(4);
 
         return $this->collectShapeRecords($shapeVersion, $numFillBits, $numLineBits);
     }
@@ -406,8 +406,8 @@ readonly class SwfRec
         $fillStyles = $this->collectFillStyleArray($shapeVersion);
         $lineStyles = $this->collectLineStyleArray($shapeVersion);
 
-        $numFillBits = $this->io->collectUB(4);
-        $numLineBits = $this->io->collectUB(4);
+        $numFillBits = $this->io->readUB(4);
+        $numLineBits = $this->io->readUB(4);
 
         $shapeRecords = $this->collectShapeRecords($shapeVersion, $numFillBits, $numLineBits);
 
@@ -416,8 +416,8 @@ readonly class SwfRec
 
     /**
      * @param int $shapeVersion
-     * @param int $numFillBits
-     * @param int $numLineBits
+     * @param non-negative-int $numFillBits
+     * @param non-negative-int $numLineBits
      * @return list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>
      * @throws Exception
      */
@@ -426,13 +426,13 @@ readonly class SwfRec
         $shapeRecords = [];
 
         for (;;) {
-            $typeFlag = $this->io->collectUB(1);
-            if ($typeFlag == 0) {
-                $stateNewStyles = (bool) $this->io->collectUB(1);
-                $stateLineStyle = (bool) $this->io->collectUB(1);
-                $stateFillStyle1 = (bool) $this->io->collectUB(1);
-                $stateFillStyle0 = (bool) $this->io->collectUB(1);
-                $stateMoveTo = (bool) $this->io->collectUB(1);
+            $typeFlag = $this->io->readBool();
+            if ($typeFlag === false) {
+                $stateNewStyles = $this->io->readBool();
+                $stateLineStyle = $this->io->readBool();
+                $stateFillStyle1 = $this->io->readBool();
+                $stateFillStyle0 = $this->io->readBool();
+                $stateMoveTo = $this->io->readBool();
                 if (!$stateNewStyles && !$stateLineStyle && !$stateFillStyle1 && !$stateFillStyle0 && !$stateMoveTo) {
                     // EndShapeRecord
                     $shapeRecords[] = new EndShapeRecord();
@@ -440,38 +440,38 @@ readonly class SwfRec
                 } else {
                     // StyleChangeRecord
                     if ($stateMoveTo) {
-                        $moveBits = $this->io->collectUB(5);
-                        $moveDeltaX = $this->io->collectSB($moveBits);
-                        $moveDeltaY = $this->io->collectSB($moveBits);
+                        $moveBits = $this->io->readUB(5);
+                        $moveDeltaX = $this->io->readSB($moveBits);
+                        $moveDeltaY = $this->io->readSB($moveBits);
                     } else {
                         $moveDeltaX = 0;
                         $moveDeltaY = 0;
                     }
 
                     if ($stateFillStyle0) {
-                        $fillStyle0 = $this->io->collectUB($numFillBits);
+                        $fillStyle0 = $this->io->readUB($numFillBits);
                     } else {
                         $fillStyle0 = 0;
                     }
 
                     if ($stateFillStyle1) {
-                        $fillStyle1 = $this->io->collectUB($numFillBits);
+                        $fillStyle1 = $this->io->readUB($numFillBits);
                     } else {
                         $fillStyle1 = 0;
                     }
 
                     if ($stateLineStyle) {
-                        $lineStyle = $this->io->collectUB($numLineBits);
+                        $lineStyle = $this->io->readUB($numLineBits);
                     } else {
                         $lineStyle = 0;
                     }
 
                     if ($stateNewStyles && ($shapeVersion == 2 || $shapeVersion == 3 || $shapeVersion == 4)) { // XXX shapeVersion 4 not in spec
-                        $this->io->byteAlign();
+                        $this->io->alignByte();
                         $newFillStyles = $this->collectFillStyleArray($shapeVersion);
                         $newLineStyles = $this->collectLineStyleArray($shapeVersion);
-                        $numFillBits = $this->io->collectUB(4);
-                        $numLineBits = $this->io->collectUB(4);
+                        $numFillBits = $this->io->readUB(4);
+                        $numLineBits = $this->io->readUB(4);
                     } else {
                         $newFillStyles = [];
                         $newLineStyles = [];
@@ -493,29 +493,29 @@ readonly class SwfRec
                     );
                 }
             } else {
-                $straightFlag = $this->io->collectUB(1);
-                $numBits = $this->io->collectUB(4);
+                $straightFlag = $this->io->readBool();
+                $numBits = $this->io->readUB(4);
 
-                if ($straightFlag == 1) {
+                if ($straightFlag) {
                     // StraightEdgeRecord
-                    $generalLineFlag = (bool) $this->io->collectUB(1);
-                    $vertLineFlag = !$generalLineFlag && (bool) $this->io->collectUB(1);
-                    $deltaX = $generalLineFlag || !$vertLineFlag ? $this->io->collectSB($numBits + 2) : 0;
-                    $deltaY = $generalLineFlag || $vertLineFlag ? $this->io->collectSB($numBits + 2) : 0;
+                    $generalLineFlag = $this->io->readBool();
+                    $vertLineFlag = !$generalLineFlag && $this->io->readBool();
+                    $deltaX = $generalLineFlag || !$vertLineFlag ? $this->io->readSB($numBits + 2) : 0;
+                    $deltaY = $generalLineFlag || $vertLineFlag ? $this->io->readSB($numBits + 2) : 0;
 
                     $shapeRecords[] = new StraightEdgeRecord($generalLineFlag, $vertLineFlag, $deltaX, $deltaY);
                 } else {
                     // CurvedEdgeRecord
                     $shapeRecords[] = new CurvedEdgeRecord(
-                        $this->io->collectSB($numBits + 2),
-                        $this->io->collectSB($numBits + 2),
-                        $this->io->collectSB($numBits + 2),
-                        $this->io->collectSB($numBits + 2),
+                        $this->io->readSB($numBits + 2),
+                        $this->io->readSB($numBits + 2),
+                        $this->io->readSB($numBits + 2),
+                        $this->io->readSB($numBits + 2),
                     );
                 }
             }
         }
-        $this->io->byteAlign();
+        $this->io->alignByte();
         return $shapeRecords;
     }
 
@@ -527,9 +527,9 @@ readonly class SwfRec
     {
         $morphFillStyleArray = [];
 
-        $fillStyleCount = $this->io->collectUI8();
+        $fillStyleCount = $this->io->readUI8();
         if ($fillStyleCount == 0xff) {
-            $fillStyleCount = $this->io->collectUI16(); // Extended
+            $fillStyleCount = $this->io->readUI16(); // Extended
         }
 
         for ($i = 0; $i < $fillStyleCount; $i++) {
@@ -545,7 +545,7 @@ readonly class SwfRec
     public function collectMorphFillStyle(): array
     {
         $morphFillStyle = []; // To return
-        $morphFillStyle['fillStyleType'] = $this->io->collectUI8();
+        $morphFillStyle['fillStyleType'] = $this->io->readUI8();
 
         switch ($morphFillStyle['fillStyleType']) {
             case 0x00: // Solid fill
@@ -562,7 +562,7 @@ readonly class SwfRec
             case 0x41: // Clipped bitmap fill
             case 0x42: // Non-smoothed repeating bitmap
             case 0x43: // Non-smoothed clipped bitmap
-                $morphFillStyle['bitmapId'] = $this->io->collectUI16();
+                $morphFillStyle['bitmapId'] = $this->io->readUI16();
                 $morphFillStyle['startBitmapMatrix'] = $this->collectMatrix();
                 $morphFillStyle['endBitmapMatrix'] = $this->collectMatrix();
                 break;
@@ -579,7 +579,7 @@ readonly class SwfRec
     public function collectMorphGradient(): array
     {
         $morphGradient = [];
-        $numGradients = $this->io->collectUI8();
+        $numGradients = $this->io->readUI8();
 
         for ($i = 0; $i < $numGradients; $i++) {
             $morphGradient[] = $this->collectMorphGradientRecord();
@@ -594,9 +594,9 @@ readonly class SwfRec
     public function collectMorphGradientRecord(): array
     {
         return [
-            'startRatio' => $this->io->collectUI8(),
+            'startRatio' => $this->io->readUI8(),
             'startColor' => $this->collectRGBA(),
-            'endRatio' => $this->io->collectUI8(),
+            'endRatio' => $this->io->readUI8(),
             'endColor' => $this->collectRGBA(),
         ];
     }
@@ -608,10 +608,10 @@ readonly class SwfRec
     public function collectMorphLineStyleArray(int $version): array
     {
         $morphLineStyleArray = [];
-        $lineStyleCount = $this->io->collectUI8();
+        $lineStyleCount = $this->io->readUI8();
 
         if ($lineStyleCount == 0xff) {
-            $lineStyleCount = $this->io->collectUI16();
+            $lineStyleCount = $this->io->readUI16();
         }
 
         if ($version === 1) {
@@ -635,8 +635,8 @@ readonly class SwfRec
     public function collectMorphLineStyle(): array
     {
         return [
-            'startWidth' => $this->io->collectUI16(),
-            'endWidth' => $this->io->collectUI16(),
+            'startWidth' => $this->io->readUI16(),
+            'endWidth' => $this->io->readUI16(),
             'startColor' => $this->collectRGBA(),
             'endColor' => $this->collectRGBA(),
         ];
@@ -648,28 +648,28 @@ readonly class SwfRec
     public function collectMorphLineStyle2(): array
     {
         $morphLineStyle2 = []; // To return
-        $morphLineStyle2['startWidth'] = $this->io->collectUI16();
-        $morphLineStyle2['endWidth'] = $this->io->collectUI16();
+        $morphLineStyle2['startWidth'] = $this->io->readUI16();
+        $morphLineStyle2['endWidth'] = $this->io->readUI16();
 
-        $morphLineStyle2['startCapStyle'] = $this->io->collectUB(2);
-        $morphLineStyle2['joinStyle'] = $this->io->collectUB(2);
-        $morphLineStyle2['hasFillFlag'] = $this->io->collectUB(1);
-        $morphLineStyle2['noHScaleFlag'] = $this->io->collectUB(1);
-        $morphLineStyle2['noVScaleFlag'] = $this->io->collectUB(1);
-        $morphLineStyle2['pixelHintingFlag'] = $this->io->collectUB(1);
+        $morphLineStyle2['startCapStyle'] = $this->io->readUB(2);
+        $morphLineStyle2['joinStyle'] = $this->io->readUB(2);
+        $morphLineStyle2['hasFillFlag'] = $this->io->readBool();
+        $morphLineStyle2['noHScaleFlag'] = $this->io->readBool();
+        $morphLineStyle2['noVScaleFlag'] = $this->io->readBool();
+        $morphLineStyle2['pixelHintingFlag'] = $this->io->readBool();
 
-        $this->io->collectUB(5); // Reserved
-        $morphLineStyle2['noClose'] = $this->io->collectUB(1);
-        $morphLineStyle2['endCapStyle'] = $this->io->collectUB(2);
+        $this->io->skipBits(5); // Reserved
+        $morphLineStyle2['noClose'] = $this->io->readBool();
+        $morphLineStyle2['endCapStyle'] = $this->io->readUB(2);
 
         if ($morphLineStyle2['joinStyle'] === 2) {
-            $morphLineStyle2['miterLimitFactor'] = $this->io->collectUI16();
+            $morphLineStyle2['miterLimitFactor'] = $this->io->readUI16();
         }
-        if ($morphLineStyle2['hasFillFlag'] === 0) {
+        if ($morphLineStyle2['hasFillFlag'] === false) {
             $morphLineStyle2['startColor'] = $this->collectRGBA();
             $morphLineStyle2['endColor'] = $this->collectRGBA();
         }
-        if ($morphLineStyle2['hasFillFlag'] === 1) {
+        if ($morphLineStyle2['hasFillFlag'] === true) {
             $morphLineStyle2['fillType'] = $this->collectMorphFillStyle();
         }
         return $morphLineStyle2;
@@ -678,9 +678,9 @@ readonly class SwfRec
     public function collectGradient(int $shapeVersion): Gradient
     {
         return new Gradient(
-            spreadMode: $this->io->collectUB(2),
-            interpolationMode: $this->io->collectUB(2),
-            records: $this->collectGradientRecords($this->io->collectUB(4), $shapeVersion),
+            spreadMode: $this->io->readUB(2),
+            interpolationMode: $this->io->readUB(2),
+            records: $this->collectGradientRecords($this->io->readUB(4), $shapeVersion),
         );
     }
 
@@ -688,10 +688,10 @@ readonly class SwfRec
     public function collectFocalGradient(int $shapeVersion): Gradient
     {
         return new Gradient(
-            spreadMode: $this->io->collectUB(2),
-            interpolationMode: $this->io->collectUB(2),
-            records: $this->collectGradientRecords($this->io->collectUB(4), $shapeVersion),
-            focalPoint: $this->io->collectFixed8(),
+            spreadMode: $this->io->readUB(2),
+            interpolationMode: $this->io->readUB(2),
+            records: $this->collectGradientRecords($this->io->readUB(4), $shapeVersion),
+            focalPoint: $this->io->readFixed8(),
         );
     }
 
@@ -701,47 +701,47 @@ readonly class SwfRec
     public function collectFilterList(): array
     {
         $filterList = [];
-        $numberOfFilters = $this->io->collectUI8();
+        $numberOfFilters = $this->io->readUI8();
 
         for ($f = 0; $f < $numberOfFilters; $f++) {
-            $filterId = $this->io->collectUI8();
+            $filterId = $this->io->readUI8();
 
             switch ($filterId) {
                 case 0: // DropShadowFilter
                     $filterList[] = new DropShadowFilter(
                         filterId: $filterId,
                         dropShadowColor: $this->collectRGBA(),
-                        blurX: $this->io->collectFixed(),
-                        blurY: $this->io->collectFixed(),
-                        angle: $this->io->collectFixed(),
-                        distance: $this->io->collectFixed(),
-                        strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1) === 1,
-                        knockout: $this->io->collectUB(1) === 1,
-                        compositeSource: $this->io->collectUB(1) === 1,
-                        passes: $this->io->collectUB(5),
+                        blurX: $this->io->readFixed(),
+                        blurY: $this->io->readFixed(),
+                        angle: $this->io->readFixed(),
+                        distance: $this->io->readFixed(),
+                        strength: $this->io->readFixed8(),
+                        innerShadow: $this->io->readBool(),
+                        knockout: $this->io->readBool(),
+                        compositeSource: $this->io->readBool(),
+                        passes: $this->io->readUB(5),
                     );
                     break;
                 case 1: // BlurFilter
                     $filterList[] = new BlurFilter(
                         filterId: $filterId,
-                        blurX: $this->io->collectFixed(),
-                        blurY: $this->io->collectFixed(),
-                        passes: $this->io->collectUB(5),
-                        reserved: $this->io->collectUB(3),
+                        blurX: $this->io->readFixed(),
+                        blurY: $this->io->readFixed(),
+                        passes: $this->io->readUB(5),
+                        reserved: $this->io->readUB(3),
                     );
                     break;
                 case 2: // GlowFilter
                     $filterList[] = new GlowFilter(
                         filterId: $filterId,
                         glowColor: $this->collectRGBA(),
-                        blurX: $this->io->collectFixed(),
-                        blurY: $this->io->collectFixed(),
-                        strength: $this->io->collectFixed8(),
-                        innerGlow: $this->io->collectUB(1) === 1,
-                        knockout: $this->io->collectUB(1) === 1,
-                        compositeSource: $this->io->collectUB(1) === 1,
-                        passes: $this->io->collectUB(5),
+                        blurX: $this->io->readFixed(),
+                        blurY: $this->io->readFixed(),
+                        strength: $this->io->readFixed8(),
+                        innerGlow: $this->io->readBool(),
+                        knockout: $this->io->readBool(),
+                        compositeSource: $this->io->readBool(),
+                        passes: $this->io->readUB(5),
                     );
                     break;
                 case 3: // BevelFilter
@@ -749,20 +749,20 @@ readonly class SwfRec
                         filterId: $filterId,
                         shadowColor: $this->collectRGBA(),
                         highlightColor: $this->collectRGBA(),
-                        blurX: $this->io->collectFixed(),
-                        blurY: $this->io->collectFixed(),
-                        angle: $this->io->collectFixed(),
-                        distance: $this->io->collectFixed(),
-                        strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1) === 1,
-                        knockout: $this->io->collectUB(1) === 1,
-                        compositeSource: $this->io->collectUB(1) === 1,
-                        onTop: $this->io->collectUB(1) === 1,
-                        passes: $this->io->collectUB(4),
+                        blurX: $this->io->readFixed(),
+                        blurY: $this->io->readFixed(),
+                        angle: $this->io->readFixed(),
+                        distance: $this->io->readFixed(),
+                        strength: $this->io->readFixed8(),
+                        innerShadow: $this->io->readBool(),
+                        knockout: $this->io->readBool(),
+                        compositeSource: $this->io->readBool(),
+                        onTop: $this->io->readBool(),
+                        passes: $this->io->readUB(4),
                     );
                     break;
                 case 4: // GradientGlowFilter
-                    $numColors = $this->io->collectUI8();
+                    $numColors = $this->io->readUI8();
                     $gradientColors = [];
                     $gradientRatio = [];
 
@@ -771,7 +771,7 @@ readonly class SwfRec
                     }
 
                     for ($i = 0; $i < $numColors; $i++) {
-                        $gradientRatio[] = $this->io->collectUI8();
+                        $gradientRatio[] = $this->io->readUI8();
                     }
 
                     $filterList[] = new GradientGlowFilter(
@@ -779,27 +779,27 @@ readonly class SwfRec
                         numColors: $numColors,
                         gradientColors: $gradientColors,
                         gradientRatio: $gradientRatio,
-                        blurX: $this->io->collectFixed(),
-                        blurY: $this->io->collectFixed(),
-                        angle: $this->io->collectFixed(),
-                        distance: $this->io->collectFixed(),
-                        strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1) === 1,
-                        knockout: $this->io->collectUB(1) === 1,
-                        compositeSource: $this->io->collectUB(1) === 1,
-                        onTop: $this->io->collectUB(1) === 1,
-                        passes: $this->io->collectUB(4),
+                        blurX: $this->io->readFixed(),
+                        blurY: $this->io->readFixed(),
+                        angle: $this->io->readFixed(),
+                        distance: $this->io->readFixed(),
+                        strength: $this->io->readFixed8(),
+                        innerShadow: $this->io->readBool(),
+                        knockout: $this->io->readBool(),
+                        compositeSource: $this->io->readBool(),
+                        onTop: $this->io->readBool(),
+                        passes: $this->io->readUB(4),
                     );
                     break;
                 case 5: // ConvolutionFilter
-                    $matrixX = $this->io->collectUI8();
-                    $matrixY = $this->io->collectUI8();
-                    $divisor = $this->io->collectFloat();
-                    $bias = $this->io->collectFloat();
+                    $matrixX = $this->io->readUI8();
+                    $matrixY = $this->io->readUI8();
+                    $divisor = $this->io->readFloat();
+                    $bias = $this->io->readFloat();
                     $matrix = [];
 
                     for ($i = 0; $i < $matrixX * $matrixY; $i++) {
-                        $filter['matrix'][] = $this->io->collectFloat();
+                        $filter['matrix'][] = $this->io->readFloat();
                     }
 
                     $filterList[] = new ConvolutionFilter(
@@ -810,15 +810,15 @@ readonly class SwfRec
                         bias: $bias,
                         matrix: $matrix,
                         defaultColor: $this->collectRGBA(),
-                        reserved: $this->io->collectUB(6),
-                        clamp: $this->io->collectUB(1) === 1,
-                        preserveAlpha: $this->io->collectUB(1) === 1,
+                        reserved: $this->io->readUB(6),
+                        clamp: $this->io->readBool(),
+                        preserveAlpha: $this->io->readBool(),
                     );
                     break;
                 case 6: // ColorMatrixFilter
                     $matrix = [];
                     for ($i = 0; $i < 20; $i++) {
-                        $matrix[$i] = $this->io->collectFloat();
+                        $matrix[$i] = $this->io->readFloat();
                     }
 
                     $filterList[] = new ColorMatrixFilter(
@@ -827,7 +827,7 @@ readonly class SwfRec
                     );
                     break;
                 case 7: // GradientBevelFilter
-                    $numColors = $this->io->collectUI8();
+                    $numColors = $this->io->readUI8();
                     $gradientColors = [];
                     $gradientRatio = [];
 
@@ -836,7 +836,7 @@ readonly class SwfRec
                     }
 
                     for ($i = 0; $i < $numColors; $i++) {
-                        $gradientRatio[] = $this->io->collectUI8();
+                        $gradientRatio[] = $this->io->readUI8();
                     }
 
                     $filterList[] = new GradientBevelFilter(
@@ -844,16 +844,16 @@ readonly class SwfRec
                         numColors: $numColors,
                         gradientColors: $gradientColors,
                         gradientRatio: $gradientRatio,
-                        blurX: $this->io->collectFixed(),
-                        blurY: $this->io->collectFixed(),
-                        angle: $this->io->collectFixed(),
-                        distance: $this->io->collectFixed(),
-                        strength: $this->io->collectFixed8(),
-                        innerShadow: $this->io->collectUB(1) === 1,
-                        knockout: $this->io->collectUB(1) === 1,
-                        compositeSource: $this->io->collectUB(1) === 1,
-                        onTop: $this->io->collectUB(1) === 1,
-                        passes: $this->io->collectUB(4),
+                        blurX: $this->io->readFixed(),
+                        blurY: $this->io->readFixed(),
+                        angle: $this->io->readFixed(),
+                        distance: $this->io->readFixed(),
+                        strength: $this->io->readFixed8(),
+                        innerShadow: $this->io->readBool(),
+                        knockout: $this->io->readBool(),
+                        compositeSource: $this->io->readBool(),
+                        onTop: $this->io->readBool(),
+                        passes: $this->io->readUB(4),
                     );
                     break;
                 default:
@@ -870,31 +870,31 @@ readonly class SwfRec
     {
         $soundInfo = [];
 
-        $this->io->collectUB(2); // Reserved
-        $soundInfo['syncStop'] = $this->io->collectUB(1);
-        $soundInfo['syncNoMultiple'] = $this->io->collectUB(1);
-        $soundInfo['hasEnvelope'] = $this->io->collectUB(1);
-        $soundInfo['hasLoops'] = $this->io->collectUB(1);
-        $soundInfo['hasOutPoint'] = $this->io->collectUB(1);
-        $soundInfo['hasInPoint'] = $this->io->collectUB(1);
+        $this->io->skipBits(2); // Reserved
+        $soundInfo['syncStop'] = $this->io->readBool();
+        $soundInfo['syncNoMultiple'] = $this->io->readBool();
+        $soundInfo['hasEnvelope'] = $this->io->readBool();
+        $soundInfo['hasLoops'] = $this->io->readBool();
+        $soundInfo['hasOutPoint'] = $this->io->readBool();
+        $soundInfo['hasInPoint'] = $this->io->readBool();
 
         if ($soundInfo['hasInPoint'] != 0) {
-            $soundInfo['inPoint'] = $this->io->collectUI32();
+            $soundInfo['inPoint'] = $this->io->readUI32();
         }
         if ($soundInfo['hasOutPoint'] != 0) {
-            $soundInfo['outPoint'] = $this->io->collectUI32();
+            $soundInfo['outPoint'] = $this->io->readUI32();
         }
         if ($soundInfo['hasLoops'] != 0) {
-            $soundInfo['loopCount'] = $this->io->collectUI16();
+            $soundInfo['loopCount'] = $this->io->readUI16();
         }
         if ($soundInfo['hasEnvelope'] != 0) {
             $soundInfo['envelopeRecords'] = [];
-            $envPoints = $this->io->collectUI8();
+            $envPoints = $this->io->readUI8();
             for ($i = 0; $i < $envPoints; $i++) {
                 $soundEnvelope = [];
-                $soundEnvelope['pos44'] = $this->io->collectUI32();
-                $soundEnvelope['leftLevel'] = $this->io->collectUI16();
-                $soundEnvelope['rightLevel'] = $this->io->collectUI16();
+                $soundEnvelope['pos44'] = $this->io->readUI32();
+                $soundEnvelope['leftLevel'] = $this->io->readUI16();
+                $soundEnvelope['rightLevel'] = $this->io->readUI16();
                 $soundInfo['envelopeRecords'][] = $soundEnvelope;
             }
         }
@@ -912,16 +912,15 @@ readonly class SwfRec
         for (;;) {
             $buttonRecord = [];
 
-            $reserved = $this->io->collectUB(2);
-            $buttonRecord['buttonHasBlendMode'] = $this->io->collectUB(1);
-            $buttonRecord['buttonHasFilterList'] = $this->io->collectUB(1);
-            $buttonRecord['buttonStateHitTest'] = $this->io->collectUB(1);
-            $buttonRecord['buttonStateDown'] = $this->io->collectUB(1);
-            $buttonRecord['buttonStateOver'] = $this->io->collectUB(1);
-            $buttonRecord['buttonStateUp'] = $this->io->collectUB(1);
+            $this->io->skipBits(2);
+            $buttonRecord['buttonHasBlendMode'] = $this->io->readBool();
+            $buttonRecord['buttonHasFilterList'] = $this->io->readBool();
+            $buttonRecord['buttonStateHitTest'] = $this->io->readBool();
+            $buttonRecord['buttonStateDown'] = $this->io->readBool();
+            $buttonRecord['buttonStateOver'] = $this->io->readBool();
+            $buttonRecord['buttonStateUp'] = $this->io->readBool();
 
-            if ($reserved == 0 &&
-                $buttonRecord['buttonHasBlendMode'] == 0 &&
+            if ($buttonRecord['buttonHasBlendMode'] == 0 &&
                 $buttonRecord['buttonHasFilterList'] == 0 &&
                 $buttonRecord['buttonStateHitTest'] == 0 &&
                 $buttonRecord['buttonStateDown'] == 0 &&
@@ -930,8 +929,8 @@ readonly class SwfRec
                 break;
             }
 
-            $buttonRecord['characterId'] = $this->io->collectUI16();
-            $buttonRecord['placeDepth'] = $this->io->collectUI16();
+            $buttonRecord['characterId'] = $this->io->readUI16();
+            $buttonRecord['placeDepth'] = $this->io->readUI16();
             $buttonRecord['placeMatrix'] = $this->collectMatrix();
             if ($version == 2) {
                 $buttonRecord['colorTransform'] = $this->collectColorTransform(true);
@@ -940,7 +939,7 @@ readonly class SwfRec
                 $buttonRecord['filterList'] = $this->collectFilterList();
             }
             if ($version == 2 && $buttonRecord['buttonHasBlendMode'] != 0) {
-                $buttonRecord['blendMode'] = $this->io->collectUI8();
+                $buttonRecord['blendMode'] = $this->io->readUI8();
             }
             $buttonRecords[] = $buttonRecord;
         }
@@ -957,20 +956,20 @@ readonly class SwfRec
         $buttonCondActions = [];
         for (;;) {
             $buttonCondAction = [];
-            $here = $this->io->bytePos;
-            $condActionSize = $this->io->collectUI16();
+            $here = $this->io->offset;
+            $condActionSize = $this->io->readUI16();
 
-            $buttonCondAction['condIdleToOverDown'] = $this->io->collectUB(1);
-            $buttonCondAction['condOutDownToIdle'] = $this->io->collectUB(1);
-            $buttonCondAction['condOutDownToOverDown'] = $this->io->collectUB(1);
-            $buttonCondAction['condOverDownToOutDown'] = $this->io->collectUB(1);
-            $buttonCondAction['condOverDownToOverUp'] = $this->io->collectUB(1);
-            $buttonCondAction['condOverUpToOverDown'] = $this->io->collectUB(1);
-            $buttonCondAction['condOverUpToIdle'] = $this->io->collectUB(1);
-            $buttonCondAction['condIdleToOverUp'] = $this->io->collectUB(1);
+            $buttonCondAction['condIdleToOverDown'] = $this->io->readBool();
+            $buttonCondAction['condOutDownToIdle'] = $this->io->readBool();
+            $buttonCondAction['condOutDownToOverDown'] = $this->io->readBool();
+            $buttonCondAction['condOverDownToOutDown'] = $this->io->readBool();
+            $buttonCondAction['condOverDownToOverUp'] = $this->io->readBool();
+            $buttonCondAction['condOverUpToOverDown'] = $this->io->readBool();
+            $buttonCondAction['condOverUpToIdle'] = $this->io->readBool();
+            $buttonCondAction['condIdleToOverUp'] = $this->io->readBool();
 
-            $buttonCondAction['condKeyPress'] = $this->io->collectUB(7);
-            $buttonCondAction['condOverDownToIdle'] = $this->io->collectUB(1);
+            $buttonCondAction['condKeyPress'] = $this->io->readUB(7);
+            $buttonCondAction['condOverDownToIdle'] = $this->io->readBool();
 
             $buttonCondAction['actions'] = $this->collectActionRecords($condActionSize == 0 ? $bytePosEnd : $here + $condActionSize);
 
@@ -989,21 +988,24 @@ readonly class SwfRec
     public function collectClipActions(int $swfVersion): array
     {
         $clipActions = [];
-        $this->io->collectUI16(); // Reserved, must be 0
+        $this->io->skipBytes(2); // Reserved, must be 0
         $clipActions['allEventFlags'] = $this->collectClipEventFlags($swfVersion);
         $clipActions['clipActionRecords'] = [];
         for (;;) {
             // Collect clipActionEndFlag, if zero then break, if not zero then push back
+            // @todo "peek" method instead of push back, or simply let collectClipActionRecord return null
             if ($swfVersion <= 5) {
-                if (($endFlag = $this->io->collectUI16()) == 0) {
+                if (($endFlag = $this->io->readUI16()) == 0) {
                     break;
                 }
-                $this->io->bytePos -= 2;
+                // @phpstan-ignore-next-line
+                $this->io->offset -= 2;
             } else {
-                if (($endFlag = $this->io->collectUI32()) == 0) {
+                if (($endFlag = $this->io->readUI32()) == 0) {
                     break;
                 }
-                $this->io->bytePos -= 4;
+                // @phpstan-ignore-next-line
+                $this->io->offset -= 4;
             }
             $clipActions['clipActionRecords'][] = $this->collectClipActionRecord($swfVersion);
         }
@@ -1018,10 +1020,10 @@ readonly class SwfRec
     {
         $clipActionRecord = [];
         $clipActionRecord['eventFlags'] = $this->collectClipEventFlags($swfVersion);
-        $actionRecordSize = $this->io->collectUI32();
-        $here = $this->io->bytePos;
+        $actionRecordSize = $this->io->readUI32();
+        $here = $this->io->offset;
         if (isset($clipActionRecord['eventFlags']['clipEventKeyPress']) && $clipActionRecord['eventFlags']['clipEventKeyPress'] == 1) {
-            $clipActionRecord['keyCode'] = $this->io->collectUI8();
+            $clipActionRecord['keyCode'] = $this->io->readUI8();
         }
         $clipActionRecord['actions'] = $this->collectActionRecords($here + $actionRecordSize);
         return $clipActionRecord;
@@ -1033,31 +1035,34 @@ readonly class SwfRec
      */
     public function collectClipEventFlags(int $swfVersion): array
     {
-        $ret = [];
-        $ret['clipEventKeyUp'] = $this->io->collectUB(1);
-        $ret['clipEventKeyDown'] = $this->io->collectUB(1);
-        $ret['clipEventMouseUp'] = $this->io->collectUB(1);
-        $ret['clipEventMouseDown'] = $this->io->collectUB(1);
-        $ret['clipEventMouseMove'] = $this->io->collectUB(1);
-        $ret['clipEventUnload'] = $this->io->collectUB(1);
-        $ret['clipEventEnterFrame'] = $this->io->collectUB(1);
-        $ret['clipEventLoad'] = $this->io->collectUB(1);
+        // @todo read as UI16 / UI32 (depending on swfVersion), and return null if all flags are 0
+        // So we do not need to perform a "push back" operation
 
-        $ret['clipEventDragOver'] = $this->io->collectUB(1);
-        $ret['clipEventRollOut'] = $this->io->collectUB(1);
-        $ret['clipEventRollOver'] = $this->io->collectUB(1);
-        $ret['clipEventReleaseOutside'] = $this->io->collectUB(1);
-        $ret['clipEventRelease'] = $this->io->collectUB(1);
-        $ret['clipEventPress'] = $this->io->collectUB(1);
-        $ret['clipEventInitialize'] = $this->io->collectUB(1);
-        $ret['clipEventData'] = $this->io->collectUB(1);
+        $ret = [];
+        $ret['clipEventKeyUp'] = $this->io->readBool();
+        $ret['clipEventKeyDown'] = $this->io->readBool();
+        $ret['clipEventMouseUp'] = $this->io->readBool();
+        $ret['clipEventMouseDown'] = $this->io->readBool();
+        $ret['clipEventMouseMove'] = $this->io->readBool();
+        $ret['clipEventUnload'] = $this->io->readBool();
+        $ret['clipEventEnterFrame'] = $this->io->readBool();
+        $ret['clipEventLoad'] = $this->io->readBool();
+
+        $ret['clipEventDragOver'] = $this->io->readBool();
+        $ret['clipEventRollOut'] = $this->io->readBool();
+        $ret['clipEventRollOver'] = $this->io->readBool();
+        $ret['clipEventReleaseOutside'] = $this->io->readBool();
+        $ret['clipEventRelease'] = $this->io->readBool();
+        $ret['clipEventPress'] = $this->io->readBool();
+        $ret['clipEventInitialize'] = $this->io->readBool();
+        $ret['clipEventData'] = $this->io->readBool();
 
         if ($swfVersion >= 6) {
-            $this->io->collectUB(5); // Reserved
-            $ret['clipEventConstruct'] = $this->io->collectUB(1);
-            $ret['clipEventKeyPress'] = $this->io->collectUB(1);
-            $ret['clipEventDragOut'] = $this->io->collectUB(1);
-            $this->io->collectUB(8); // Reserved
+            $this->io->skipBits(5); // Reserved
+            $ret['clipEventConstruct'] = $this->io->readBool();
+            $ret['clipEventKeyPress'] = $this->io->readBool();
+            $ret['clipEventDragOut'] = $this->io->readBool();
+            $this->io->skipBytes(1); // Reserved
         }
         return $ret;
     }
@@ -1074,7 +1079,7 @@ readonly class SwfRec
 
         for ($i = 0; $i < $numGradientRecords; $i++) {
             $gradientRecords[] = new GradientRecord(
-                $this->io->collectUI8(),
+                $this->io->readUI8(),
                 match ($shapeVersion) {
                     1, 2 => $this->collectRGB(),
                     3, 4 => $this->collectRGBA(),
@@ -1087,8 +1092,8 @@ readonly class SwfRec
     }
 
     /**
-     * @param int $glyphBits
-     * @param int $advanceBits
+     * @param non-negative-int $glyphBits
+     * @param non-negative-int $advanceBits
      * @param int $textVersion
      * @return list<mixed>
      */
@@ -1098,12 +1103,12 @@ readonly class SwfRec
         // Collect text records
         for (;;) {
             $textRecord = [];
-            $textRecord['textRecordType'] = $this->io->collectUB(1);
-            $reserved = $this->io->collectUB(3); // Reserved, must be 0
-            $textRecord['styleFlagsHasFont'] = $this->io->collectUB(1);
-            $textRecord['styleFlagsHasColor'] = $this->io->collectUB(1);
-            $textRecord['styleFlagsHasYOffset'] = $this->io->collectUB(1);
-            $textRecord['styleFlagsHasXOffset'] = $this->io->collectUB(1);
+            $textRecord['textRecordType'] = $this->io->readBool();
+            $this->io->skipBits(3); // Reserved, must be 0
+            $textRecord['styleFlagsHasFont'] = $this->io->readBool();
+            $textRecord['styleFlagsHasColor'] = $this->io->readBool();
+            $textRecord['styleFlagsHasYOffset'] = $this->io->readBool();
+            $textRecord['styleFlagsHasXOffset'] = $this->io->readBool();
 
             if ($textRecord['textRecordType'] == 0 &&
                 $textRecord['styleFlagsHasFont'] == 0 && $textRecord['styleFlagsHasColor'] == 0 &&
@@ -1112,30 +1117,30 @@ readonly class SwfRec
             }
 
             if ($textRecord['styleFlagsHasFont'] != 0) {
-                $textRecord['fontId'] = $this->io->collectUI16();
+                $textRecord['fontId'] = $this->io->readUI16();
             }
             if ($textRecord['styleFlagsHasColor'] != 0) {
                 $textRecord['textColor'] = $textVersion == 1 ? $this->collectRGB() : $this->collectRGBA();
             }
             if ($textRecord['styleFlagsHasXOffset'] != 0) {
-                $textRecord['xOffset'] = $this->io->collectSI16();
+                $textRecord['xOffset'] = $this->io->readSI16();
             }
             if ($textRecord['styleFlagsHasYOffset'] != 0) {
-                $textRecord['yOffset'] = $this->io->collectSI16();
+                $textRecord['yOffset'] = $this->io->readSI16();
             }
             if ($textRecord['styleFlagsHasFont'] != 0) {
-                $textRecord['textHeight'] = $this->io->collectUI16();
+                $textRecord['textHeight'] = $this->io->readUI16();
             }
             $textRecord['glyphEntries'] = [];
-            $glyphCount = $this->io->collectUI8();
+            $glyphCount = $this->io->readUI8();
             for ($i = 0; $i < $glyphCount; $i++) {
                 $glyphEntry = [];
-                $glyphEntry['glyphIndex'] = $this->io->collectUB($glyphBits);
-                $glyphEntry['glyphAdvance'] = $this->io->collectSB($advanceBits);
+                $glyphEntry['glyphIndex'] = $this->io->readUB($glyphBits);
+                $glyphEntry['glyphAdvance'] = $this->io->readSB($advanceBits);
                 $textRecord['glyphEntries'][] = $glyphEntry;
             }
             $textRecords[] = $textRecord;
-            $this->io->byteAlign();
+            $this->io->alignByte();
         }
         return $textRecords;
     }
@@ -1146,10 +1151,10 @@ readonly class SwfRec
      */
     public function collectFillStyleArray(int $shapeVersion): array
     {
-        $fillStyleCount = $this->io->collectUI8();
+        $fillStyleCount = $this->io->readUI8();
         if ($shapeVersion == 2 || $shapeVersion == 3 || $shapeVersion == 4) { //XXX shapeversion 4 not in spec
             if ($fillStyleCount == 0xff) {
-                $fillStyleCount = $this->io->collectUI16(); // Extended
+                $fillStyleCount = $this->io->readUI16(); // Extended
             }
         }
         $fillStyleArray = [];
@@ -1166,22 +1171,22 @@ readonly class SwfRec
     public function collectLineStyleArray(int $shapeVersion): array
     {
         $lineStyleArray = [];
-        $lineStyleCount = $this->io->collectUI8();
+        $lineStyleCount = $this->io->readUI8();
         if ($lineStyleCount == 0xff) {
-            $lineStyleCount = $this->io->collectUI16(); // Extended
+            $lineStyleCount = $this->io->readUI16(); // Extended
         }
         if ($shapeVersion == 1 || $shapeVersion == 2 || $shapeVersion == 3) {
             for ($i = 0; $i < $lineStyleCount; $i++) {
                 $lineStyleArray[] = new LineStyle(
-                    width: $this->io->collectUI16(),
+                    width: $this->io->readUI16(),
                     color: $shapeVersion == 1 || $shapeVersion == 2 ? $this->collectRGB() : $this->collectRGBA(),
                 );
             }
         } elseif ($shapeVersion == 4) {
             for ($i = 0; $i < $lineStyleCount; $i++) {
-                $width = $this->io->collectUI16();
+                $width = $this->io->readUI16();
 
-                $flags = $this->io->collectUI8();
+                $flags = $this->io->readUI8();
                 $startCapStyle = ($flags >> 6) & 0b11; // 2bits
                 $joinStyle = ($flags >> 4) & 0b11; // 4bits
                 $hasFillFlag = ($flags & 0b1000) !== 0; // 5bits
@@ -1189,12 +1194,12 @@ readonly class SwfRec
                 $noVScaleFlag = ($flags & 0b10) !== 0; // 7 bits
                 $pixelHintingFlag = ($flags & 0b1) !== 0; // 8 bits
 
-                $flags = $this->io->collectUI8();
+                $flags = $this->io->readUI8();
                 // 5bits skipped
                 $noClose = ($flags & 0b100) !== 0; // 6bits
                 $endCapStyle = $flags & 0b11; // 8bits
 
-                $miterLimitFactor = $joinStyle === 2 ? $this->io->collectUI16() : null;
+                $miterLimitFactor = $joinStyle === 2 ? $this->io->readUI16() : null;
 
                 if (!$hasFillFlag) {
                     $color = $this->collectRGBA();
@@ -1227,7 +1232,7 @@ readonly class SwfRec
 
     public function collectFillStyle(int $shapeVersion): FillStyle
     {
-        $type = $this->io->collectUI8();
+        $type = $this->io->readUI8();
 
         $style = match ($type) {
             FillStyle::SOLID => match ($shapeVersion) {
@@ -1247,13 +1252,13 @@ readonly class SwfRec
             ),
             FillStyle::REPEATING_BITMAP, FillStyle::CLIPPED_BITMAP, FillStyle::NON_SMOOTHED_REPEATING_BITMAP, FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new FillStyle(
                 $type,
-                bitmapId: $this->io->collectUI16(),
+                bitmapId: $this->io->readUI16(),
                 bitmapMatrix: $this->collectMatrix(),
             ),
             default => throw new Exception(sprintf('Internal error: fillStyleType=%d', $type)),
         };
 
-        $this->io->byteAlign();
+        $this->io->alignByte();
         return $style;
     }
 
@@ -1264,17 +1269,17 @@ readonly class SwfRec
     public function collectZoneTable(int $bytePosEnd): array
     {
         $zoneRecords = [];
-        while ($this->io->bytePos < $bytePosEnd) {
+        while ($this->io->offset < $bytePosEnd) {
             $zoneData = [];
-            $numZoneData = $this->io->collectUI8();
+            $numZoneData = $this->io->readUI8();
             for ($i = 0; $i < $numZoneData; $i++) {
-                $alignmentCoordinate = $this->io->collectFloat16();
-                $range = $this->io->collectFloat16();
+                $alignmentCoordinate = $this->io->readFloat16();
+                $range = $this->io->readFloat16();
                 $zoneData[] = ['alignmentCoordinate' => $alignmentCoordinate, 'range' => $range];
             }
-            $this->io->collectUB(6); // Reserved;
-            $zoneMaskY = $this->io->collectUB(1);
-            $zoneMaskX = $this->io->collectUB(1);
+            $this->io->skipBits(6); // Reserved;
+            $zoneMaskY = $this->io->readBool();
+            $zoneMaskX = $this->io->readBool();
             $zoneRecords[] = ['zoneData' => $zoneData, 'zoneMaskY' => $zoneMaskY, 'zoneMaskX' => $zoneMaskX];
         }
         return $zoneRecords;

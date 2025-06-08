@@ -35,7 +35,7 @@ foreach ($swf->tags as $tag) {
 
 - [`Swf`](./Swf.php): The main class, facade for parse and access to the SWF file.
 - [`SwfHdr`](./SwfHdr.php): Parse the SWF header.
-- [`SwfIO`](./SwfIO.php): Low-level class to read primitive types from the SWF file. The instance is mutable, use with caution.
+- [`SwfIO`](./SwfReader.php): Low-level class to read primitive types from the SWF file. The instance is mutable, use with caution.
 - [`SwfRec`](./SwfRec.php): Parse SWF structures.
 - [`SwfTag`](./SwfTag.php): Parse tags from the SWF file.
 

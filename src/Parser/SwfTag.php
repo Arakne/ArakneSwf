@@ -99,7 +99,7 @@ use function substr;
 final readonly class SwfTag
 {
     public function __construct(
-        private SwfIO $io,
+        private SwfReader $io,
         private SwfRec $rec,
         private int $swfVersion,
         private ?ErrorCollector $errorCollector,
@@ -117,32 +117,33 @@ final readonly class SwfTag
         $io = $this->io;
         $len = strlen($io->b);
 
-        while ($io->bytePos < $len) {
+        while ($io->offset < $len) {
             // Collect record header (short or long)
-            $recordHeader = $io->collectUI16();
+            $recordHeader = $io->readUI16();
             $tagType = $recordHeader >> 6;
             $tagLength = $recordHeader & 0x3f;
 
             if ($tagLength === 0x3f) {
-                $tagLength = $io->collectSI32();
+                $tagLength = $io->readUI32();
             }
 
             // For definition tags, collect the 'id' also
             if ($this->isDefinitionTagType($tagType)) {
+                assert($tagLength >= 2);
                 $tags[] = new SwfTagPosition(
                     type: $tagType,
-                    offset: $io->bytePos,
+                    offset: $io->offset,
                     length: $tagLength,
-                    id: $io->collectUI16(),
+                    id: $io->readUI16(),
                 );
-                $io->bytePos += $tagLength - 2; // 2 bytes already consumed
+                $io->skipBytes($tagLength - 2); // 2 bytes already consumed
             } else {
                 $tags[] = new SwfTagPosition(
                     type: $tagType,
-                    offset: $io->bytePos,
+                    offset: $io->offset,
                     length: $tagLength,
                 );
-                $io->bytePos += $tagLength;
+                $io->skipBytes($tagLength);
             }
         }
 
@@ -192,7 +193,7 @@ final readonly class SwfTag
         $tagOffset = $tag->offset;
         $tagLength = $tag->length;
 
-        $this->io->bytePos = $tagOffset;
+        $this->io->offset = $tagOffset;
 
         $bytePosEnd = $tagOffset + $tagLength;
 
@@ -262,10 +263,10 @@ final readonly class SwfTag
             89 => $this->parseStartSoundTag($bytePosEnd, 2),
             90 => $this->parseDefineBitsJPEGTag($bytePosEnd, 4),
             91 => $this->parseDefineFont4Tag($bytePosEnd),
-            777 => new ReflexTag($this->io->collectBytes($bytePosEnd - $this->io->bytePos)),
+            777 => new ReflexTag($this->io->readBytes($bytePosEnd - $this->io->offset)),
             default => new UnknownTag(
                 code: $tagType,
-                data: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+                data: $this->io->readBytes($bytePosEnd - $this->io->offset),
             ),
         };
 
@@ -280,22 +281,22 @@ final readonly class SwfTag
             );
         }
 
-        if ($this->io->bytePos > $bytePosEnd) {
+        if ($this->io->offset > $bytePosEnd) {
             $this->errorCollector?->add(
                 $tag,
                 TagParseErrorType::ReadAfterEnd,
                 [
-                    'length' => $this->io->bytePos - $bytePosEnd,
-                    'data' => substr($this->io->b, $bytePosEnd, $this->io->bytePos - $bytePosEnd),
+                    'length' => $this->io->offset - $bytePosEnd,
+                    'data' => substr($this->io->b, $bytePosEnd, $this->io->offset - $bytePosEnd),
                 ]
             );
-        } elseif ($this->io->bytePos < $bytePosEnd) {
+        } elseif ($this->io->offset < $bytePosEnd) {
             $this->errorCollector?->add(
                 $tag,
                 TagParseErrorType::ExtraBytes,
                 [
-                    'length' => $bytePosEnd - $this->io->bytePos,
-                    'data' => substr($this->io->b, $this->io->bytePos, $bytePosEnd - $this->io->bytePos),
+                    'length' => $bytePosEnd - $this->io->offset,
+                    'data' => substr($this->io->b, $this->io->offset, $bytePosEnd - $this->io->offset),
                 ]
             );
         }
@@ -318,20 +319,20 @@ final readonly class SwfTag
         if ($shapeVersion < 4) {
             return new DefineShapeTag(
                 version: $shapeVersion,
-                shapeId: $this->io->collectUI16(),
+                shapeId: $this->io->readUI16(),
                 shapeBounds: $this->rec->collectRect(),
                 shapes: $this->rec->collectShapeWithStyle($shapeVersion),
             );
         }
 
         return new DefineShape4Tag(
-            shapeId: $this->io->collectUI16(),
+            shapeId: $this->io->readUI16(),
             shapeBounds: $this->rec->collectRect(),
             edgeBounds: $this->rec->collectRect(),
-            reserved: $this->io->collectUB(5),
-            usesFillWindingRule: $this->io->collectUB(1) === 1,
-            usesNonScalingStrokes: $this->io->collectUB(1) === 1,
-            usesScalingStrokes: $this->io->collectUB(1) === 1,
+            reserved: $this->io->readUB(5),
+            usesFillWindingRule: $this->io->readBool(),
+            usesNonScalingStrokes: $this->io->readBool(),
+            usesScalingStrokes: $this->io->readBool(),
             shapes: $this->rec->collectShapeWithStyle($shapeVersion),
         );
     }
@@ -339,10 +340,10 @@ final readonly class SwfTag
     private function parsePlaceObjectTag(int $bytePosEnd): PlaceObjectTag
     {
         return new PlaceObjectTag(
-            characterId: $this->io->collectUI16(),
-            depth: $this->io->collectUI16(),
+            characterId: $this->io->readUI16(),
+            depth: $this->io->readUI16(),
             matrix: $this->rec->collectMatrix(),
-            colorTransform: $this->io->bytePos < $bytePosEnd ? $this->rec->collectColorTransform(false) : null,
+            colorTransform: $this->io->offset < $bytePosEnd ? $this->rec->collectColorTransform(false) : null,
         );
     }
 
@@ -352,11 +353,11 @@ final readonly class SwfTag
 
         return match ($version) {
             1 => new RemoveObjectTag(
-                characterId: $this->io->collectUI16(),
-                depth: $this->io->collectUI16(),
+                characterId: $this->io->readUI16(),
+                depth: $this->io->readUI16(),
             ),
             2 => new RemoveObject2Tag(
-                depth: $this->io->collectUI16(),
+                depth: $this->io->readUI16(),
             ),
         };
     }
@@ -364,8 +365,8 @@ final readonly class SwfTag
     private function parseDefineBitsTag(int $bytePosEnd): DefineBitsTag
     {
         return new DefineBitsTag(
-            characterId: $this->io->collectUI16(),
-            imageData: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+            characterId: $this->io->readUI16(),
+            imageData: $this->io->readBytes($bytePosEnd - $this->io->offset),
         );
     }
 
@@ -373,16 +374,16 @@ final readonly class SwfTag
     {
         if ($version === 1) {
             return new DefineButtonTag(
-                buttonId: $this->io->collectUI16(),
+                buttonId: $this->io->readUI16(),
                 characters: $this->rec->collectButtonRecords($version),
                 actions: $this->rec->collectActionRecords($bytePosEnd),
             );
         }
 
-        $buttonId = $this->io->collectUI16();
-        $this->io->collectUB(7); // Reserved, must be 0
-        $taskAsMenu = $this->io->collectUB(1) === 1;
-        $actionOffset = $this->io->collectUI16();
+        $buttonId = $this->io->readUI16();
+        $this->io->skipBits(7); // Reserved, must be 0
+        $taskAsMenu = $this->io->readBool();
+        $actionOffset = $this->io->readUI16();
         $characters = $this->rec->collectButtonRecords($version);
         $actions = $actionOffset !== 0 ? $this->rec->collectButtonCondActions($bytePosEnd) : [];
 
@@ -397,27 +398,27 @@ final readonly class SwfTag
 
     private function parseJPEGTablesTag(int $bytePosEnd): JPEGTablesTag
     {
-        return new JPEGTablesTag($this->io->collectBytes($bytePosEnd - $this->io->bytePos));
+        return new JPEGTablesTag($this->io->readBytes($bytePosEnd - $this->io->offset));
     }
 
     private function parseSetBackgroundColorTag(int $bytePosEnd): SetBackgroundColorTag
     {
         return new SetBackgroundColorTag(
-            red: $this->io->collectUI8(),
-            green: $this->io->collectUI8(),
-            blue: $this->io->collectUI8(),
+            red: $this->io->readUI8(),
+            green: $this->io->readUI8(),
+            blue: $this->io->readUI8(),
         );
     }
 
     private function parseDefineFontTag(int $bytePosEnd): DefineFontTag
     {
-        $fontId = $this->io->collectUI16();
+        $fontId = $this->io->readUI16();
         // Collect and push back 1st element of OffsetTable (this is numGlyphs * 2)
-        $numGlyphs = $this->io->collectUI16() / 2;
-        $this->io->bytePos -= 2;
+        $numGlyphs = $this->io->readUI16() / 2;
+        $this->io->offset -= 2;
         $offsetTable = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
-            $offsetTable[] = $this->io->collectUI16();
+            $offsetTable[] = $this->io->readUI16();
         }
         $glyphShapeData = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
@@ -435,11 +436,11 @@ final readonly class SwfTag
     {
         return new DefineTextTag(
             version: $textVersion,
-            characterId: $this->io->collectUI16(),
+            characterId: $this->io->readUI16(),
             textBounds: $this->rec->collectRect(),
             textMatrix: $this->rec->collectMatrix(),
-            glyphBits: $glyphBits = $this->io->collectUI8(),
-            advanceBits: $advanceBits = $this->io->collectUI8(),
+            glyphBits: $glyphBits = $this->io->readUI8(),
+            advanceBits: $advanceBits = $this->io->readUI8(),
             textRecords: $this->rec->collectTextRecords($glyphBits, $advanceBits, $textVersion),
         );
     }
@@ -451,29 +452,29 @@ final readonly class SwfTag
 
     private function parseDefineFontInfoTag(int $bytePosEnd, int $version): DefineFontInfoTag
     {
-        $fontId = $this->io->collectUI16();
-        $fontNameLen = $this->io->collectUI8();
-        $fontName = $this->io->collectBytes($fontNameLen);
+        $fontId = $this->io->readUI16();
+        $fontNameLen = $this->io->readUI8();
+        $fontName = $this->io->readBytes($fontNameLen);
 
-        $this->io->collectUB(2); // Reserved
-        $fontFlagsSmallText = $this->io->collectUB(1) === 1;
-        $fontFlagsShiftJIS = $this->io->collectUB(1) === 1;
-        $fontFlagsANSI = $this->io->collectUB(1) === 1;
-        $fontFlagsItalic = $this->io->collectUB(1) === 1;
-        $fontFlagsBold = $this->io->collectUB(1) === 1;
-        $fontFlagsWideCodes = $this->io->collectUB(1) === 1;
+        $this->io->skipBits(2); // Reserved
+        $fontFlagsSmallText = $this->io->readBool();
+        $fontFlagsShiftJIS = $this->io->readBool();
+        $fontFlagsANSI = $this->io->readBool();
+        $fontFlagsItalic = $this->io->readBool();
+        $fontFlagsBold = $this->io->readBool();
+        $fontFlagsWideCodes = $this->io->readBool();
         $languageCode = null;
         $codeTable = [];
 
         if ($version === 1) {
-            while ($this->io->bytePos < $bytePosEnd) {
-                $codeTable[] = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
+            while ($this->io->offset < $bytePosEnd) {
+                $codeTable[] = $fontFlagsWideCodes ? $this->io->readUI16() : $this->io->readUI8();
             }
         } elseif ($version === 2) {
-            $languageCode = $this->io->collectUI8();
+            $languageCode = $this->io->readUI8();
 
-            while ($this->io->bytePos < $bytePosEnd) {
-                $codeTable[] = $this->io->collectUI16();
+            while ($this->io->offset < $bytePosEnd) {
+                $codeTable[] = $this->io->readUI16();
             }
         }
 
@@ -495,13 +496,13 @@ final readonly class SwfTag
     private function parseDefineSoundTag(int $bytePosEnd): DefineSoundTag
     {
         return new DefineSoundTag(
-            soundId: $this->io->collectUI16(),
-            soundFormat: $this->io->collectUB(4),
-            soundRate: $this->io->collectUB(2),
-            soundSize: $this->io->collectUB(1),
-            soundType: $this->io->collectUB(1),
-            soundSampleCount: $this->io->collectUI32(),
-            soundData: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+            soundId: $this->io->readUI16(),
+            soundFormat: $this->io->readUB(4),
+            soundRate: $this->io->readUB(2),
+            soundSize: $this->io->readBool() ? 0 : 1,
+            soundType: $this->io->readBool() ? 0 : 1,
+            soundSampleCount: $this->io->readUI32(),
+            soundData: $this->io->readBytes($bytePosEnd - $this->io->offset),
         );
     }
 
@@ -511,11 +512,11 @@ final readonly class SwfTag
 
         return match ($version) {
             1 => new StartSoundTag(
-                soundId: $this->io->collectUI16(),
+                soundId: $this->io->readUI16(),
                 soundInfo: $this->rec->collectSoundInfo(),
             ),
             2 => new StartSound2Tag(
-                soundClassName: $this->io->collectString(),
+                soundClassName: $this->io->readNullTerminatedString(),
                 soundInfo: $this->rec->collectSoundInfo(),
             ),
         };
@@ -524,33 +525,33 @@ final readonly class SwfTag
     private function parseDefineButtonSoundTag(int $bytePosEnd): DefineButtonSoundTag
     {
         return new DefineButtonSoundTag(
-            buttonId: $this->io->collectUI16(),
-            buttonSoundChar0: $char0 = $this->io->collectUI16(),
+            buttonId: $this->io->readUI16(),
+            buttonSoundChar0: $char0 = $this->io->readUI16(),
             buttonSoundInfo0: $char0 !== 0 ? $this->rec->collectSoundInfo() : null,
-            buttonSoundChar1: $char1 = $this->io->collectUI16(),
+            buttonSoundChar1: $char1 = $this->io->readUI16(),
             buttonSoundInfo1: $char1 !== 0 ? $this->rec->collectSoundInfo() : null,
-            buttonSoundChar2: $char2 = $this->io->collectUI16(),
+            buttonSoundChar2: $char2 = $this->io->readUI16(),
             buttonSoundInfo2: $char2 !== 0 ? $this->rec->collectSoundInfo() : null,
-            buttonSoundChar3: $char3 = $this->io->collectUI16(),
+            buttonSoundChar3: $char3 = $this->io->readUI16(),
             buttonSoundInfo3: $char3 !== 0 ? $this->rec->collectSoundInfo() : null,
         );
     }
 
     private function parseSoundStreamHeadTag(int $bytePosEnd, int $version): SoundStreamHeadTag
     {
-        $this->io->collectUB(4); // Reserved
+        $this->io->skipBits(4); // Reserved
 
-        $playbackSoundRate = $this->io->collectUB(2);
-        $playbackSoundSize = $this->io->collectUB(1);
-        $playbackSoundType = $this->io->collectUB(1);
+        $playbackSoundRate = $this->io->readUB(2);
+        $playbackSoundSize = $this->io->readBool() ? 0 : 1; // @todo rename to 16bits bool
+        $playbackSoundType = $this->io->readBool() ? 0 : 1; // @todo rename to stereo bool
 
-        $streamSoundCompression = $this->io->collectUB(4);
-        $streamSoundRate = $this->io->collectUB(2);
-        $streamSoundSize = $this->io->collectUB(1);
-        $streamSoundType = $this->io->collectUB(1);
-        $streamSoundSampleCount = $this->io->collectUI16();
+        $streamSoundCompression = $this->io->readUB(4);
+        $streamSoundRate = $this->io->readUB(2);
+        $streamSoundSize = $this->io->readBool() ? 0 : 1;
+        $streamSoundType = $this->io->readBool() ? 0 : 1;
+        $streamSoundSampleCount = $this->io->readUI16();
 
-        $latencySeek = $streamSoundSampleCount === 2 ? $this->io->collectSI16() : null; // MP3
+        $latencySeek = $streamSoundSampleCount === 2 ? $this->io->readSI16() : null; // MP3
 
         return new SoundStreamHeadTag(
             version: $version,
@@ -568,21 +569,21 @@ final readonly class SwfTag
 
     private function parseSoundStreamBlockTag(int $bytePosEnd): SoundStreamBlockTag
     {
-        return new SoundStreamBlockTag($this->io->collectBytes($bytePosEnd - $this->io->bytePos));
+        return new SoundStreamBlockTag($this->io->readBytes($bytePosEnd - $this->io->offset));
     }
 
     private function parseDefineBitsLosslessTag(int $bytePosEnd, int $version): DefineBitsLosslessTag
     {
         assert($version === 1 || $version === 2);
 
-        $characterId = $this->io->collectUI16();
-        $bitmapFormat = $this->io->collectUI8();
-        $bitmapWidth = $this->io->collectUI16();
-        $bitmapHeight = $this->io->collectUI16();
+        $characterId = $this->io->readUI16();
+        $bitmapFormat = $this->io->readUI8();
+        $bitmapWidth = $this->io->readUI16();
+        $bitmapHeight = $this->io->readUI16();
 
         if ($bitmapFormat == 3) {
-            $colors = $this->io->collectUI8();
-            $data = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $colors = $this->io->readUI8();
+            $data = gzuncompress($this->io->readBytes($bytePosEnd - $this->io->offset)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
             $colorTableSize = match ($version) {
                 1 => 3 * ($colors + 1), // 3 bytes per RGB value
                 2 => 4 * ($colors + 1), // 4 bytes per RGBA value
@@ -592,7 +593,7 @@ final readonly class SwfTag
             $pixelData = substr($data, $colorTableSize);
         } elseif ($bitmapFormat == 4 || $bitmapFormat == 5) {
             $colorTable = null;
-            $pixelData = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $pixelData = gzuncompress($this->io->readBytes($bytePosEnd - $this->io->offset)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
         } else {
             throw new Exception(sprintf('Internal error: bitmapFormat=%d', $bitmapFormat));
         }
@@ -620,23 +621,23 @@ final readonly class SwfTag
         switch ($version) {
             case 2:
                 return new DefineBitsJPEG2Tag(
-                    characterId: $this->io->collectUI16(),
-                    imageData: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+                    characterId: $this->io->readUI16(),
+                    imageData: $this->io->readBytes($bytePosEnd - $this->io->offset),
                 );
 
             case 3:
                 return new DefineBitsJPEG3Tag(
-                    characterId: $this->io->collectUI16(),
-                    imageData: $this->io->collectBytes($this->io->collectUI32()),
-                    alphaData: gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')), // ZLIB uncompress alpha channel
+                    characterId: $this->io->readUI16(),
+                    imageData: $this->io->readBytes($this->io->readUI32()),
+                    alphaData: gzuncompress($this->io->readBytes($bytePosEnd - $this->io->offset)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')), // ZLIB uncompress alpha channel
                 );
 
             case 4:
-                $characterId = $this->io->collectUI16();
-                $alphaDataOffset = $this->io->collectUI32();
-                $deblockParam = $this->io->collectUI16();
-                $imageData = $this->io->collectBytes($alphaDataOffset);
-                $alphaData = gzuncompress($this->io->collectBytes($bytePosEnd - $this->io->bytePos)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
+                $characterId = $this->io->readUI16();
+                $alphaDataOffset = $this->io->readUI32();
+                $deblockParam = $this->io->readUI16();
+                $imageData = $this->io->readBytes($alphaDataOffset);
+                $alphaData = gzuncompress($this->io->readBytes($bytePosEnd - $this->io->offset)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
 
                 return new DefineBitsJPEG4Tag(
                     characterId: $characterId,
@@ -650,7 +651,7 @@ final readonly class SwfTag
     private function parseDefineButtonCxformTag(int $bytePosEnd): DefineButtonCxformTag
     {
         return new DefineButtonCxformTag(
-            buttonId: $this->io->collectUI16(),
+            buttonId: $this->io->readUI16(),
             colorTransform: $this->rec->collectColorTransform(false),
         );
     }
@@ -660,40 +661,40 @@ final readonly class SwfTag
         return new ProtectTag(
             // Password is only present if tag length is not 0
             // It's stored as a null-terminated string
-            password: $bytePosEnd > $this->io->bytePos ? $this->io->collectString() : null,
+            password: $bytePosEnd > $this->io->offset ? $this->io->readNullTerminatedString() : null,
         );
     }
 
     private function parsePlaceObject2Tag(int $bytePosEnd, int $swfVersion): PlaceObject2Tag
     {
-        $placeFlagHasClipActions = $this->io->collectUB(1) === 1;
-        $placeFlagHasClipDepth = $this->io->collectUB(1) === 1;
-        $placeFlagHasName = $this->io->collectUB(1) === 1;
-        $placeFlagHasRatio = $this->io->collectUB(1) === 1;
-        $placeFlagHasColorTransform = $this->io->collectUB(1) === 1;
-        $placeFlagHasMatrix = $this->io->collectUB(1) === 1;
-        $placeFlagHasCharacter = $this->io->collectUB(1) === 1;
-        $placeFlagMove = $this->io->collectUB(1) === 1;
+        $placeFlagHasClipActions = $this->io->readBool();
+        $placeFlagHasClipDepth = $this->io->readBool();
+        $placeFlagHasName = $this->io->readBool();
+        $placeFlagHasRatio = $this->io->readBool();
+        $placeFlagHasColorTransform = $this->io->readBool();
+        $placeFlagHasMatrix = $this->io->readBool();
+        $placeFlagHasCharacter = $this->io->readBool();
+        $placeFlagMove = $this->io->readBool();
 
         return new PlaceObject2Tag(
             move: $placeFlagMove,
-            depth: $this->io->collectUI16(),
-            characterId: $placeFlagHasCharacter ? $this->io->collectUI16() : null,
+            depth: $this->io->readUI16(),
+            characterId: $placeFlagHasCharacter ? $this->io->readUI16() : null,
             matrix: $placeFlagHasMatrix ? $this->rec->collectMatrix() : null,
             colorTransform: $placeFlagHasColorTransform ? $this->rec->collectColorTransform(true) : null,
-            ratio: $placeFlagHasRatio ? $this->io->collectUI16() : null,
-            name: $placeFlagHasName ? $this->io->collectString() : null,
-            clipDepth: $placeFlagHasClipDepth ? $this->io->collectUI16() : null,
+            ratio: $placeFlagHasRatio ? $this->io->readUI16() : null,
+            name: $placeFlagHasName ? $this->io->readNullTerminatedString() : null,
+            clipDepth: $placeFlagHasClipDepth ? $this->io->readUI16() : null,
             clipActions: $placeFlagHasClipActions ? $this->rec->collectClipActions($swfVersion) : null,
         );
     }
 
     private function parseDefineEditTextTag(int $bytePosEnd): DefineEditTextTag
     {
-        $characterId = $this->io->collectUI16();
+        $characterId = $this->io->readUI16();
         $bounds = $this->rec->collectRect();
 
-        $flags = $this->io->collectUI8();
+        $flags = $this->io->readUI8();
         $hasText = ($flags & 0b10000000) === 0b10000000;
         $wordWrap = ($flags & 0b01000000) === 0b01000000;
         $multiline = ($flags & 0b00100000) === 0b00100000;
@@ -703,7 +704,7 @@ final readonly class SwfTag
         $hasMaxLength = ($flags & 0b00000010) === 0b00000010;
         $hasFont = ($flags & 0b00000001) === 0b00000001;
 
-        $flags = $this->io->collectUI8();
+        $flags = $this->io->readUI8();
         $hasFontClass = ($flags & 0b10000000) === 0b10000000;
         $autoSize = ($flags & 0b01000000) === 0b01000000;
         $hasLayout = ($flags & 0b00100000) === 0b00100000;
@@ -726,46 +727,46 @@ final readonly class SwfTag
             wasStatic: $wasStatic,
             html: $html,
             useOutlines: $useOutlines,
-            fontId: $hasFont ? $this->io->collectUI16() : null,
-            fontClass: $hasFontClass ? $this->io->collectString() : null,
-            fontHeight: $hasFont ? $this->io->collectUI16() : null,
+            fontId: $hasFont ? $this->io->readUI16() : null,
+            fontClass: $hasFontClass ? $this->io->readNullTerminatedString() : null,
+            fontHeight: $hasFont ? $this->io->readUI16() : null,
             textColor: $hasTextColor ? $this->rec->collectRGBA() : null,
-            maxLength: $hasMaxLength ? $this->io->collectUI16() : null,
+            maxLength: $hasMaxLength ? $this->io->readUI16() : null,
             layout: $hasLayout ? [
-                'align' => $this->io->collectUI8(),
-                'leftMargin' => $this->io->collectUI16(),
-                'rightMargin' => $this->io->collectUI16(),
-                'indent' => $this->io->collectUI16(),
-                'leading' => $this->io->collectSI16(),
+                'align' => $this->io->readUI8(),
+                'leftMargin' => $this->io->readUI16(),
+                'rightMargin' => $this->io->readUI16(),
+                'indent' => $this->io->readUI16(),
+                'leading' => $this->io->readSI16(),
             ] : null,
-            variableName: $this->io->collectString(),
-            initialText: $hasText ? $this->io->collectString() : null,
+            variableName: $this->io->readNullTerminatedString(),
+            initialText: $hasText ? $this->io->readNullTerminatedString() : null,
         );
     }
 
     private function parseDefineSpriteTag(int $bytePosEnd): DefineSpriteTag
     {
-        $spriteId = $this->io->collectUI16();
-        $frameCount = $this->io->collectUI16();
-        $b = $this->io->collectBytes($bytePosEnd - $this->io->bytePos);
+        $spriteId = $this->io->readUI16();
+        $frameCount = $this->io->readUI16();
+        $b = $this->io->readBytes($bytePosEnd - $this->io->offset);
 
-        $io = new SwfIO($b);
+        $io = new SwfReader($b);
         $rec = new SwfRec($io);
         $tag = new SwfTag($io, $rec, $this->swfVersion, $this->errorCollector);
 
         // Collect and parse tags
         $tags = [];
 
-        while ($io->bytePos < strlen($io->b)) {
-            $recordHeader = $io->collectUI16();
+        while ($io->offset < strlen($io->b)) {
+            $recordHeader = $io->readUI16();
             $tagType = $recordHeader >> 6;
             $tagLength = $recordHeader & 0x3f;
             if ($tagLength == 0x3f) {
-                $tagLength = $io->collectSI32();
+                $tagLength = $io->readSI32();
             }
-            $bytePosEnd = $io->bytePos + $tagLength;
-            $tags[] = $tag->parseTag(new SwfTagPosition($tagType, $io->bytePos, $tagLength));
-            $io->bytePos = $bytePosEnd;
+            $bytePosEnd = $io->offset + $tagLength;
+            $tags[] = $tag->parseTag(new SwfTagPosition($tagType, $io->offset, $tagLength));
+            $io->offset = $bytePosEnd;
         }
 
         return new DefineSpriteTag(
@@ -778,21 +779,21 @@ final readonly class SwfTag
     private function parseFrameLabelTag(int $bytePosEnd): FrameLabelTag
     {
         // Parse null-terminated string
-        $label = $this->io->collectString();
+        $label = $this->io->readNullTerminatedString();
 
         // Since SWF 6, the flag namedAnchor is present to create a named anchor
         // So we need to check if there is still data to read, and if so, read the flag
-        $hasMoreData = $this->io->bytePos < $bytePosEnd;
+        $hasMoreData = $this->io->offset < $bytePosEnd;
 
         return new FrameLabelTag(
             $label,
-            $hasMoreData && $this->io->collectUI8() === 1,
+            $hasMoreData && $this->io->readUI8() === 1,
         );
     }
 
     private function parseDefineMorphShapeTag(int $bytePosEnd, int $version): DefineMorphShapeTag|DefineMorphShape2Tag
     {
-        $characterId = $this->io->collectUI16();
+        $characterId = $this->io->readUI16();
         $startBounds = $this->rec->collectRect();
         $endBounds = $this->rec->collectRect();
 
@@ -801,7 +802,7 @@ final readonly class SwfTag
                 characterId: $characterId,
                 startBounds: $startBounds,
                 endBounds: $endBounds,
-                offset: $this->io->collectUI32(),
+                offset: $this->io->readUI32(),
                 fillStyles: $this->rec->collectMorphFillStyleArray(),
                 lineStyles: $this->rec->collectMorphLineStyleArray(1),
                 startEdges: $this->rec->collectShape(1),
@@ -811,9 +812,9 @@ final readonly class SwfTag
 
         $startEdgeBounds = $this->rec->collectRect();
         $endEdgeBounds = $this->rec->collectRect();
-        $this->io->collectUB(6); // Reserved
-        $usesNonScalingStrokes = (bool) $this->io->collectUB(1);
-        $usesScalingStrokes = (bool) $this->io->collectUB(1);
+        $this->io->skipBits(6); // Reserved
+        $usesNonScalingStrokes = $this->io->readBool();
+        $usesScalingStrokes = $this->io->readBool();
 
         return new DefineMorphShape2Tag(
             characterId: $characterId,
@@ -823,7 +824,7 @@ final readonly class SwfTag
             endEdgeBounds: $endEdgeBounds,
             usesNonScalingStrokes: $usesNonScalingStrokes,
             usesScalingStrokes: $usesScalingStrokes,
-            offset: $this->io->collectUI32(),
+            offset: $this->io->readUI32(),
             fillStyles: $this->rec->collectMorphFillStyleArray(),
             lineStyles: $this->rec->collectMorphLineStyleArray(2),
             startEdges: $this->rec->collectShape(1), // @todo version ?
@@ -833,9 +834,9 @@ final readonly class SwfTag
 
     private function parseDefineFont23Tag(int $bytePosEnd, int $version): DefineFont2Or3Tag
     {
-        $fontId = $this->io->collectUI16();
+        $fontId = $this->io->readUI16();
 
-        $flags = $this->io->collectUI8();
+        $flags = $this->io->readUI8();
         $fontFlagsHasLayout = ($flags & 0b10000000) === 0b10000000;
         $fontFlagsShiftJIS = ($flags & 0b01000000) === 0b01000000;
         $fontFlagsSmallText = ($flags & 0b00100000) === 0b00100000;
@@ -845,17 +846,17 @@ final readonly class SwfTag
         $fontFlagsItalic = ($flags & 0b00000010) === 0b00000010;
         $fontFlagsBold = ($flags & 0b00000001) === 0b00000001;
 
-        $languageCode = $this->io->collectUI8();
-        $fontNameLength = $this->io->collectUI8();
-        $fontName = substr($this->io->collectBytes($fontNameLength), 0, -1); // Remove trailing NULL
-        $numGlyphs = $this->io->collectUI16();
+        $languageCode = $this->io->readUI8();
+        $fontNameLength = $this->io->readUI8();
+        $fontName = substr($this->io->readBytes($fontNameLength), 0, -1); // Remove trailing NULL
+        $numGlyphs = $this->io->readUI16();
 
         $offsetTable = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
-            $offsetTable[] = $fontFlagsWideOffsets ? $this->io->collectUI32() : $this->io->collectUI16();
+            $offsetTable[] = $fontFlagsWideOffsets ? $this->io->readUI32() : $this->io->readUI16();
         }
 
-        $codeTableOffset = $fontFlagsWideOffsets ? $this->io->collectUI32() : $this->io->collectUI16();
+        $codeTableOffset = $fontFlagsWideOffsets ? $this->io->readUI32() : $this->io->readUI16();
 
         $glyphShapeTable = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
@@ -865,31 +866,31 @@ final readonly class SwfTag
         $codeTable = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
             if ($version === 2) {
-                $codeTable[] = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
+                $codeTable[] = $fontFlagsWideCodes ? $this->io->readUI16() : $this->io->readUI8();
             } elseif ($version === 3) {
-                $codeTable[] = $this->io->collectUI16();
+                $codeTable[] = $this->io->readUI16();
             }
         }
 
         if ($fontFlagsHasLayout) {
             $layout = [];
-            $layout['fontAscent'] = $this->io->collectSI16();
-            $layout['fontDescent'] = $this->io->collectSI16();
-            $layout['fontLeading'] = $this->io->collectSI16();
+            $layout['fontAscent'] = $this->io->readSI16();
+            $layout['fontDescent'] = $this->io->readSI16();
+            $layout['fontLeading'] = $this->io->readSI16();
             $layout['fontAdvanceTable'] = [];
             for ($i = 0; $i < $numGlyphs; $i++) {
-                $layout['fontAdvanceTable'][] = $this->io->collectSI16();
+                $layout['fontAdvanceTable'][] = $this->io->readSI16();
             }
             $layout['fontBoundsTable'] = [];
             for ($i = 0; $i < $numGlyphs; $i++) {
                 $layout['fontBoundsTable'][] = $this->rec->collectRect();
             }
-            $kerningCount = $this->io->collectUI16();
+            $kerningCount = $this->io->readUI16();
             $layout['fontKerningTable'] = [];
             for ($i = 0; $i < $kerningCount; $i++) {
-                $fontKerningCode1 = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
-                $fontKerningCode2 = $fontFlagsWideCodes ? $this->io->collectUI16() : $this->io->collectUI8();
-                $fontKerningAdjustment = $this->io->collectSI16();
+                $fontKerningCode1 = $fontFlagsWideCodes ? $this->io->readUI16() : $this->io->readUI8();
+                $fontKerningCode2 = $fontFlagsWideCodes ? $this->io->readUI16() : $this->io->readUI8();
+                $fontKerningAdjustment = $this->io->readSI16();
                 $layout['fontKerningTable'][] = [
                     'fontKerningCode1' => $fontKerningCode1,
                     'fontKerningCode2' => $fontKerningCode2,
@@ -925,11 +926,11 @@ final readonly class SwfTag
     {
         $tags = [];
         $names = [];
-        $count = $this->io->collectUI16();
+        $count = $this->io->readUI16();
 
         for ($i = 0; $i < $count; $i++) {
-            $tags[] = $this->io->collectUI16();
-            $names[] = $this->io->collectString();
+            $tags[] = $this->io->readUI16();
+            $names[] = $this->io->readNullTerminatedString();
         }
 
         return new ExportAssetsTag(
@@ -940,20 +941,20 @@ final readonly class SwfTag
 
     private function parseImportAssetsTag(int $bytePosEnd, int $version): ImportAssetsTag
     {
-        $url = $this->io->collectString();
+        $url = $this->io->readNullTerminatedString();
 
         if ($version === 2) {
-            $this->io->collectUI8(); // Reserved, must be 1
-            $this->io->collectUI8(); // Reserved, must be 0
+            $this->io->skipBytes(1); // Reserved, must be 1
+            $this->io->skipBytes(1); // Reserved, must be 0
         }
 
         $tags = [];
         $names = [];
-        $count = $this->io->collectUI16();
+        $count = $this->io->readUI16();
 
         for ($i = 0; $i < $count; $i++) {
-            $tags[] = $this->io->collectUI16();
-            $names[] = $this->io->collectString();
+            $tags[] = $this->io->readUI16();
+            $names[] = $this->io->readNullTerminatedString();
         }
 
         return new ImportAssetsTag(
@@ -967,35 +968,35 @@ final readonly class SwfTag
     private function parseEnableDebuggerTag(int $bytePosEnd, int $version): EnableDebuggerTag
     {
         if ($version === 2) {
-            $this->io->collectUI16(); // Reserved, must be 0
+            $this->io->skipBytes(2); // Reserved, must be 0
         }
 
         return new EnableDebuggerTag(
             version: $version,
-            password: $this->io->collectString(),
+            password: $this->io->readNullTerminatedString(),
         );
     }
 
     private function parseDoInitActionTag(int $bytePosEnd): DoInitActionTag
     {
         return new DoInitActionTag(
-            spriteId: $this->io->collectUI16(),
+            spriteId: $this->io->readUI16(),
             actions: $this->rec->collectActionRecords($bytePosEnd),
         );
     }
 
     private function parseDefineVideoStreamTag(int $bytePosEnd): DefineVideoStreamTag
     {
-        $characterId = $this->io->collectUI16();
-        $numFrames = $this->io->collectUI16();
-        $width = $this->io->collectUI16();
-        $height = $this->io->collectUI16();
+        $characterId = $this->io->readUI16();
+        $numFrames = $this->io->readUI16();
+        $width = $this->io->readUI16();
+        $height = $this->io->readUI16();
 
-        $this->io->collectUB(4); // Reserved
-        $videoFlagsDeblocking = $this->io->collectUB(3);
-        $videoFlagsSmoothing = $this->io->collectUB(1);
+        $this->io->skipBits(4); // Reserved
+        $videoFlagsDeblocking = $this->io->readUB(3);
+        $videoFlagsSmoothing = $this->io->readBool();
 
-        $codecId = $this->io->collectUI8();
+        $codecId = $this->io->readUI8();
 
         return new DefineVideoStreamTag(
             characterId: $characterId,
@@ -1011,38 +1012,38 @@ final readonly class SwfTag
     private function parseVideoFrameTag(int $bytePosEnd): VideoFrameTag
     {
         return new VideoFrameTag(
-            streamId: $this->io->collectUI16(),
-            frameNum: $this->io->collectUI16(),
-            videoData: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+            streamId: $this->io->readUI16(),
+            frameNum: $this->io->readUI16(),
+            videoData: $this->io->readBytes($bytePosEnd - $this->io->offset),
         );
     }
 
     private function parseScriptLimitsTag(int $bytePosEnd): ScriptLimitsTag
     {
         return new ScriptLimitsTag(
-            maxRecursionDepth: $this->io->collectUI16(),
-            scriptTimeoutSeconds: $this->io->collectUI16(),
+            maxRecursionDepth: $this->io->readUI16(),
+            scriptTimeoutSeconds: $this->io->readUI16(),
         );
     }
 
     private function parseSetTabIndexTag(int $bytePosEnd): SetTabIndexTag
     {
         return new SetTabIndexTag(
-            depth: $this->io->collectUI16(),
-            tabIndex: $this->io->collectUI16(),
+            depth: $this->io->readUI16(),
+            tabIndex: $this->io->readUI16(),
         );
     }
 
     private function parseFileAttributesTag(int $bytePosEnd): FileAttributesTag
     {
-        $this->io->collectUB(1); // Reserved
-        $useDirectBlit = $this->io->collectUB(1) === 1;
-        $useGPU = $this->io->collectUB(1) === 1;
-        $hasMetadata = $this->io->collectUB(1) === 1;
-        $actionScript3 = $this->io->collectUB(1) === 1;
-        $this->io->collectUB(2); // Reserved
-        $useNetwork = $this->io->collectUB(1) === 1;
-        $this->io->collectUB(24); // Reserved
+        $this->io->skipBits(1); // Reserved
+        $useDirectBlit = $this->io->readBool();
+        $useGPU = $this->io->readBool();
+        $hasMetadata = $this->io->readBool();
+        $actionScript3 = $this->io->readBool();
+        $this->io->skipBits(2); // Reserved
+        $useNetwork = $this->io->readBool();
+        $this->io->skipBits(24); // Reserved
 
         return new FileAttributesTag(
             useDirectBlit: $useDirectBlit,
@@ -1055,45 +1056,45 @@ final readonly class SwfTag
 
     private function parsePlaceObject3Tag(int $bytePosEnd): PlaceObject3Tag
     {
-        $placeFlagHasClipActions = $this->io->collectUB(1) === 1;
-        $placeFlagHasClipDepth = $this->io->collectUB(1) === 1;
-        $placeFlagHasName = $this->io->collectUB(1) === 1;
-        $placeFlagHasRatio = $this->io->collectUB(1) === 1;
-        $placeFlagHasColorTransform = $this->io->collectUB(1) === 1;
-        $placeFlagHasMatrix = $this->io->collectUB(1) === 1;
-        $placeFlagHasCharacter = $this->io->collectUB(1) === 1;
-        $placeFlagMove = $this->io->collectUB(1) === 1;
+        $placeFlagHasClipActions = $this->io->readBool();
+        $placeFlagHasClipDepth = $this->io->readBool();
+        $placeFlagHasName = $this->io->readBool();
+        $placeFlagHasRatio = $this->io->readBool();
+        $placeFlagHasColorTransform = $this->io->readBool();
+        $placeFlagHasMatrix = $this->io->readBool();
+        $placeFlagHasCharacter = $this->io->readBool();
+        $placeFlagMove = $this->io->readBool();
 
-        $this->io->collectUB(3); // Reserved, must be 0
-        $placeFlagHasImage = $this->io->collectUB(1) === 1;
-        $placeFlagHasClassName = $this->io->collectUB(1) === 1;
-        $placeFlagHasCacheAsBitmap = $this->io->collectUB(1) === 1;
-        $placeFlagHasBlendMode = $this->io->collectUB(1) === 1;
-        $placeFlagHasFilterList = $this->io->collectUB(1) === 1;
+        $this->io->skipBits(3); // Reserved, must be 0
+        $placeFlagHasImage = $this->io->readBool();
+        $placeFlagHasClassName = $this->io->readBool();
+        $placeFlagHasCacheAsBitmap = $this->io->readBool();
+        $placeFlagHasBlendMode = $this->io->readBool();
+        $placeFlagHasFilterList = $this->io->readBool();
 
         return new PlaceObject3Tag(
             move: $placeFlagMove,
             hasImage: $placeFlagHasImage,
-            depth: $this->io->collectUI16(),
-            className: $placeFlagHasClassName || ($placeFlagHasImage && $placeFlagHasCharacter) ? $this->io->collectString() : null,
-            characterId: $placeFlagHasCharacter ? $this->io->collectUI16() : null,
+            depth: $this->io->readUI16(),
+            className: $placeFlagHasClassName || ($placeFlagHasImage && $placeFlagHasCharacter) ? $this->io->readNullTerminatedString() : null,
+            characterId: $placeFlagHasCharacter ? $this->io->readUI16() : null,
             matrix: $placeFlagHasMatrix ? $this->rec->collectMatrix() : null,
             colorTransform: $placeFlagHasColorTransform ? $this->rec->collectColorTransform(true) : null,
-            ratio: $placeFlagHasRatio ? $this->io->collectUI16() : null,
-            name: $placeFlagHasName ? $this->io->collectString() : null,
-            clipDepth: $placeFlagHasClipDepth ? $this->io->collectUI16() : null,
+            ratio: $placeFlagHasRatio ? $this->io->readUI16() : null,
+            name: $placeFlagHasName ? $this->io->readNullTerminatedString() : null,
+            clipDepth: $placeFlagHasClipDepth ? $this->io->readUI16() : null,
             surfaceFilterList: $placeFlagHasFilterList ? $this->rec->collectFilterList() : null,
-            blendMode: $placeFlagHasBlendMode ? $this->io->collectUI8() : null,
-            bitmapCache: $placeFlagHasCacheAsBitmap ? $this->io->collectUI8() : null,
+            blendMode: $placeFlagHasBlendMode ? $this->io->readUI8() : null,
+            bitmapCache: $placeFlagHasCacheAsBitmap ? $this->io->readUI8() : null,
             clipActions: $placeFlagHasClipActions ? $this->rec->collectClipActions($this->swfVersion) : null,
         );
     }
 
     private function parseDefineFontAlignZonesTag(int $bytePosEnd): DefineFontAlignZonesTag
     {
-        $fontId = $this->io->collectUI16();
-        $csmTableHint = $this->io->collectUB(2);
-        $this->io->collectUB(6); // Reserved
+        $fontId = $this->io->readUI16();
+        $csmTableHint = $this->io->readUB(2);
+        $this->io->skipBits(6); // Reserved
         $zoneTable = $this->rec->collectZoneTable($bytePosEnd);
 
         return new DefineFontAlignZonesTag(
@@ -1105,13 +1106,13 @@ final readonly class SwfTag
 
     private function parseCSMTextSettingsTag(int $bytePosEnd): CSMTextSettingsTag
     {
-        $textId = $this->io->collectUI16();
-        $useFlashType = $this->io->collectUB(2);
-        $gridFit = $this->io->collectUB(3);
-        $this->io->collectUB(3); // Reserved
-        $thickness = $this->io->collectFixed(); //XXX F32 in the spec
-        $sharpness = $this->io->collectFixed(); //XXX F32 in the spec
-        $this->io->collectUI8(); // Reserved
+        $textId = $this->io->readUI16();
+        $useFlashType = $this->io->readUB(2);
+        $gridFit = $this->io->readUB(3);
+        $this->io->skipBits(3); // Reserved
+        $thickness = $this->io->readFixed(); //XXX F32 in the spec
+        $sharpness = $this->io->readFixed(); //XXX F32 in the spec
+        $this->io->skipBytes(1); // Reserved
 
         return new CSMTextSettingsTag(
             textId: $textId,
@@ -1124,13 +1125,13 @@ final readonly class SwfTag
 
     private function parseSymbolClassTag(int $bytePosEnd): SymbolClassTag
     {
-        $numSymbols = $this->io->collectUI16();
+        $numSymbols = $this->io->readUI16();
         $tags = [];
         $names = [];
 
         for ($i = 0; $i < $numSymbols; $i++) {
-            $tags[] = $this->io->collectUI16();
-            $names[] = $this->io->collectString();
+            $tags[] = $this->io->readUI16();
+            $names[] = $this->io->readNullTerminatedString();
         }
 
         return new SymbolClassTag(
@@ -1141,13 +1142,13 @@ final readonly class SwfTag
 
     private function parseMetadataTag(int $bytePosEnd): MetadataTag
     {
-        return new MetadataTag($this->io->collectString());
+        return new MetadataTag($this->io->readNullTerminatedString());
     }
 
     private function parseDefineScalingGridTag(int $bytePosEnd): DefineScalingGridTag
     {
         return new DefineScalingGridTag(
-            characterId: $this->io->collectUI16(),
+            characterId: $this->io->readUI16(),
             splitter: $this->rec->collectRect(),
         );
     }
@@ -1155,9 +1156,9 @@ final readonly class SwfTag
     private function parseDoABCTag(int $bytePosEnd): DoABCTag
     {
         return new DoABCTag(
-            flags: $this->io->collectUI32(),
-            name: $this->io->collectString(),
-            data: $this->io->collectBytes($bytePosEnd - $this->io->bytePos),
+            flags: $this->io->readUI32(),
+            name: $this->io->readNullTerminatedString(),
+            data: $this->io->readBytes($bytePosEnd - $this->io->offset),
         );
     }
 
@@ -1165,18 +1166,18 @@ final readonly class SwfTag
     {
         $sceneOffsets = [];
         $sceneNames = [];
-        $sceneCount = $this->io->collectEncodedU32();
+        $sceneCount = $this->io->readEncodedU32();
         for ($i = 0; $i < $sceneCount; $i++) {
-            $sceneOffsets[] = $this->io->collectEncodedU32();
-            $sceneNames[] = $this->io->collectString();
+            $sceneOffsets[] = $this->io->readEncodedU32();
+            $sceneNames[] = $this->io->readNullTerminatedString();
         }
 
         $frameNumbers = [];
         $frameLabels = [];
-        $frameLabelCount = $this->io->collectEncodedU32();
+        $frameLabelCount = $this->io->readEncodedU32();
         for ($i = 0; $i < $frameLabelCount; $i++) {
-            $frameNumbers[] = $this->io->collectEncodedU32();
-            $frameLabels[] = $this->io->collectString();
+            $frameNumbers[] = $this->io->readEncodedU32();
+            $frameLabels[] = $this->io->readNullTerminatedString();
         }
 
         return new DefineSceneAndFrameLabelDataTag(
@@ -1189,9 +1190,9 @@ final readonly class SwfTag
 
     private function parseDefineBinaryDataTag(int $bytePosEnd): DefineBinaryDataTag
     {
-        $tag = $this->io->collectUI16();
-        $this->io->collectUI32(); // Reserved, must be 0
-        $data = $this->io->collectBytes($bytePosEnd - $this->io->bytePos);
+        $tag = $this->io->readUI16();
+        $this->io->skipBytes(4); // Reserved, must be 0
+        $data = $this->io->readBytes($bytePosEnd - $this->io->offset);
 
         return new DefineBinaryDataTag($tag, $data);
     }
@@ -1199,24 +1200,24 @@ final readonly class SwfTag
     private function parseDefineFontNameTag(int $bytePosEnd): DefineFontNameTag
     {
         return new DefineFontNameTag(
-            fontId: $this->io->collectUI16(),
-            fontName: $this->io->collectString(),
-            fontCopyright: $this->io->collectString(),
+            fontId: $this->io->readUI16(),
+            fontName: $this->io->readNullTerminatedString(),
+            fontCopyright: $this->io->readNullTerminatedString(),
         );
     }
 
     private function parseDefineFont4Tag(int $bytePosEnd): DefineFont4Tag
     {
-        $fontId = $this->io->collectUI16();
+        $fontId = $this->io->readUI16();
 
-        $this->io->collectUB(5); // Reserved
-        $fontFlagsHasFontData = $this->io->collectUB(1) === 1;
-        $fontFlagsItalic = $this->io->collectUB(1) === 1;
-        $fontFlagsBold = $this->io->collectUB(1) === 1;
+        $this->io->skipBits(5); // Reserved
+        $fontFlagsHasFontData = $this->io->readBool();
+        $fontFlagsItalic = $this->io->readBool();
+        $fontFlagsBold = $this->io->readBool();
 
-        $fontName = $this->io->collectString();
+        $fontName = $this->io->readNullTerminatedString();
 
-        $fontData = $fontFlagsHasFontData ? $this->io->collectBytes($bytePosEnd - $this->io->bytePos) : null;
+        $fontData = $fontFlagsHasFontData ? $this->io->readBytes($bytePosEnd - $this->io->offset) : null;
 
         return new DefineFont4Tag(
             fontId: $fontId,
@@ -1230,12 +1231,12 @@ final readonly class SwfTag
     private function parseProductInfoTag(int $bytePosEnd): ProductInfo
     {
         return new ProductInfo(
-            productId: $this->io->collectUI32(),
-            edition: $this->io->collectUI32(),
-            majorVersion: $this->io->collectUI8(),
-            minorVersion: $this->io->collectUI8(),
-            buildNumber: $this->io->collectSI64(),
-            compilationDate: $this->io->collectSI64(),
+            productId: $this->io->readUI32(),
+            edition: $this->io->readUI32(),
+            majorVersion: $this->io->readUI8(),
+            minorVersion: $this->io->readUI8(),
+            buildNumber: $this->io->readSI64(),
+            compilationDate: $this->io->readSI64(),
         );
     }
 }

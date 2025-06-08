@@ -36,7 +36,7 @@ use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Swf;
-use Arakne\Swf\Parser\SwfIO;
+use Arakne\Swf\Parser\SwfReader;
 use InvalidArgumentException;
 
 use function array_flip;
@@ -85,21 +85,21 @@ final class SwfFile
             return false;
         }
 
-        $io = new SwfIO($head);
-        $signature = $io->collectBytes(3);
+        $io = new SwfReader($head);
+        $signature = $io->readBytes(3);
 
         if ($signature !== 'CWS' && $signature !== 'FWS') {
             return false;
         }
 
-        $version = $io->collectUI8();
+        $version = $io->readUI8();
 
         // Last version (2024) is 51, so we can safely assume that any version above 60 is invalid
         if ($version > 60) {
             return false;
         }
 
-        $len = $io->collectUI32();
+        $len = $io->readUI32();
 
         if ($len > $maxLength) {
             return false;
