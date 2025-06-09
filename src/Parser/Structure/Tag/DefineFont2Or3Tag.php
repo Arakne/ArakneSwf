@@ -21,10 +21,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
-use Arakne\Swf\Parser\Structure\Record\EndShapeRecord;
-use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
-use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
+use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
+use Arakne\Swf\Parser\Structure\Record\Shape\StraightEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 
 final readonly class DefineFont2Or3Tag
 {

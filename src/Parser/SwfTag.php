@@ -31,6 +31,8 @@ use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
+use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
@@ -326,7 +328,7 @@ final readonly class SwfTag
                 version: $shapeVersion,
                 shapeId: $this->io->readUI16(),
                 shapeBounds: Rectangle::read($this->io),
-                shapes: $this->rec->collectShapeWithStyle($shapeVersion),
+                shapes: ShapeWithStyle::read($this->io, $shapeVersion),
             );
         }
 
@@ -338,7 +340,7 @@ final readonly class SwfTag
             usesFillWindingRule: $this->io->readBool(),
             usesNonScalingStrokes: $this->io->readBool(),
             usesScalingStrokes: $this->io->readBool(),
-            shapes: $this->rec->collectShapeWithStyle($shapeVersion),
+            shapes: ShapeWithStyle::read($this->io, $shapeVersion),
         );
     }
 
@@ -427,7 +429,7 @@ final readonly class SwfTag
         }
         $glyphShapeData = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
-            $glyphShapeData[] = $this->rec->collectShape(1);
+            $glyphShapeData[] = ShapeRecord::readCollection($this->io, 1);
         }
 
         return new DefineFontTag(
@@ -810,8 +812,8 @@ final readonly class SwfTag
                 offset: $this->io->readUI32(),
                 fillStyles: $this->rec->collectMorphFillStyleArray(),
                 lineStyles: $this->rec->collectMorphLineStyleArray(1),
-                startEdges: $this->rec->collectShape(1),
-                endEdges: $this->rec->collectShape(1),
+                startEdges: ShapeRecord::readCollection($this->io, 1),
+                endEdges: ShapeRecord::readCollection($this->io, 1),
             );
         }
 
@@ -832,8 +834,8 @@ final readonly class SwfTag
             offset: $this->io->readUI32(),
             fillStyles: $this->rec->collectMorphFillStyleArray(),
             lineStyles: $this->rec->collectMorphLineStyleArray(2),
-            startEdges: $this->rec->collectShape(1), // @todo version ?
-            endEdges: $this->rec->collectShape(1), // @todo version ?
+            startEdges: ShapeRecord::readCollection($this->io, 1), // @todo version ?
+            endEdges: ShapeRecord::readCollection($this->io, 1), // @todo version ?
         );
     }
 
@@ -865,7 +867,7 @@ final readonly class SwfTag
 
         $glyphShapeTable = [];
         for ($i = 0; $i < $numGlyphs; $i++) {
-            $glyphShapeTable[] = $this->rec->collectShape(1);
+            $glyphShapeTable[] = ShapeRecord::readCollection($this->io, 1);
         }
 
         $codeTable = [];
