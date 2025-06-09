@@ -26,6 +26,11 @@ namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
+use Arakne\Swf\Parser\Structure\Action\ActionRecord;
+use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
@@ -320,15 +325,15 @@ final readonly class SwfTag
             return new DefineShapeTag(
                 version: $shapeVersion,
                 shapeId: $this->io->readUI16(),
-                shapeBounds: $this->rec->collectRect(),
+                shapeBounds: Rectangle::read($this->io),
                 shapes: $this->rec->collectShapeWithStyle($shapeVersion),
             );
         }
 
         return new DefineShape4Tag(
             shapeId: $this->io->readUI16(),
-            shapeBounds: $this->rec->collectRect(),
-            edgeBounds: $this->rec->collectRect(),
+            shapeBounds: Rectangle::read($this->io),
+            edgeBounds: Rectangle::read($this->io),
             reserved: $this->io->readUB(5),
             usesFillWindingRule: $this->io->readBool(),
             usesNonScalingStrokes: $this->io->readBool(),
@@ -342,8 +347,8 @@ final readonly class SwfTag
         return new PlaceObjectTag(
             characterId: $this->io->readUI16(),
             depth: $this->io->readUI16(),
-            matrix: $this->rec->collectMatrix(),
-            colorTransform: $this->io->offset < $bytePosEnd ? $this->rec->collectColorTransform(false) : null,
+            matrix: Matrix::read($this->io),
+            colorTransform: $this->io->offset < $bytePosEnd ? ColorTransform::read($this->io, false) : null,
         );
     }
 
@@ -376,7 +381,7 @@ final readonly class SwfTag
             return new DefineButtonTag(
                 buttonId: $this->io->readUI16(),
                 characters: $this->rec->collectButtonRecords($version),
-                actions: $this->rec->collectActionRecords($bytePosEnd),
+                actions: ActionRecord::readCollection($this->io, $bytePosEnd),
             );
         }
 
@@ -437,8 +442,8 @@ final readonly class SwfTag
         return new DefineTextTag(
             version: $textVersion,
             characterId: $this->io->readUI16(),
-            textBounds: $this->rec->collectRect(),
-            textMatrix: $this->rec->collectMatrix(),
+            textBounds: Rectangle::read($this->io),
+            textMatrix: Matrix::read($this->io),
             glyphBits: $glyphBits = $this->io->readUI8(),
             advanceBits: $advanceBits = $this->io->readUI8(),
             textRecords: $this->rec->collectTextRecords($glyphBits, $advanceBits, $textVersion),
@@ -447,7 +452,7 @@ final readonly class SwfTag
 
     private function parseDoActionTag(int $bytePosEnd): DoActionTag
     {
-        return new DoActionTag($this->rec->collectActionRecords($bytePosEnd));
+        return new DoActionTag(ActionRecord::readCollection($this->io, $bytePosEnd));
     }
 
     private function parseDefineFontInfoTag(int $bytePosEnd, int $version): DefineFontInfoTag
@@ -652,7 +657,7 @@ final readonly class SwfTag
     {
         return new DefineButtonCxformTag(
             buttonId: $this->io->readUI16(),
-            colorTransform: $this->rec->collectColorTransform(false),
+            colorTransform: ColorTransform::read($this->io, false),
         );
     }
 
@@ -680,8 +685,8 @@ final readonly class SwfTag
             move: $placeFlagMove,
             depth: $this->io->readUI16(),
             characterId: $placeFlagHasCharacter ? $this->io->readUI16() : null,
-            matrix: $placeFlagHasMatrix ? $this->rec->collectMatrix() : null,
-            colorTransform: $placeFlagHasColorTransform ? $this->rec->collectColorTransform(true) : null,
+            matrix: $placeFlagHasMatrix ? Matrix::read($this->io) : null,
+            colorTransform: $placeFlagHasColorTransform ? ColorTransform::read($this->io, true) : null,
             ratio: $placeFlagHasRatio ? $this->io->readUI16() : null,
             name: $placeFlagHasName ? $this->io->readNullTerminatedString() : null,
             clipDepth: $placeFlagHasClipDepth ? $this->io->readUI16() : null,
@@ -692,7 +697,7 @@ final readonly class SwfTag
     private function parseDefineEditTextTag(int $bytePosEnd): DefineEditTextTag
     {
         $characterId = $this->io->readUI16();
-        $bounds = $this->rec->collectRect();
+        $bounds = Rectangle::read($this->io);
 
         $flags = $this->io->readUI8();
         $hasText = ($flags & 0b10000000) === 0b10000000;
@@ -730,7 +735,7 @@ final readonly class SwfTag
             fontId: $hasFont ? $this->io->readUI16() : null,
             fontClass: $hasFontClass ? $this->io->readNullTerminatedString() : null,
             fontHeight: $hasFont ? $this->io->readUI16() : null,
-            textColor: $hasTextColor ? $this->rec->collectRGBA() : null,
+            textColor: $hasTextColor ? Color::readRgba($this->io) : null,
             maxLength: $hasMaxLength ? $this->io->readUI16() : null,
             layout: $hasLayout ? [
                 'align' => $this->io->readUI8(),
@@ -794,8 +799,8 @@ final readonly class SwfTag
     private function parseDefineMorphShapeTag(int $bytePosEnd, int $version): DefineMorphShapeTag|DefineMorphShape2Tag
     {
         $characterId = $this->io->readUI16();
-        $startBounds = $this->rec->collectRect();
-        $endBounds = $this->rec->collectRect();
+        $startBounds = Rectangle::read($this->io);
+        $endBounds = Rectangle::read($this->io);
 
         if ($version === 1) {
             return new DefineMorphShapeTag(
@@ -810,8 +815,8 @@ final readonly class SwfTag
             );
         }
 
-        $startEdgeBounds = $this->rec->collectRect();
-        $endEdgeBounds = $this->rec->collectRect();
+        $startEdgeBounds = Rectangle::read($this->io);
+        $endEdgeBounds = Rectangle::read($this->io);
         $this->io->skipBits(6); // Reserved
         $usesNonScalingStrokes = $this->io->readBool();
         $usesScalingStrokes = $this->io->readBool();
@@ -883,7 +888,7 @@ final readonly class SwfTag
             }
             $layout['fontBoundsTable'] = [];
             for ($i = 0; $i < $numGlyphs; $i++) {
-                $layout['fontBoundsTable'][] = $this->rec->collectRect();
+                $layout['fontBoundsTable'][] = Rectangle::read($this->io);
             }
             $kerningCount = $this->io->readUI16();
             $layout['fontKerningTable'] = [];
@@ -981,7 +986,7 @@ final readonly class SwfTag
     {
         return new DoInitActionTag(
             spriteId: $this->io->readUI16(),
-            actions: $this->rec->collectActionRecords($bytePosEnd),
+            actions: ActionRecord::readCollection($this->io, $bytePosEnd),
         );
     }
 
@@ -1078,8 +1083,8 @@ final readonly class SwfTag
             depth: $this->io->readUI16(),
             className: $placeFlagHasClassName || ($placeFlagHasImage && $placeFlagHasCharacter) ? $this->io->readNullTerminatedString() : null,
             characterId: $placeFlagHasCharacter ? $this->io->readUI16() : null,
-            matrix: $placeFlagHasMatrix ? $this->rec->collectMatrix() : null,
-            colorTransform: $placeFlagHasColorTransform ? $this->rec->collectColorTransform(true) : null,
+            matrix: $placeFlagHasMatrix ? Matrix::read($this->io) : null,
+            colorTransform: $placeFlagHasColorTransform ? ColorTransform::read($this->io, true) : null,
             ratio: $placeFlagHasRatio ? $this->io->readUI16() : null,
             name: $placeFlagHasName ? $this->io->readNullTerminatedString() : null,
             clipDepth: $placeFlagHasClipDepth ? $this->io->readUI16() : null,
@@ -1149,7 +1154,7 @@ final readonly class SwfTag
     {
         return new DefineScalingGridTag(
             characterId: $this->io->readUI16(),
-            splitter: $this->rec->collectRect(),
+            splitter: Rectangle::read($this->io),
         );
     }
 

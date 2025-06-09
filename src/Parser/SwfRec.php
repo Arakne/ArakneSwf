@@ -25,15 +25,6 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
-use Arakne\Swf\Parser\Structure\Action\DefineFunction2Data;
-use Arakne\Swf\Parser\Structure\Action\DefineFunctionData;
-use Arakne\Swf\Parser\Structure\Action\GetURL2Data;
-use Arakne\Swf\Parser\Structure\Action\GetURLData;
-use Arakne\Swf\Parser\Structure\Action\GotoFrame2Data;
-use Arakne\Swf\Parser\Structure\Action\Opcode;
-use Arakne\Swf\Parser\Structure\Action\Type;
-use Arakne\Swf\Parser\Structure\Action\Value;
-use Arakne\Swf\Parser\Structure\Action\WaitForFrameData;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\CurvedEdgeRecord;
@@ -51,12 +42,12 @@ use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\GradientRecord;
 use Arakne\Swf\Parser\Structure\Record\LineStyle;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
-use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
 use Arakne\Swf\Parser\Structure\Record\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\StyleChangeRecord;
 use Exception;
 
+use function assert;
 use function sprintf;
 
 /**
@@ -68,326 +59,9 @@ readonly class SwfRec
         private SwfReader $io,
     ) {}
 
-    public function collectRGB(): Color
-    {
-        return new Color(
-            $this->io->readUI8(),
-            $this->io->readUI8(),
-            $this->io->readUI8(),
-        );
-    }
-
-    public function collectRGBA(): Color
-    {
-        return new Color(
-            $this->io->readUI8(),
-            $this->io->readUI8(),
-            $this->io->readUI8(),
-            $this->io->readUI8(),
-        );
-    }
-
-    public function collectRect(): Rectangle
-    {
-        $nbits = $this->io->readUB(5);
-
-        $ret = new Rectangle(
-            $this->io->readSB($nbits),
-            $this->io->readSB($nbits),
-            $this->io->readSB($nbits),
-            $this->io->readSB($nbits),
-        );
-
-        $this->io->alignByte();
-
-        return $ret;
-    }
-
-    public function collectMatrix(): Matrix
-    {
-        $scaleX = 1.0;
-        $scaleY = 1.0;
-        $rotateSkew0 = 0.0;
-        $rotateSkew1 = 0.0;
-        $translateX = 0;
-        $translateY = 0;
-
-        if ($this->io->readBool()) {
-            $nScaleBits = $this->io->readUB(5);
-            $scaleX = $this->io->readFB($nScaleBits);
-            $scaleY = $this->io->readFB($nScaleBits);
-        }
-
-        if ($this->io->readBool()) {
-            $nRotateBits = $this->io->readUB(5);
-            $rotateSkew0 = $this->io->readFB($nRotateBits);
-            $rotateSkew1 = $this->io->readFB($nRotateBits);
-        }
-
-        if (($nTranslateBits = $this->io->readUB(5)) != 0) {
-            $translateX = $this->io->readSB($nTranslateBits);
-            $translateY = $this->io->readSB($nTranslateBits);
-        }
-
-        $this->io->alignByte();
-
-        return new Matrix($scaleX, $scaleY, $rotateSkew0, $rotateSkew1, $translateX, $translateY);
-    }
-
-    public function collectColorTransform(bool $withAlpha): ColorTransform
-    {
-        $hasAddTerms = $this->io->readBool();
-        $hasMultTerms = $this->io->readBool();
-        $nbits = $this->io->readUB(4);
-
-        $redMultTerm = 256;
-        $greenMultTerm = 256;
-        $blueMultTerm = 256;
-        $alphaMultTerm = 256;
-        $redAddTerm = 0;
-        $greenAddTerm = 0;
-        $blueAddTerm = 0;
-        $alphaAddTerm = 0;
-
-        if ($hasMultTerms != 0) {
-            $redMultTerm = $this->io->readSB($nbits);
-            $greenMultTerm = $this->io->readSB($nbits);
-            $blueMultTerm = $this->io->readSB($nbits);
-            if ($withAlpha) {
-                $alphaMultTerm = $this->io->readSB($nbits);
-            }
-        }
-
-        if ($hasAddTerms != 0) {
-            $redAddTerm = $this->io->readSB($nbits);
-            $greenAddTerm = $this->io->readSB($nbits);
-            $blueAddTerm = $this->io->readSB($nbits);
-            if ($withAlpha) {
-                $alphaAddTerm = $this->io->readSB($nbits);
-            }
-        }
-
-        $this->io->alignByte();
-
-        return new ColorTransform(
-            $redMultTerm,
-            $greenMultTerm,
-            $blueMultTerm,
-            $alphaMultTerm,
-            $redAddTerm,
-            $greenAddTerm,
-            $blueAddTerm,
-            $alphaAddTerm,
-        );
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     // More complex records
     ////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @param int $bytePosEnd
-     * @return list<ActionRecord>
-     * @throws Exception
-     */
-    public function collectActionRecords(int $bytePosEnd): array
-    {
-        $actions =  [];
-
-        for (;;) {
-            if ($this->io->offset >= $bytePosEnd) {
-                break;
-            }
-
-            $offset = $this->io->offset;
-            $actionLength = 0;
-
-            if (($actionCode = $this->io->readUI8()) === 0) {
-                // echo sprintf("%6d: Code=0x%02x, breaking\n", $offset, $actionCode);
-                $actions[] = new ActionRecord($offset, Opcode::Null, 0, null);
-                continue; // break;
-            }
-
-            if ($actionCode >= 0x80) {
-                $actionLength = $this->io->readUI16();
-            }
-
-            $opcode = Opcode::tryFrom($actionCode);
-
-            if (!$opcode) {
-                throw new Exception(sprintf("Internal error: actionCode=0x%02X, actionLength=%d", $actionCode, $actionLength));
-            }
-
-            /** @var mixed $actionData */
-            $actionData = $actionLength > 0 ? $this->collectActionData($opcode, $actionLength) : null;
-
-            // echo sprintf("%6d: Code=0x%02x, length=%d, name=%s\n", $offset, $actionCode, $actionLength, $actionName);
-            $actions[] = new ActionRecord($offset, $opcode, $actionLength, $actionData);
-        }
-
-        if ($this->io->offset !== $bytePosEnd) {
-            throw new Exception(sprintf('There are %d bytes left', $bytePosEnd - $this->io->offset));
-        }
-
-        return $actions;
-    }
-
-    /**
-     * @param Opcode $opcode
-     * @param non-negative-int $actionLength
-     * @return mixed
-     */
-    public function collectActionData(Opcode $opcode, int $actionLength): mixed
-    {
-        return match ($opcode) {
-            Opcode::ActionGotoFrame => $this->io->readUI16(),
-            Opcode::ActionGetURL => new GetURLData(
-                url: $this->io->readNullTerminatedString(),
-                target: $this->io->readNullTerminatedString(),
-            ),
-            Opcode::ActionStoreRegister => $this->io->readUI8(),
-            Opcode::ActionConstantPool => $this->collectConstantPool(),
-            Opcode::ActionWaitForFrame => new WaitForFrameData(
-                frame: $this->io->readUI16(),
-                skipCount: $this->io->readUI8(),
-            ),
-            Opcode::ActionSetTarget => $this->io->readNullTerminatedString(),
-            Opcode::ActionGoToLabel => $this->io->readNullTerminatedString(),
-            Opcode::ActionWaitForFrame2 => $this->io->readUI8(),
-            Opcode::ActionDefineFunction2 => $this->collectDefineFunction2(),
-            Opcode::ActionWith => $this->io->readBytes($this->io->readUI16()),
-            Opcode::ActionPush => $this->collectPush($actionLength),
-            Opcode::ActionJump, Opcode::ActionIf => $this->io->readSI16(),
-            Opcode::ActionGetURL2 => new GetURL2Data(
-                sendVarsMethod: $this->io->readUB(2),
-                reserved: $this->io->readUB(4),
-                loadTargetFlag: $this->io->readBool(),
-                loadVariablesFlag: $this->io->readBool(),
-            ),
-            Opcode::ActionDefineFunction => $this->collectDefineFunction(),
-            Opcode::ActionGotoFrame2 => $this->collectGotoFrame2(),
-            default => throw new Exception(sprintf("Internal error: opcode=%s, actionLength=%d", $opcode->name, $actionLength)),
-        };
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function collectConstantPool(): array
-    {
-        $data = [];
-        $count = $this->io->readUI16();
-
-        for ($i = 0; $i < $count; $i++) {
-            $data[] = $this->io->readNullTerminatedString();
-        }
-
-        return $data;
-    }
-
-    private function collectDefineFunction2(): DefineFunction2Data
-    {
-        $functionName = $this->io->readNullTerminatedString();
-        $numParams = $this->io->readUI16();
-        $registerCount = $this->io->readUI8();
-        $preloadParentFlag = $this->io->readBool();
-        $preloadRootFlag = $this->io->readBool();
-        $suppressSuperFlag = $this->io->readBool();
-        $preloadSuperFlag = $this->io->readBool();
-        $suppressArgumentsFlag = $this->io->readBool();
-        $preloadArgumentsFlag = $this->io->readBool();
-        $suppressThisFlag = $this->io->readBool();
-        $preloadThisFlag = $this->io->readBool();
-        $this->io->skipBits(7); // Reserved
-        $preloadGlobalFlag = $this->io->readBool();
-
-        $parameters = [];
-        $registers = [];
-
-        for ($i = 0; $i < $numParams; $i++) {
-            $registers[] = $this->io->readUI8();
-            $parameters[] = $this->io->readNullTerminatedString();
-        }
-
-        $codeSize = $this->io->readUI16();
-
-        return new DefineFunction2Data(
-            $functionName,
-            $registerCount,
-            $preloadParentFlag,
-            $preloadRootFlag,
-            $suppressSuperFlag,
-            $preloadSuperFlag,
-            $suppressArgumentsFlag,
-            $preloadArgumentsFlag,
-            $suppressThisFlag,
-            $preloadThisFlag,
-            $preloadGlobalFlag,
-            $parameters,
-            $registers,
-            $codeSize,
-        );
-    }
-
-    /**
-     * @param non-negative-int $actionLength
-     * @return list<Value>
-     * @throws Exception
-     */
-    private function collectPush(int $actionLength): array
-    {
-        $actionData = [];
-        $bytePosEnd = $this->io->offset + $actionLength;
-
-        while ($this->io->offset < $bytePosEnd) {
-            $typeId = $this->io->readUI8();
-            $type = Type::tryFrom($typeId) ?? throw new Exception(sprintf("Internal error: typeId=%d", $typeId));
-
-            $actionData[] = new Value(
-                $type,
-                match ($type) {
-                    Type::String => $this->io->readNullTerminatedString(),
-                    Type::Float => $this->io->readFloat(),
-                    Type::Null => null,
-                    Type::Undefined => null,
-                    Type::Register => $this->io->readUI8(),
-                    Type::Boolean => $this->io->readUI8() === 1,
-                    Type::Double => $this->io->readDouble(),
-                    Type::Integer => $this->io->readSI32(),
-                    Type::Constant8 => $this->io->readUI8(),
-                    Type::Constant16 => $this->io->readUI16(),
-                }
-            );
-        }
-
-        return $actionData;
-    }
-
-    private function collectDefineFunction(): DefineFunctionData
-    {
-        $name = $this->io->readNullTerminatedString();
-        $params = [];
-        $numParams = $this->io->readUI16();
-
-        for ($i = 0; $i < $numParams; $i++) {
-            $params[] = $this->io->readNullTerminatedString();
-        }
-
-        $codeSize = $this->io->readUI16();
-
-        return new DefineFunctionData($name, $params, $codeSize);
-    }
-
-    private function collectGotoFrame2(): GotoFrame2Data
-    {
-        $this->io->skipBits(6); // Reserved
-
-        $sceneBiasFlag = $this->io->readBool();
-        $playFlag = $this->io->readBool();
-        $sceneBias = $sceneBiasFlag ? $this->io->readUI16() : null;
-
-        return new GotoFrame2Data($sceneBiasFlag, $playFlag, $sceneBias);
-    }
 
     /**
      * @param int $shapeVersion
@@ -549,13 +223,13 @@ readonly class SwfRec
 
         switch ($morphFillStyle['fillStyleType']) {
             case 0x00: // Solid fill
-                $morphFillStyle['startColor'] = $this->collectRGBA();
-                $morphFillStyle['endColor'] = $this->collectRGBA();
+                $morphFillStyle['startColor'] = Color::readRgba($this->io);
+                $morphFillStyle['endColor'] = Color::readRgba($this->io);
                 break;
             case 0x10: // Linear gradient fill
             case 0x12: // Radial gradient fill
-                $morphFillStyle['startGradientMatrix'] = $this->collectMatrix();
-                $morphFillStyle['endGradientMatrix'] = $this->collectMatrix();
+                $morphFillStyle['startGradientMatrix'] = Matrix::read($this->io);
+                $morphFillStyle['endGradientMatrix'] = Matrix::read($this->io);
                 $morphFillStyle['gradient'] = $this->collectMorphGradient();
                 break;
             case 0x40: // Repeating bitmap
@@ -563,8 +237,8 @@ readonly class SwfRec
             case 0x42: // Non-smoothed repeating bitmap
             case 0x43: // Non-smoothed clipped bitmap
                 $morphFillStyle['bitmapId'] = $this->io->readUI16();
-                $morphFillStyle['startBitmapMatrix'] = $this->collectMatrix();
-                $morphFillStyle['endBitmapMatrix'] = $this->collectMatrix();
+                $morphFillStyle['startBitmapMatrix'] = Matrix::read($this->io);
+                $morphFillStyle['endBitmapMatrix'] = Matrix::read($this->io);
                 break;
             default:
                 throw new Exception(sprintf('Internal error: fillStyleType=%d', $morphFillStyle['fillStyleType']));
@@ -595,9 +269,9 @@ readonly class SwfRec
     {
         return [
             'startRatio' => $this->io->readUI8(),
-            'startColor' => $this->collectRGBA(),
+            'startColor' => Color::readRgba($this->io),
             'endRatio' => $this->io->readUI8(),
-            'endColor' => $this->collectRGBA(),
+            'endColor' => Color::readRgba($this->io),
         ];
     }
 
@@ -637,8 +311,8 @@ readonly class SwfRec
         return [
             'startWidth' => $this->io->readUI16(),
             'endWidth' => $this->io->readUI16(),
-            'startColor' => $this->collectRGBA(),
-            'endColor' => $this->collectRGBA(),
+            'startColor' => Color::readRgba($this->io),
+            'endColor' => Color::readRgba($this->io),
         ];
     }
 
@@ -666,8 +340,8 @@ readonly class SwfRec
             $morphLineStyle2['miterLimitFactor'] = $this->io->readUI16();
         }
         if ($morphLineStyle2['hasFillFlag'] === false) {
-            $morphLineStyle2['startColor'] = $this->collectRGBA();
-            $morphLineStyle2['endColor'] = $this->collectRGBA();
+            $morphLineStyle2['startColor'] = Color::readRgba($this->io);
+            $morphLineStyle2['endColor'] = Color::readRgba($this->io);
         }
         if ($morphLineStyle2['hasFillFlag'] === true) {
             $morphLineStyle2['fillType'] = $this->collectMorphFillStyle();
@@ -710,7 +384,7 @@ readonly class SwfRec
                 case 0: // DropShadowFilter
                     $filterList[] = new DropShadowFilter(
                         filterId: $filterId,
-                        dropShadowColor: $this->collectRGBA(),
+                        dropShadowColor: Color::readRgba($this->io),
                         blurX: $this->io->readFixed(),
                         blurY: $this->io->readFixed(),
                         angle: $this->io->readFixed(),
@@ -734,7 +408,7 @@ readonly class SwfRec
                 case 2: // GlowFilter
                     $filterList[] = new GlowFilter(
                         filterId: $filterId,
-                        glowColor: $this->collectRGBA(),
+                        glowColor: Color::readRgba($this->io),
                         blurX: $this->io->readFixed(),
                         blurY: $this->io->readFixed(),
                         strength: $this->io->readFixed8(),
@@ -747,8 +421,8 @@ readonly class SwfRec
                 case 3: // BevelFilter
                     $filterList[] = new BevelFilter(
                         filterId: $filterId,
-                        shadowColor: $this->collectRGBA(),
-                        highlightColor: $this->collectRGBA(),
+                        shadowColor: Color::readRgba($this->io),
+                        highlightColor: Color::readRgba($this->io),
                         blurX: $this->io->readFixed(),
                         blurY: $this->io->readFixed(),
                         angle: $this->io->readFixed(),
@@ -767,7 +441,7 @@ readonly class SwfRec
                     $gradientRatio = [];
 
                     for ($i = 0; $i < $numColors; $i++) {
-                        $gradientColors[] = $this->collectRGBA();
+                        $gradientColors[] = Color::readRgba($this->io);
                     }
 
                     for ($i = 0; $i < $numColors; $i++) {
@@ -809,7 +483,7 @@ readonly class SwfRec
                         divisor: $divisor,
                         bias: $bias,
                         matrix: $matrix,
-                        defaultColor: $this->collectRGBA(),
+                        defaultColor: Color::readRgba($this->io),
                         reserved: $this->io->readUB(6),
                         clamp: $this->io->readBool(),
                         preserveAlpha: $this->io->readBool(),
@@ -832,7 +506,7 @@ readonly class SwfRec
                     $gradientRatio = [];
 
                     for ($i = 0; $i < $numColors; $i++) {
-                        $gradientColors[] = $this->collectRGBA();
+                        $gradientColors[] = Color::readRgba($this->io);
                     }
 
                     for ($i = 0; $i < $numColors; $i++) {
@@ -931,9 +605,9 @@ readonly class SwfRec
 
             $buttonRecord['characterId'] = $this->io->readUI16();
             $buttonRecord['placeDepth'] = $this->io->readUI16();
-            $buttonRecord['placeMatrix'] = $this->collectMatrix();
+            $buttonRecord['placeMatrix'] = Matrix::read($this->io);
             if ($version == 2) {
-                $buttonRecord['colorTransform'] = $this->collectColorTransform(true);
+                $buttonRecord['colorTransform'] = ColorTransform::read($this->io, true);
             }
             if ($version == 2 && $buttonRecord['buttonHasFilterList'] != 0) {
                 $buttonRecord['filterList'] = $this->collectFilterList();
@@ -953,6 +627,8 @@ readonly class SwfRec
      */
     public function collectButtonCondActions(int $bytePosEnd): array
     {
+        assert($bytePosEnd > 0); // @todo temporary before refactoring
+
         $buttonCondActions = [];
         for (;;) {
             $buttonCondAction = [];
@@ -971,7 +647,7 @@ readonly class SwfRec
             $buttonCondAction['condKeyPress'] = $this->io->readUB(7);
             $buttonCondAction['condOverDownToIdle'] = $this->io->readBool();
 
-            $buttonCondAction['actions'] = $this->collectActionRecords($condActionSize == 0 ? $bytePosEnd : $here + $condActionSize);
+            $buttonCondAction['actions'] = ActionRecord::readCollection($this->io, $condActionSize == 0 ? $bytePosEnd : $here + $condActionSize);
 
             $buttonCondActions[] = $buttonCondAction;
             if ($condActionSize == 0) {
@@ -1025,7 +701,7 @@ readonly class SwfRec
         if (isset($clipActionRecord['eventFlags']['clipEventKeyPress']) && $clipActionRecord['eventFlags']['clipEventKeyPress'] == 1) {
             $clipActionRecord['keyCode'] = $this->io->readUI8();
         }
-        $clipActionRecord['actions'] = $this->collectActionRecords($here + $actionRecordSize);
+        $clipActionRecord['actions'] = ActionRecord::readCollection($this->io, $here + $actionRecordSize);
         return $clipActionRecord;
     }
 
@@ -1081,8 +757,8 @@ readonly class SwfRec
             $gradientRecords[] = new GradientRecord(
                 $this->io->readUI8(),
                 match ($shapeVersion) {
-                    1, 2 => $this->collectRGB(),
-                    3, 4 => $this->collectRGBA(),
+                    1, 2 => Color::readRgb($this->io),
+                    3, 4 => Color::readRgba($this->io),
                     default => throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion)),
                 }
             );
@@ -1120,7 +796,7 @@ readonly class SwfRec
                 $textRecord['fontId'] = $this->io->readUI16();
             }
             if ($textRecord['styleFlagsHasColor'] != 0) {
-                $textRecord['textColor'] = $textVersion == 1 ? $this->collectRGB() : $this->collectRGBA();
+                $textRecord['textColor'] = $textVersion == 1 ? Color::readRgb($this->io) : Color::readRgba($this->io);
             }
             if ($textRecord['styleFlagsHasXOffset'] != 0) {
                 $textRecord['xOffset'] = $this->io->readSI16();
@@ -1179,7 +855,7 @@ readonly class SwfRec
             for ($i = 0; $i < $lineStyleCount; $i++) {
                 $lineStyleArray[] = new LineStyle(
                     width: $this->io->readUI16(),
-                    color: $shapeVersion == 1 || $shapeVersion == 2 ? $this->collectRGB() : $this->collectRGBA(),
+                    color: $shapeVersion == 1 || $shapeVersion == 2 ? Color::readRgb($this->io) : Color::readRgba($this->io),
                 );
             }
         } elseif ($shapeVersion == 4) {
@@ -1202,7 +878,7 @@ readonly class SwfRec
                 $miterLimitFactor = $joinStyle === 2 ? $this->io->readUI16() : null;
 
                 if (!$hasFillFlag) {
-                    $color = $this->collectRGBA();
+                    $color = Color::readRgba($this->io);
                     $fillType = null;
                 } else {
                     $fillType = $this->collectFillStyle($shapeVersion);
@@ -1236,24 +912,24 @@ readonly class SwfRec
 
         $style = match ($type) {
             FillStyle::SOLID => match ($shapeVersion) {
-                1, 2 => new FillStyle($type, color: $this->collectRGB()),
-                3, 4 => new FillStyle($type, color: $this->collectRGBA()), //XXX shapeVersion 4 not in spec
+                1, 2 => new FillStyle($type, color: Color::readRgb($this->io)),
+                3, 4 => new FillStyle($type, color: Color::readRgba($this->io)), //XXX shapeVersion 4 not in spec
                 default => throw new Exception(sprintf('Internal error: shapeVersion=%d', $shapeVersion)),
             },
             FillStyle::LINEAR_GRADIENT, FillStyle::RADIAL_GRADIENT => new FillStyle(
                 $type,
-                matrix: $this->collectMatrix(),
+                matrix: Matrix::read($this->io),
                 gradient: $this->collectGradient($shapeVersion)
             ),
             FillStyle::FOCAL_GRADIENT => new FillStyle(
                 $type,
-                matrix: $this->collectMatrix(),
+                matrix: Matrix::read($this->io),
                 focalGradient: $this->collectFocalGradient($shapeVersion),
             ),
             FillStyle::REPEATING_BITMAP, FillStyle::CLIPPED_BITMAP, FillStyle::NON_SMOOTHED_REPEATING_BITMAP, FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => new FillStyle(
                 $type,
                 bitmapId: $this->io->readUI16(),
-                bitmapMatrix: $this->collectMatrix(),
+                bitmapMatrix: Matrix::read($this->io),
             ),
             default => throw new Exception(sprintf('Internal error: fillStyleType=%d', $type)),
         };

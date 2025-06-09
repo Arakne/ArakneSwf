@@ -53,7 +53,7 @@ readonly class Swf
     {
         $this->io = new SwfReader($binary);
         $this->rec = new SwfRec($this->io);
-        $this->hdr = new SwfHdr($this->io, $this->rec);
+        $this->hdr = new SwfHdr($this->io);
         $this->header = $this->hdr->parseHeader();
         $this->tag = new SwfTag($this->io, $this->rec, $this->header->version, $errorCollector);
         $this->tags = $this->tag->parseTags();

@@ -3,23 +3,24 @@
 /*
  * This file is part of Arakne-Swf.
  *
- * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  *
  * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ * See the GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Arakne-Swf: derived from SWF.php
- * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
  */
 
 declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
+
+use Arakne\Swf\Parser\SwfReader;
 
 /**
  * Structure for store color transform
@@ -76,5 +77,54 @@ final readonly class ColorTransform
         }
 
         return new Color((int) $red, (int) $green, (int) $blue, (int) $alpha);
+    }
+
+    public static function read(SwfReader $reader, bool $withAlpha): self
+    {
+        $hasAddTerms = $reader->readBool();
+        $hasMultTerms = $reader->readBool();
+        $nbits = $reader->readUB(4);
+
+        $redMultTerm = 256;
+        $greenMultTerm = 256;
+        $blueMultTerm = 256;
+        $alphaMultTerm = 256;
+        $redAddTerm = 0;
+        $greenAddTerm = 0;
+        $blueAddTerm = 0;
+        $alphaAddTerm = 0;
+
+        if ($hasMultTerms) {
+            $redMultTerm = $reader->readSB($nbits);
+            $greenMultTerm = $reader->readSB($nbits);
+            $blueMultTerm = $reader->readSB($nbits);
+
+            if ($withAlpha) {
+                $alphaMultTerm = $reader->readSB($nbits);
+            }
+        }
+
+        if ($hasAddTerms) {
+            $redAddTerm = $reader->readSB($nbits);
+            $greenAddTerm = $reader->readSB($nbits);
+            $blueAddTerm = $reader->readSB($nbits);
+
+            if ($withAlpha) {
+                $alphaAddTerm = $reader->readSB($nbits);
+            }
+        }
+
+        $reader->alignByte();
+
+        return new ColorTransform(
+            $redMultTerm,
+            $greenMultTerm,
+            $blueMultTerm,
+            $alphaMultTerm,
+            $redAddTerm,
+            $greenAddTerm,
+            $blueAddTerm,
+            $alphaAddTerm,
+        );
     }
 }

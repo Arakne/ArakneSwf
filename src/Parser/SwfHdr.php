@@ -24,9 +24,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
-
-use function var_dump;
 
 /**
  * SWF file header parser
@@ -35,7 +34,6 @@ readonly class SwfHdr
 {
     public function __construct(
         private SwfReader $io,
-        private SwfRec $rec,
     ) {}
 
     public function parseHeader(): SwfHeader
@@ -56,7 +54,7 @@ readonly class SwfHdr
             $this->io->doUncompress($fileLength);
         }
 
-        $frameSize = $this->rec->collectRect();
+        $frameSize = Rectangle::read($this->io);
         $frameRate = $this->io->readFixed8();
         $frameCount = $this->io->readUI16();
 
