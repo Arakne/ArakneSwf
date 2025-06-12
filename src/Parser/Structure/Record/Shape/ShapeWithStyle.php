@@ -18,13 +18,8 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Record;
+namespace Arakne\Swf\Parser\Structure\Record\Shape;
 
-use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
-use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
-use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
-use Arakne\Swf\Parser\Structure\Record\Shape\StraightEdgeRecord;
-use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\SwfReader;

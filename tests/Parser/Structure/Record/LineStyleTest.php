@@ -3,9 +3,9 @@
 namespace Arakne\Tests\Swf\Parser\Structure\Record;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
-use Arakne\Swf\Parser\Structure\Record\FillStyle;
-use Arakne\Swf\Parser\Structure\Record\LineStyle;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Arakne\Swf\Parser\Structure\Record\Shape\FillStyle;
+use Arakne\Swf\Parser\Structure\Record\Shape\LineStyle;
 use Arakne\Swf\Parser\SwfReader;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

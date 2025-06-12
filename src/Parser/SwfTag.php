@@ -33,7 +33,7 @@ use Arakne\Swf\Parser\Structure\Record\Filter\Filter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
+use Arakne\Swf\Parser\Structure\Record\Shape\ShapeWithStyle;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;

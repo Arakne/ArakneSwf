@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\Shape;
 
-use Arakne\Swf\Parser\Structure\Record\FillStyle;
-use Arakne\Swf\Parser\Structure\Record\LineStyle;
 use Arakne\Swf\Parser\SwfReader;
 
 /**

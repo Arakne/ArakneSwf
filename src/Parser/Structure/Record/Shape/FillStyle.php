@@ -18,8 +18,11 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Record;
+namespace Arakne\Swf\Parser\Structure\Record\Shape;
 
+use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\Gradient;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\SwfReader;
 use Exception;
 
