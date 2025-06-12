@@ -27,14 +27,7 @@ namespace Arakne\Swf\Parser;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
-use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\ConvolutionFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\DropShadowFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\GlowFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\GradientBevelFilter;
-use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
+use Arakne\Swf\Parser\Structure\Record\Filter\Filter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Exception;
 
@@ -211,174 +204,6 @@ readonly class SwfRec
     }
 
     /**
-     * @return list<DropShadowFilter|BlurFilter|GlowFilter|BevelFilter|GradientGlowFilter|ConvolutionFilter|ColorMatrixFilter|GradientBevelFilter>
-     */
-    public function collectFilterList(): array
-    {
-        $filterList = [];
-        $numberOfFilters = $this->io->readUI8();
-
-        for ($f = 0; $f < $numberOfFilters; $f++) {
-            $filterId = $this->io->readUI8();
-
-            switch ($filterId) {
-                case 0: // DropShadowFilter
-                    $filterList[] = new DropShadowFilter(
-                        filterId: $filterId,
-                        dropShadowColor: Color::readRgba($this->io),
-                        blurX: $this->io->readFixed(),
-                        blurY: $this->io->readFixed(),
-                        angle: $this->io->readFixed(),
-                        distance: $this->io->readFixed(),
-                        strength: $this->io->readFixed8(),
-                        innerShadow: $this->io->readBool(),
-                        knockout: $this->io->readBool(),
-                        compositeSource: $this->io->readBool(),
-                        passes: $this->io->readUB(5),
-                    );
-                    break;
-                case 1: // BlurFilter
-                    $filterList[] = new BlurFilter(
-                        filterId: $filterId,
-                        blurX: $this->io->readFixed(),
-                        blurY: $this->io->readFixed(),
-                        passes: $this->io->readUB(5),
-                        reserved: $this->io->readUB(3),
-                    );
-                    break;
-                case 2: // GlowFilter
-                    $filterList[] = new GlowFilter(
-                        filterId: $filterId,
-                        glowColor: Color::readRgba($this->io),
-                        blurX: $this->io->readFixed(),
-                        blurY: $this->io->readFixed(),
-                        strength: $this->io->readFixed8(),
-                        innerGlow: $this->io->readBool(),
-                        knockout: $this->io->readBool(),
-                        compositeSource: $this->io->readBool(),
-                        passes: $this->io->readUB(5),
-                    );
-                    break;
-                case 3: // BevelFilter
-                    $filterList[] = new BevelFilter(
-                        filterId: $filterId,
-                        shadowColor: Color::readRgba($this->io),
-                        highlightColor: Color::readRgba($this->io),
-                        blurX: $this->io->readFixed(),
-                        blurY: $this->io->readFixed(),
-                        angle: $this->io->readFixed(),
-                        distance: $this->io->readFixed(),
-                        strength: $this->io->readFixed8(),
-                        innerShadow: $this->io->readBool(),
-                        knockout: $this->io->readBool(),
-                        compositeSource: $this->io->readBool(),
-                        onTop: $this->io->readBool(),
-                        passes: $this->io->readUB(4),
-                    );
-                    break;
-                case 4: // GradientGlowFilter
-                    $numColors = $this->io->readUI8();
-                    $gradientColors = [];
-                    $gradientRatio = [];
-
-                    for ($i = 0; $i < $numColors; $i++) {
-                        $gradientColors[] = Color::readRgba($this->io);
-                    }
-
-                    for ($i = 0; $i < $numColors; $i++) {
-                        $gradientRatio[] = $this->io->readUI8();
-                    }
-
-                    $filterList[] = new GradientGlowFilter(
-                        filterId: $filterId,
-                        numColors: $numColors,
-                        gradientColors: $gradientColors,
-                        gradientRatio: $gradientRatio,
-                        blurX: $this->io->readFixed(),
-                        blurY: $this->io->readFixed(),
-                        angle: $this->io->readFixed(),
-                        distance: $this->io->readFixed(),
-                        strength: $this->io->readFixed8(),
-                        innerShadow: $this->io->readBool(),
-                        knockout: $this->io->readBool(),
-                        compositeSource: $this->io->readBool(),
-                        onTop: $this->io->readBool(),
-                        passes: $this->io->readUB(4),
-                    );
-                    break;
-                case 5: // ConvolutionFilter
-                    $matrixX = $this->io->readUI8();
-                    $matrixY = $this->io->readUI8();
-                    $divisor = $this->io->readFloat();
-                    $bias = $this->io->readFloat();
-                    $matrix = [];
-
-                    for ($i = 0; $i < $matrixX * $matrixY; $i++) {
-                        $filter['matrix'][] = $this->io->readFloat();
-                    }
-
-                    $filterList[] = new ConvolutionFilter(
-                        filterId: $filterId,
-                        matrixX: $matrixX,
-                        matrixY: $matrixY,
-                        divisor: $divisor,
-                        bias: $bias,
-                        matrix: $matrix,
-                        defaultColor: Color::readRgba($this->io),
-                        reserved: $this->io->readUB(6),
-                        clamp: $this->io->readBool(),
-                        preserveAlpha: $this->io->readBool(),
-                    );
-                    break;
-                case 6: // ColorMatrixFilter
-                    $matrix = [];
-                    for ($i = 0; $i < 20; $i++) {
-                        $matrix[$i] = $this->io->readFloat();
-                    }
-
-                    $filterList[] = new ColorMatrixFilter(
-                        filterId: $filterId,
-                        matrix: $matrix,
-                    );
-                    break;
-                case 7: // GradientBevelFilter
-                    $numColors = $this->io->readUI8();
-                    $gradientColors = [];
-                    $gradientRatio = [];
-
-                    for ($i = 0; $i < $numColors; $i++) {
-                        $gradientColors[] = Color::readRgba($this->io);
-                    }
-
-                    for ($i = 0; $i < $numColors; $i++) {
-                        $gradientRatio[] = $this->io->readUI8();
-                    }
-
-                    $filterList[] = new GradientBevelFilter(
-                        filterId: $filterId,
-                        numColors: $numColors,
-                        gradientColors: $gradientColors,
-                        gradientRatio: $gradientRatio,
-                        blurX: $this->io->readFixed(),
-                        blurY: $this->io->readFixed(),
-                        angle: $this->io->readFixed(),
-                        distance: $this->io->readFixed(),
-                        strength: $this->io->readFixed8(),
-                        innerShadow: $this->io->readBool(),
-                        knockout: $this->io->readBool(),
-                        compositeSource: $this->io->readBool(),
-                        onTop: $this->io->readBool(),
-                        passes: $this->io->readUB(4),
-                    );
-                    break;
-                default:
-                    throw new Exception(sprintf('Internal error: filterId=%d', $filterId));
-            }
-        }
-        return $filterList;
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function collectSoundInfo(): array
@@ -451,7 +276,7 @@ readonly class SwfRec
                 $buttonRecord['colorTransform'] = ColorTransform::read($this->io, true);
             }
             if ($version == 2 && $buttonRecord['buttonHasFilterList'] != 0) {
-                $buttonRecord['filterList'] = $this->collectFilterList();
+                $buttonRecord['filterList'] = Filter::readCollection($this->io);
             }
             if ($version == 2 && $buttonRecord['buttonHasBlendMode'] != 0) {
                 $buttonRecord['blendMode'] = $this->io->readUI8();

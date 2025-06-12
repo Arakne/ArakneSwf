@@ -21,13 +21,26 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
-final readonly class BlurFilter
+use Arakne\Swf\Parser\SwfReader;
+use Override;
+
+final readonly class BlurFilter extends Filter
 {
+    public const int FILTER_ID = 1;
+
     public function __construct(
-        public int $filterId,
         public float $blurX,
         public float $blurY,
         public int $passes,
-        public int $reserved,
     ) {}
+
+    #[Override]
+    protected static function read(SwfReader $reader): static
+    {
+        return new BlurFilter(
+            blurX: $reader->readFixed(),
+            blurY: $reader->readFixed(),
+            passes: ($reader->readUI8() >> 3) & 31, // 5 bits for passes, 3 bits reserved
+        );
+    }
 }

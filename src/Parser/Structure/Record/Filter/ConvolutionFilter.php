@@ -23,13 +23,18 @@ namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
 
+use Arakne\Swf\Parser\SwfReader;
+
+use Override;
+
 use function assert;
 use function count;
 
-final readonly class ConvolutionFilter
+final readonly class ConvolutionFilter extends Filter
 {
+    public const int FILTER_ID = 5;
+
     public function __construct(
-        public int $filterId,
         public int $matrixX,
         public int $matrixY,
         public float $divisor,
@@ -39,10 +44,40 @@ final readonly class ConvolutionFilter
          */
         public array $matrix,
         public Color $defaultColor,
-        public int $reserved,
         public bool $clamp,
         public bool $preserveAlpha,
     ) {
         assert(count($this->matrix) === $this->matrixX * $this->matrixY);
+    }
+
+    #[Override]
+    protected static function read(SwfReader $reader): static
+    {
+        $matrixX = $reader->readUI8();
+        $matrixY = $reader->readUI8();
+        $divisor = $reader->readFloat();
+        $bias = $reader->readFloat();
+        $matrix = [];
+
+        for ($i = 0; $i < $matrixX * $matrixY; $i++) {
+            $matrix[] = $reader->readFloat();
+        }
+
+        $defaultColor = Color::readRgba($reader);
+        $flags = $reader->readUI8();
+        // 6 bits reserved (should be 0)
+        $clamp         = ($flags & 0b00000010) !== 0;
+        $preserveAlpha = ($flags & 0b00000001) !== 0;
+
+        return new ConvolutionFilter(
+            matrixX: $matrixX,
+            matrixY: $matrixY,
+            divisor: $divisor,
+            bias: $bias,
+            matrix: $matrix,
+            defaultColor: $defaultColor,
+            clamp: $clamp,
+            preserveAlpha: $preserveAlpha,
+        );
     }
 }

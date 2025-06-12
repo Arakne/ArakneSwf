@@ -21,18 +21,35 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
+use Arakne\Swf\Parser\SwfReader;
+
+use Override;
+
 use function assert;
 use function count;
 
-final readonly class ColorMatrixFilter
+final readonly class ColorMatrixFilter extends Filter
 {
+    public const int FILTER_ID = 6;
+
     public function __construct(
-        public int $filterId,
         /**
-         * @var array<int<0, 19>, float> Size must be 20
+         * @var list<float> Size must be 20
          */
         public array $matrix,
     ) {
         assert(count($this->matrix) === 20);
+    }
+
+    #[Override]
+    protected static function read(SwfReader $reader): static
+    {
+        $matrix = [];
+
+        for ($i = 0; $i < 20; ++$i) {
+            $matrix[] = $reader->readFloat();
+        }
+
+        return new ColorMatrixFilter($matrix);
     }
 }

@@ -29,6 +29,7 @@ use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\Filter\Filter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
@@ -1090,7 +1091,7 @@ final readonly class SwfTag
             ratio: $placeFlagHasRatio ? $this->io->readUI16() : null,
             name: $placeFlagHasName ? $this->io->readNullTerminatedString() : null,
             clipDepth: $placeFlagHasClipDepth ? $this->io->readUI16() : null,
-            surfaceFilterList: $placeFlagHasFilterList ? $this->rec->collectFilterList() : null,
+            surfaceFilterList: $placeFlagHasFilterList ? Filter::readCollection($this->io) : null,
             blendMode: $placeFlagHasBlendMode ? $this->io->readUI8() : null,
             bitmapCache: $placeFlagHasCacheAsBitmap ? $this->io->readUI8() : null,
             clipActions: $placeFlagHasClipActions ? $this->rec->collectClipActions($this->swfVersion) : null,

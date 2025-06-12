@@ -22,11 +22,14 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\SwfReader;
+use Override;
 
-final readonly class GlowFilter
+final readonly class GlowFilter extends Filter
 {
+    public const int FILTER_ID = 2;
+
     public function __construct(
-        public int $filterId,
         public Color $glowColor,
         public float $blurX,
         public float $blurY,
@@ -36,4 +39,19 @@ final readonly class GlowFilter
         public bool $compositeSource,
         public int $passes,
     ) {}
+
+    #[Override]
+    protected static function read(SwfReader $reader): static
+    {
+        return new GlowFilter(
+            glowColor: Color::readRgba($reader),
+            blurX: $reader->readFixed(),
+            blurY: $reader->readFixed(),
+            strength: $reader->readFixed8(),
+            innerGlow: $reader->readBool(),
+            knockout: $reader->readBool(),
+            compositeSource: $reader->readBool(),
+            passes: $reader->readUB(5),
+        );
+    }
 }

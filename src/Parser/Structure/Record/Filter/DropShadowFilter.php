@@ -22,11 +22,14 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\SwfReader;
+use Override;
 
-final readonly class DropShadowFilter
+final readonly class DropShadowFilter extends Filter
 {
+    public const int FILTER_ID = 0;
+
     public function __construct(
-        public int $filterId,
         public Color $dropShadowColor,
         public float $blurX,
         public float $blurY,
@@ -38,4 +41,21 @@ final readonly class DropShadowFilter
         public bool $compositeSource,
         public int $passes,
     ) {}
+
+    #[Override]
+    protected static function read(SwfReader $reader): static
+    {
+        return new DropShadowFilter(
+            dropShadowColor: Color::readRgba($reader),
+            blurX: $reader->readFixed(),
+            blurY: $reader->readFixed(),
+            angle: $reader->readFixed(),
+            distance: $reader->readFixed(),
+            strength: $reader->readFixed8(),
+            innerShadow: $reader->readBool(),
+            knockout: $reader->readBool(),
+            compositeSource: $reader->readBool(),
+            passes: $reader->readUB(5),
+        );
+    }
 }

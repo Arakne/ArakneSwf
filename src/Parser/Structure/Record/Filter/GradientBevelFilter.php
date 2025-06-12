@@ -23,13 +23,18 @@ namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
 
+use Arakne\Swf\Parser\SwfReader;
+
+use Override;
+
 use function assert;
 use function count;
 
-final readonly class GradientBevelFilter
+final readonly class GradientBevelFilter extends Filter
 {
+    public const int FILTER_ID = 7;
+
     public function __construct(
-        public int $filterId,
         public int $numColors,
         /**
          * @var list<Color> Size must be equal to $numColors
@@ -52,5 +57,37 @@ final readonly class GradientBevelFilter
     ) {
         assert(count($this->gradientColors) === $this->numColors);
         assert(count($this->gradientRatio) === $this->numColors);
+    }
+
+    #[Override]
+    protected static function read(SwfReader $reader): static
+    {
+        $numColors = $reader->readUI8();
+        $gradientColors = [];
+        $gradientRatio = [];
+
+        for ($i = 0; $i < $numColors; ++$i) {
+            $gradientColors[] = Color::readRgba($reader);
+        }
+
+        for ($i = 0; $i < $numColors; ++$i) {
+            $gradientRatio[] = $reader->readUI8();
+        }
+
+        return new GradientBevelFilter(
+            numColors: $numColors,
+            gradientColors: $gradientColors,
+            gradientRatio: $gradientRatio,
+            blurX: $reader->readFixed(),
+            blurY: $reader->readFixed(),
+            angle: $reader->readFixed(),
+            distance: $reader->readFixed(),
+            strength: $reader->readFixed8(),
+            innerShadow: $reader->readBool(),
+            knockout: $reader->readBool(),
+            compositeSource: $reader->readBool(),
+            onTop: $reader->readBool(),
+            passes: $reader->readUB(4),
+        );
     }
 }
