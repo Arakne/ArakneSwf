@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphFillStyle;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle2;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
@@ -39,10 +41,10 @@ final readonly class DefineMorphShape2Tag
         public bool $usesScalingStrokes,
         public int $offset,
 
-        /** @var list<mixed> */
+        /** @var list<MorphFillStyle> */
         public array $fillStyles,
 
-        /** @var list<mixed> */
+        /** @var list<MorphLineStyle2> */
         public array $lineStyles,
 
         /** @var list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> */

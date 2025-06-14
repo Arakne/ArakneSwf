@@ -23,6 +23,7 @@ namespace Arakne\Swf\Parser\Structure\Record;
 use Arakne\Swf\Parser\SwfReader;
 
 use function round;
+use function var_dump;
 
 /**
  * Represents a 2D transformation matrix

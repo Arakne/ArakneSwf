@@ -31,6 +31,9 @@ use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\Filter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphFillStyle;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle2;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeWithStyle;
@@ -811,8 +814,8 @@ final readonly class SwfTag
                 startBounds: $startBounds,
                 endBounds: $endBounds,
                 offset: $this->io->readUI32(),
-                fillStyles: $this->rec->collectMorphFillStyleArray(),
-                lineStyles: $this->rec->collectMorphLineStyleArray(1),
+                fillStyles: MorphFillStyle::readCollection($this->io),
+                lineStyles: MorphLineStyle::readCollection($this->io),
                 startEdges: ShapeRecord::readCollection($this->io, 1),
                 endEdges: ShapeRecord::readCollection($this->io, 1),
             );
@@ -833,8 +836,8 @@ final readonly class SwfTag
             usesNonScalingStrokes: $usesNonScalingStrokes,
             usesScalingStrokes: $usesScalingStrokes,
             offset: $this->io->readUI32(),
-            fillStyles: $this->rec->collectMorphFillStyleArray(),
-            lineStyles: $this->rec->collectMorphLineStyleArray(2),
+            fillStyles: MorphFillStyle::readCollection($this->io),
+            lineStyles: MorphLineStyle2::readCollection($this->io),
             startEdges: ShapeRecord::readCollection($this->io, 1), // @todo version ?
             endEdges: ShapeRecord::readCollection($this->io, 1), // @todo version ?
         );
