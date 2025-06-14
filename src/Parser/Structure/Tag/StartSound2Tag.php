@@ -21,12 +21,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\SoundInfo;
+
 final readonly class StartSound2Tag
 {
     public function __construct(
         public string $soundClassName,
-
-        /** @var array<string, mixed> */
-        public array $soundInfo,
+        public SoundInfo $soundInfo,
     ) {}
 }

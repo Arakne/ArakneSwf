@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\ClipActions;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 
@@ -37,7 +38,6 @@ final readonly class PlaceObject2Tag
         public ?int $ratio,
         public ?string $name,
         public ?int $clipDepth,
-        /** @var array<string, mixed>|null */
-        public ?array $clipActions,
+        public ?ClipActions $clipActions,
     ) {}
 }

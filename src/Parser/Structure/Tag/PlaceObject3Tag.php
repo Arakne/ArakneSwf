@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\ClipActions;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
@@ -105,9 +106,8 @@ final readonly class PlaceObject3Tag
         public ?int $bitmapCache,
 
         /**
-         * @var array<string, mixed>|null
          * @see PlaceObject2Tag::$clipActions
          */
-        public ?array $clipActions,
+        public ?ClipActions $clipActions,
     ) {}
 }

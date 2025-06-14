@@ -24,9 +24,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
-
-use function var_dump;
 
 /**
  * SWF file header parser
@@ -34,13 +33,12 @@ use function var_dump;
 readonly class SwfHdr
 {
     public function __construct(
-        private SwfIO $io,
-        private SwfRec $rec,
+        private SwfReader $io,
     ) {}
 
     public function parseHeader(): SwfHeader
     {
-        $signature = $this->io->collectBytes(3);
+        $signature = $this->io->readBytes(3);
         if ($signature === 'CWS') {
             $compressed = true;
         } elseif ($signature === 'FWS') {
@@ -49,16 +47,16 @@ readonly class SwfHdr
             throw new \Exception(sprintf('Internal error: signature=[%s]', $signature));
         }
 
-        $version = $this->io->collectUI8();
-        $fileLength = $this->io->collectUI32();
+        $version = $this->io->readUI8();
+        $fileLength = $this->io->readUI32();
 
         if ($compressed) {
             $this->io->doUncompress($fileLength);
         }
 
-        $frameSize = $this->rec->collectRect();
-        $frameRate = $this->io->collectFixed8();
-        $frameCount = $this->io->collectUI16();
+        $frameSize = Rectangle::read($this->io);
+        $frameRate = $this->io->readFixed8();
+        $frameCount = $this->io->readUI16();
 
         return new SwfHeader(
             $signature,

@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\Record\ShapeWithStyle;
+use Arakne\Swf\Parser\Structure\Record\Shape\ShapeWithStyle;
 
 final readonly class DefineShape4Tag
 {

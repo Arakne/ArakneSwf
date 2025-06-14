@@ -21,13 +21,15 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\ZoneRecord;
+
 final readonly class DefineFontAlignZonesTag
 {
     public function __construct(
         public int $fontId,
         public int $csmTableHint,
 
-        /** @var list<mixed> */
+        /** @var list<ZoneRecord> */
         public array $zoneTable,
     ) {}
 }

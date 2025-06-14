@@ -28,7 +28,9 @@ final readonly class SwfTagPosition
 {
     public function __construct(
         public int $type,
+        /** @var non-negative-int */
         public int $offset,
+        /** @var non-negative-int */
         public int $length,
 
         /**

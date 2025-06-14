@@ -4,8 +4,11 @@ namespace Arakne\Tests\Swf\Parser\Structure\Record;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\SwfReader;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+
+use function file_get_contents;
 
 class ColorTransformTest extends TestCase
 {
@@ -122,5 +125,24 @@ class ColorTransformTest extends TestCase
 
         $result = $transform->transform($color);
         $this->assertEquals($expected, $result);
+    }
+
+    #[Test]
+    public function read()
+    {
+        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/1317.swf'));
+        $reader->doUncompress(50766);
+        $reader->skipBytes(2828);
+
+        $transform = ColorTransform::read($reader, true);
+
+        $this->assertSame(85, $transform->redMult);
+        $this->assertSame(85, $transform->greenMult);
+        $this->assertSame(85, $transform->blueMult);
+        $this->assertSame(256, $transform->alphaMult);
+        $this->assertSame(170, $transform->redAdd);
+        $this->assertSame(170, $transform->greenAdd);
+        $this->assertSame(170, $transform->blueAdd);
+        $this->assertSame(0, $transform->alphaAdd);
     }
 }

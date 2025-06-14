@@ -21,25 +21,19 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\SoundInfo;
+
 final readonly class DefineButtonSoundTag
 {
     public function __construct(
         public int $buttonId,
         public int $buttonSoundChar0,
-
-        /** @var array<string, mixed>|null */
-        public ?array $buttonSoundInfo0,
+        public ?SoundInfo $buttonSoundInfo0,
         public int $buttonSoundChar1,
-
-        /** @var array<string, mixed>|null */
-        public ?array $buttonSoundInfo1,
+        public ?SoundInfo $buttonSoundInfo1,
         public int $buttonSoundChar2,
-
-        /** @var array<string, mixed>|null */
-        public ?array $buttonSoundInfo2,
+        public ?SoundInfo $buttonSoundInfo2,
         public int $buttonSoundChar3,
-
-        /** @var array<string, mixed>|null */
-        public ?array $buttonSoundInfo3,
+        public ?SoundInfo $buttonSoundInfo3,
     ) {}
 }
