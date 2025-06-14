@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Structure\Record\ButtonRecord;
+
 final readonly class DefineButton2Tag
 {
     public function __construct(
@@ -28,7 +30,7 @@ final readonly class DefineButton2Tag
         public bool $trackAsMenu,
         public int $actionOffset,
 
-        /** @var list<mixed> */
+        /** @var list<ButtonRecord> */
         public array $characters,
 
         /** @var list<mixed> */

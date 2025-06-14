@@ -23,6 +23,7 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Record\TextRecord;
 
 final readonly class DefineTextTag
 {
@@ -34,7 +35,7 @@ final readonly class DefineTextTag
         public int $glyphBits,
         public int $advanceBits,
 
-        /** @var list<mixed> */
+        /** @var list<TextRecord> */
         public array $textRecords,
     ) {}
 }

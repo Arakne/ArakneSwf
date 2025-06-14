@@ -27,6 +27,9 @@ namespace Arakne\Swf\Parser;
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
+use Arakne\Swf\Parser\Structure\Record\ButtonCondAction;
+use Arakne\Swf\Parser\Structure\Record\ButtonRecord;
+use Arakne\Swf\Parser\Structure\Record\ClipActions;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\Filter;
@@ -37,6 +40,9 @@ use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle2;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeWithStyle;
+use Arakne\Swf\Parser\Structure\Record\SoundInfo;
+use Arakne\Swf\Parser\Structure\Record\TextRecord;
+use Arakne\Swf\Parser\Structure\Record\ZoneRecord;
 use Arakne\Swf\Parser\Structure\SwfTagPosition;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
@@ -111,7 +117,6 @@ final readonly class SwfTag
 {
     public function __construct(
         private SwfReader $io,
-        private SwfRec $rec,
         private int $swfVersion,
         private ?ErrorCollector $errorCollector,
     ) {}
@@ -386,7 +391,7 @@ final readonly class SwfTag
         if ($version === 1) {
             return new DefineButtonTag(
                 buttonId: $this->io->readUI16(),
-                characters: $this->rec->collectButtonRecords($version),
+                characters: ButtonRecord::readCollection($this->io, 1),
                 actions: ActionRecord::readCollection($this->io, $bytePosEnd),
             );
         }
@@ -395,8 +400,8 @@ final readonly class SwfTag
         $this->io->skipBits(7); // Reserved, must be 0
         $taskAsMenu = $this->io->readBool();
         $actionOffset = $this->io->readUI16();
-        $characters = $this->rec->collectButtonRecords($version);
-        $actions = $actionOffset !== 0 ? $this->rec->collectButtonCondActions($bytePosEnd) : [];
+        $characters = ButtonRecord::readCollection($this->io, 2);
+        $actions = $actionOffset !== 0 ? ButtonCondAction::readCollection($this->io, $bytePosEnd) : [];
 
         return new DefineButton2Tag(
             buttonId: $buttonId,
@@ -452,7 +457,7 @@ final readonly class SwfTag
             textMatrix: Matrix::read($this->io),
             glyphBits: $glyphBits = $this->io->readUI8(),
             advanceBits: $advanceBits = $this->io->readUI8(),
-            textRecords: $this->rec->collectTextRecords($glyphBits, $advanceBits, $textVersion),
+            textRecords: TextRecord::readCollection($this->io, $glyphBits, $advanceBits, withAlpha: $textVersion > 1),
         );
     }
 
@@ -524,11 +529,11 @@ final readonly class SwfTag
         return match ($version) {
             1 => new StartSoundTag(
                 soundId: $this->io->readUI16(),
-                soundInfo: $this->rec->collectSoundInfo(),
+                soundInfo: SoundInfo::read($this->io),
             ),
             2 => new StartSound2Tag(
                 soundClassName: $this->io->readNullTerminatedString(),
-                soundInfo: $this->rec->collectSoundInfo(),
+                soundInfo: SoundInfo::read($this->io),
             ),
         };
     }
@@ -538,13 +543,13 @@ final readonly class SwfTag
         return new DefineButtonSoundTag(
             buttonId: $this->io->readUI16(),
             buttonSoundChar0: $char0 = $this->io->readUI16(),
-            buttonSoundInfo0: $char0 !== 0 ? $this->rec->collectSoundInfo() : null,
+            buttonSoundInfo0: $char0 !== 0 ? SoundInfo::read($this->io) : null,
             buttonSoundChar1: $char1 = $this->io->readUI16(),
-            buttonSoundInfo1: $char1 !== 0 ? $this->rec->collectSoundInfo() : null,
+            buttonSoundInfo1: $char1 !== 0 ? SoundInfo::read($this->io) : null,
             buttonSoundChar2: $char2 = $this->io->readUI16(),
-            buttonSoundInfo2: $char2 !== 0 ? $this->rec->collectSoundInfo() : null,
+            buttonSoundInfo2: $char2 !== 0 ? SoundInfo::read($this->io) : null,
             buttonSoundChar3: $char3 = $this->io->readUI16(),
-            buttonSoundInfo3: $char3 !== 0 ? $this->rec->collectSoundInfo() : null,
+            buttonSoundInfo3: $char3 !== 0 ? SoundInfo::read($this->io) : null,
         );
     }
 
@@ -696,7 +701,7 @@ final readonly class SwfTag
             ratio: $placeFlagHasRatio ? $this->io->readUI16() : null,
             name: $placeFlagHasName ? $this->io->readNullTerminatedString() : null,
             clipDepth: $placeFlagHasClipDepth ? $this->io->readUI16() : null,
-            clipActions: $placeFlagHasClipActions ? $this->rec->collectClipActions($swfVersion) : null,
+            clipActions: $placeFlagHasClipActions ? ClipActions::read($this->io, $swfVersion) : null,
         );
     }
 
@@ -762,8 +767,7 @@ final readonly class SwfTag
         $b = $this->io->readBytes($bytePosEnd - $this->io->offset);
 
         $io = new SwfReader($b);
-        $rec = new SwfRec($io);
-        $tag = new SwfTag($io, $rec, $this->swfVersion, $this->errorCollector);
+        $tag = new SwfTag($io, $this->swfVersion, $this->errorCollector);
 
         // Collect and parse tags
         $tags = [];
@@ -1097,7 +1101,7 @@ final readonly class SwfTag
             surfaceFilterList: $placeFlagHasFilterList ? Filter::readCollection($this->io) : null,
             blendMode: $placeFlagHasBlendMode ? $this->io->readUI8() : null,
             bitmapCache: $placeFlagHasCacheAsBitmap ? $this->io->readUI8() : null,
-            clipActions: $placeFlagHasClipActions ? $this->rec->collectClipActions($this->swfVersion) : null,
+            clipActions: $placeFlagHasClipActions ? ClipActions::read($this->io, $this->swfVersion) : null,
         );
     }
 
@@ -1106,7 +1110,7 @@ final readonly class SwfTag
         $fontId = $this->io->readUI16();
         $csmTableHint = $this->io->readUB(2);
         $this->io->skipBits(6); // Reserved
-        $zoneTable = $this->rec->collectZoneTable($bytePosEnd);
+        $zoneTable = ZoneRecord::readCollection($this->io, $bytePosEnd);
 
         return new DefineFontAlignZonesTag(
             fontId: $fontId,

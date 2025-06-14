@@ -41,7 +41,6 @@ readonly class Swf
     public array $tags; // Tags
 
     private SwfReader $io;
-    private SwfRec $rec;
     private SwfHdr $hdr;
     private SwfTag $tag;
 
@@ -52,10 +51,9 @@ readonly class Swf
     public function __construct(string $binary, ?ErrorCollector $errorCollector = null)
     {
         $this->io = new SwfReader($binary);
-        $this->rec = new SwfRec($this->io);
         $this->hdr = new SwfHdr($this->io);
         $this->header = $this->hdr->parseHeader();
-        $this->tag = new SwfTag($this->io, $this->rec, $this->header->version, $errorCollector);
+        $this->tag = new SwfTag($this->io, $this->header->version, $errorCollector);
         $this->tags = $this->tag->parseTags();
     }
 

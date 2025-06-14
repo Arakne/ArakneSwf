@@ -22,13 +22,14 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
+use Arakne\Swf\Parser\Structure\Record\ButtonRecord;
 
 final readonly class DefineButtonTag
 {
     public function __construct(
         public int $buttonId,
 
-        /** @var list<mixed> */
+        /** @var list<ButtonRecord> */
         public array $characters,
 
         /** @var list<ActionRecord> */
