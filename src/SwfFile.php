@@ -33,7 +33,7 @@ use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Swf;
 use Arakne\Swf\Parser\SwfReader;
@@ -151,7 +151,7 @@ final class SwfFile
      *
      * @param int ...$tagIds The tag IDs to extract. If empty, all tags are extracted.
      *
-     * @return iterable<SwfTagPosition, object>
+     * @return iterable<SwfTag, object>
      */
     public function tags(int ...$tagIds): iterable
     {

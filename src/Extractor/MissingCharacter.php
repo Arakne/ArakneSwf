@@ -34,7 +34,7 @@ final readonly class MissingCharacter implements DrawableInterface
         /**
          * The character ID of the requested character
          *
-         * @see SwfTagPosition::$id
+         * @see SwfTag::$id
          */
         public int $id,
     ) {}

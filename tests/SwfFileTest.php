@@ -10,7 +10,7 @@ use Arakne\Swf\Parser\Error\TagParseError;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Error\TagParseException;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\FileAttributesTag;
@@ -134,9 +134,9 @@ class SwfFileTest extends TestCase
         }
 
         $this->assertCount(2, $tags);
-        $this->assertEquals(new SwfTagPosition(9, 29, 3), $tags[0][0]);
+        $this->assertEquals(new SwfTag(9, 29, 3), $tags[0][0]);
         $this->assertInstanceOf(SetBackgroundColorTag::class, $tags[0][1]);
-        $this->assertEquals(new SwfTagPosition(12, 38, 168338), $tags[1][0]);
+        $this->assertEquals(new SwfTag(12, 38, 168338), $tags[1][0]);
         $this->assertInstanceOf(DoActionTag::class, $tags[1][1]);
     }
 

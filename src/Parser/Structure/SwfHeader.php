@@ -30,6 +30,11 @@ final readonly class SwfHeader
          * @var "FWS"|"CWS"
          */
         public string $signature,
+        /**
+         * The version of the SWF file
+         *
+         * @var non-negative-int
+         */
         public int $version,
         public int $fileLength,
         public Rectangle $frameSize,

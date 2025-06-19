@@ -21,12 +21,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Error;
 
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 
 final readonly class TagParseError
 {
     public function __construct(
-        public SwfTagPosition $position,
+        public SwfTag $position,
         public TagParseErrorType $error,
 
         /** @var array<string, mixed> */

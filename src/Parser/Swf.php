@@ -26,7 +26,7 @@ namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\SwfHeader;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 
 /**
  * Facade for parse and extract data from a SWF file
@@ -36,13 +36,13 @@ readonly class Swf
     public SwfHeader $header;
 
     /**
-     * @var list<SwfTagPosition>
+     * @var list<SwfTag>
      */
     public array $tags; // Tags
 
     private SwfReader $io;
     private SwfHdr $hdr;
-    private SwfTag $tag;
+    private ?ErrorCollector $errorCollector; // @todo to remove
 
     /**
      * @param string $binary The content of the SWF file
@@ -53,20 +53,20 @@ readonly class Swf
         $this->io = new SwfReader($binary);
         $this->hdr = new SwfHdr($this->io);
         $this->header = $this->hdr->parseHeader();
-        $this->tag = new SwfTag($this->io, $this->header->version, $errorCollector);
-        $this->tags = SwfTagPosition::readAll($this->io);
+        $this->errorCollector = $errorCollector;
+        $this->tags = SwfTag::readAll($this->io);
     }
 
     /**
      * Parse the given tag data
      *
-     * @param SwfTagPosition $tag
+     * @param SwfTag $tag
      * @return object
      *
-     * @see SwfTag::parseTag()
+     * @see SwfTag::parse()
      */
-    final public function parseTag(SwfTagPosition $tag): object
+    final public function parseTag(SwfTag $tag): object
     {
-        return $this->tag->parseTag($tag);
+        return $tag->parse($this->io, $this->header->version, $this->errorCollector);
     }
 }

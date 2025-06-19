@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Error;
 
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use IteratorAggregate;
 use Override;
 use Traversable;
@@ -56,11 +56,11 @@ final class ErrorCollector implements IteratorAggregate
     /**
      * Add an error to the collector.
      *
-     * @param SwfTagPosition $position
+     * @param SwfTag $position
      * @param TagParseErrorType $error
      * @param array<string, mixed> $payload
      */
-    public function add(SwfTagPosition $position, TagParseErrorType $error, array $payload = []): void
+    public function add(SwfTag $position, TagParseErrorType $error, array $payload = []): void
     {
         $this->errors[] = $error = new TagParseError($position, $error, $payload);
 

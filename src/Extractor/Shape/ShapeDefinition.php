@@ -25,7 +25,7 @@ use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Override;
@@ -46,7 +46,7 @@ final class ShapeDefinition implements DrawableInterface
         /**
          * The character id of the shape
          *
-         * @see SwfTagPosition::$id
+         * @see SwfTag::$id
          */
         public readonly int $id,
 

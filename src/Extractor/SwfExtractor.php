@@ -28,7 +28,7 @@ use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
@@ -86,7 +86,7 @@ final class SwfExtractor
     /**
      * Extract all shapes from the SWF file.
      *
-     * The result array will be indexed by the character ID (i.e. {@see SwfTagPosition::$id}).
+     * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
      *
      * Note: Shape will not be processed immediately, but only when requested.
      *
@@ -119,7 +119,7 @@ final class SwfExtractor
     /**
      * Extract all raster images from the SWF file.
      *
-     * The result array will be indexed by the character ID (i.e. {@see SwfTagPosition::$id}).
+     * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
      *
      * @return array<int, LosslessImageDefinition|JpegImageDefinition|ImageBitsDefinition>
      */

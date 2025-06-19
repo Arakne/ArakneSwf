@@ -44,7 +44,7 @@ final class SpriteDefinition implements DrawableInterface
         /**
          * The character ID of the sprite
          *
-         * @see SwfTagPosition::$id
+         * @see SwfTag::$id
          */
         public readonly int $id,
 

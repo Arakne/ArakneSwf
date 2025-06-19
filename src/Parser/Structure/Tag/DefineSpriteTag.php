@@ -21,9 +21,8 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Error\ErrorCollector;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\SwfReader;
-use Arakne\Swf\Parser\SwfTag;
 
 use function assert;
 use function strlen;
@@ -45,6 +44,7 @@ final readonly class DefineSpriteTag
      * Read a DefineSprite tag
      *
      * @param SwfReader $reader
+     * @param non-negative-int $swfVersion The version of the SWF file
      * @param non-negative-int $end The end byte offset of the tag.
      *
      * @return self
@@ -58,7 +58,6 @@ final readonly class DefineSpriteTag
         $b = $reader->readBytes($len);
 
         $io = new SwfReader($b);
-        $tag = new SwfTag($io, $swfVersion, $errorCollector);
 
         // Collect and parse tags
         $tags = [];
@@ -72,7 +71,7 @@ final readonly class DefineSpriteTag
                 $tagLength = $io->readUI32();
             }
             $end = $io->offset + $tagLength;
-            $tags[] = $tag->parseTag(new SwfTagPosition($tagType, $io->offset, $tagLength));
+            $tags[] = new SwfTag($tagType, $io->offset, $tagLength)->parse($io, $swfVersion, $errorCollector);
             $io->offset = $end;
         }
 
