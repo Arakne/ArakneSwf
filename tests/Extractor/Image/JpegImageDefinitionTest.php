@@ -26,7 +26,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function characterId()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
         
@@ -37,7 +37,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function bounds()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
 
@@ -49,7 +49,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function framesCount()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
 
@@ -61,7 +61,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function toPngOpaqueJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
 
@@ -72,7 +72,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function toJpegOpaqueJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
 
@@ -83,7 +83,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function toBase64DataJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
 
@@ -98,7 +98,7 @@ class JpegImageDefinitionTest extends ImageTestCase
     public function toBestFormatJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/core/core.swf');
-        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsJPEG2Tag::TYPE), false)[0];
 
         $image = new JpegImageDefinition($tag);
 
@@ -115,7 +115,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $ids = [507, 669];
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if (in_array($tag->characterId, $ids)) {
                 $images[] = new JpegImageDefinition($tag);
             }
@@ -134,7 +134,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $image = null;
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if ($tag->characterId === 507) {
                 $image = new JpegImageDefinition($tag);
                 break;
@@ -155,7 +155,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $image = null;
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if ($tag->characterId === 507) {
                 $image = new JpegImageDefinition($tag);
                 break;
@@ -175,7 +175,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $ids = [507, 669];
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if (in_array($tag->characterId, $ids)) {
                 $images[] = new JpegImageDefinition($tag);
             }
@@ -194,7 +194,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if ($tag->characterId === 507) {
                 $image = new JpegImageDefinition($tag);
                 break;
@@ -212,7 +212,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if ($tag->characterId === 507) {
                 $image = new JpegImageDefinition($tag);
                 break;
@@ -232,7 +232,7 @@ class JpegImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
         /** @var DefineBitsJPEG3Tag $tag */
-        foreach ($swf->tags(DefineBitsJPEG3Tag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsJPEG3Tag::TYPE) as $tag) {
             if ($tag->characterId === 507) {
                 $image = new JpegImageDefinition($tag);
                 break;

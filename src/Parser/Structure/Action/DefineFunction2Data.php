@@ -50,6 +50,8 @@ final readonly class DefineFunction2Data
         $functionName = $reader->readNullTerminatedString();
         $numParams = $reader->readUI16();
         $registerCount = $reader->readUI8();
+
+        // @todo use bit operators
         $preloadParentFlag = $reader->readBool();
         $preloadRootFlag = $reader->readBool();
         $suppressSuperFlag = $reader->readBool();

@@ -15,5 +15,3 @@ parameters:
         # TODO: Remove these ignores when parser library will be fully migrated
         - path: src/Parser/SwfTag.php
           identifier: argument.type
-        - path: src/Parser/SwfTag.php
-          identifier: assign.propertyType

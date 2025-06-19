@@ -5,6 +5,7 @@ namespace Arakne\Tests\Swf\Parser;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
+use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
@@ -45,7 +46,7 @@ class SwfTest extends TestCase
         $this->assertSame(1, $swf->tags[2]->type);
         $this->assertSame(0, $swf->tags[3]->type);
 
-        $this->assertEquals(new SetBackgroundColorTag(0, 0, 0), $swf->parseTag($swf->tags[0]));
+        $this->assertEquals(new SetBackgroundColorTag(new Color(0, 0, 0)), $swf->parseTag($swf->tags[0]));
 
         /** @var DoActionTag $doActionTag */
         $doActionTag = $swf->parseTag($swf->tags[1]);

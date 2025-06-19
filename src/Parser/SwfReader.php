@@ -439,6 +439,20 @@ final class SwfReader
     }
 
     /**
+     * Read two bytes as an unsigned integer, without moving the read cursor.
+     * Calling multiple times this method will return the same value until the read cursor is moved.
+     *
+     * @return int<0, 65535>
+     */
+    public function peekUI16(): int
+    {
+        $offset = $this->offset;
+
+        // @phpstan-ignore return.type
+        return ord($this->b[$offset]) | (ord($this->b[$offset + 1]) << 8);
+    }
+
+    /**
      * Read int32 value
      */
     public function readSI32(): int

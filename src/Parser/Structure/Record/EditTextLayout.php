@@ -18,39 +18,35 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Structure\Tag;
+namespace Arakne\Swf\Parser\Structure\Record;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
-final readonly class DefineBinaryDataTag
+final readonly class EditTextLayout
 {
-    public const int TYPE = 87;
-
     public function __construct(
-        public int $tag,
-        public string $data,
+        public int $align,
+        public int $leftMargin,
+        public int $rightMargin,
+        public int $indent,
+        public int $leading,
     ) {}
 
     /**
-     * Read a DefineBinaryData tag from the SWF reader
+     * Read an EditTextLayout structure from the given reader.
      *
      * @param SwfReader $reader
-     * @param non-negative-int $end The end byte offset of the tag data
      *
      * @return self
      */
-    public static function read(SwfReader $reader, int $end): self
+    public static function read(SwfReader $reader): self
     {
-        $tag = $reader->readUI16();
-        $reader->skipBytes(4); // Reserved, must be 0
-
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
-        $data = $reader->readBytes($len);
-
-        return new DefineBinaryDataTag($tag, $data);
+        return new self(
+            align: $reader->readUI8(),
+            leftMargin: $reader->readUI16(),
+            rightMargin: $reader->readUI16(),
+            indent: $reader->readUI16(),
+            leading: $reader->readSI16(),
+        );
     }
 }

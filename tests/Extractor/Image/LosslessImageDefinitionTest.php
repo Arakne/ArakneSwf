@@ -26,7 +26,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V1), false)[0];
         $image = new LosslessImageDefinition($tag);
 
         $this->assertSame(534, $image->characterId);
@@ -37,7 +37,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V1), false)[0];
         $image = new LosslessImageDefinition($tag);
 
         $this->assertEquals(new Rectangle(0, 12000, 0, 6900), $image->bounds());
@@ -49,7 +49,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V1), false)[0];
         $image = new LosslessImageDefinition($tag);
 
         $this->assertSame(1, $image->framesCount());
@@ -61,7 +61,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V1), false)[0];
         $image = new LosslessImageDefinition($tag);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-24bits.png', $image->toPng());
@@ -72,7 +72,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::V1_ID), false)[0];
+        $tag = iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V1), false)[0];
         $image = new LosslessImageDefinition($tag);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-24bits.jpg', $image->toJpeg(100));
@@ -84,7 +84,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
         $image = new LosslessImageDefinition($tag);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.png', $image->toPng());
@@ -95,7 +95,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
         $image = new LosslessImageDefinition($tag);
 
         $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/maps/lossless-32bits.jpg', $image->toJpeg(100));
@@ -108,7 +108,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/homestuck/00004.swf');
 
         /** @var DefineBitsLosslessTag $tag */
-        foreach ($swf->tags(DefineBitsLosslessTag::V1_ID) as $tag) {
+        foreach ($swf->tags(DefineBitsLosslessTag::TYPE_V1) as $tag) {
             if ($tag->type() === ImageBitmapType::Opaque8Bit) {
                 $image = new LosslessImageDefinition($tag);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.png', $image->toPng());
@@ -122,7 +122,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/homestuck/00004.swf');
 
         /** @var DefineBitsLosslessTag $tag */
-        foreach ($swf->tags(DefineBitsLosslessTag::V1_ID) as $tag) {
+        foreach ($swf->tags(DefineBitsLosslessTag::TYPE_V1) as $tag) {
             if ($tag->type() === ImageBitmapType::Opaque8Bit) {
                 $image = new LosslessImageDefinition($tag);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-opaque-'.$tag->characterId.'.jpg', $image->toJpeg(100), 0.004);
@@ -137,7 +137,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/homestuck/00004.swf');
 
         /** @var DefineBitsLosslessTag $tag */
-        foreach ($swf->tags(DefineBitsLosslessTag::V2_ID) as $tag) {
+        foreach ($swf->tags(DefineBitsLosslessTag::TYPE_V2) as $tag) {
             if ($tag->type() === ImageBitmapType::Transparent8Bit) {
                 $image = new LosslessImageDefinition($tag);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-alpha-'.$tag->characterId.'.png', $image->toPng());
@@ -151,7 +151,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
         $swf = new SwfFile(__DIR__.'/../Fixtures/homestuck/00004.swf');
 
         /** @var DefineBitsLosslessTag $tag */
-        foreach ($swf->tags(DefineBitsLosslessTag::V2_ID) as $tag) {
+        foreach ($swf->tags(DefineBitsLosslessTag::TYPE_V2) as $tag) {
             if ($tag->type() === ImageBitmapType::Transparent8Bit) {
                 $image = new LosslessImageDefinition($tag);
                 $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/homestuck/lossless-8bits-alpha-'.$tag->characterId.'.png', $image->toJpeg(100), 0.2);
@@ -164,7 +164,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
         $image = new LosslessImageDefinition($tag);
 
         $data = $image->toBase64Data();
@@ -178,7 +178,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
         $image = new LosslessImageDefinition($tag);
 
         $data = $image->toBestFormat();
@@ -192,7 +192,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
         $image = new LosslessImageDefinition($tag);
 
         $transformed = $image->transformColors(new ColorTransform(redMult: 0, greenMult: 0));
@@ -205,7 +205,7 @@ class LosslessImageDefinitionTest extends ImageTestCase
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
 
-        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::V2_ID), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
         $image = new LosslessImageDefinition($tag);
 
         $svg = new SimpleXMLElement($image->draw(new SvgCanvas($image->bounds()))->render());

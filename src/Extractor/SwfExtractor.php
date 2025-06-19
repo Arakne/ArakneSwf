@@ -261,7 +261,7 @@ final class SwfExtractor
     {
         $images = [];
 
-        foreach ($this->file->tags(DefineBitsLosslessTag::V1_ID, DefineBitsLosslessTag::V2_ID) as $pos => $tag) {
+        foreach ($this->file->tags(DefineBitsLosslessTag::TYPE_V1, DefineBitsLosslessTag::TYPE_V2) as $pos => $tag) {
             assert($tag instanceof DefineBitsLosslessTag);
 
             if (($id = $pos->id) === null) {
@@ -283,7 +283,7 @@ final class SwfExtractor
         $jpegTables = null;
 
         /** @var JPEGTablesTag|DefineBitsTag $tag */
-        foreach ($this->file->tags(JPEGTablesTag::ID, DefineBitsTag::ID) as $tag) {
+        foreach ($this->file->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE) as $tag) {
             if ($tag instanceof JPEGTablesTag) {
                 $jpegTables = $tag;
                 continue;
@@ -307,7 +307,7 @@ final class SwfExtractor
     {
         $images = [];
 
-        foreach ($this->file->tags(DefineBitsJPEG2Tag::ID, DefineBitsJPEG3Tag::ID, DefineBitsJPEG4Tag::ID) as $pos => $tag) {
+        foreach ($this->file->tags(DefineBitsJPEG2Tag::TYPE, DefineBitsJPEG3Tag::TYPE, DefineBitsJPEG4Tag::TYPE) as $pos => $tag) {
             assert($tag instanceof DefineBitsJPEG2Tag || $tag instanceof DefineBitsJPEG3Tag || $tag instanceof DefineBitsJPEG4Tag);
 
             if (($id = $pos->id) === null) {

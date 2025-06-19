@@ -54,7 +54,7 @@ readonly class Swf
         $this->hdr = new SwfHdr($this->io);
         $this->header = $this->hdr->parseHeader();
         $this->tag = new SwfTag($this->io, $this->header->version, $errorCollector);
-        $this->tags = $this->tag->parseTags();
+        $this->tags = SwfTagPosition::readAll($this->io);
     }
 
     /**
