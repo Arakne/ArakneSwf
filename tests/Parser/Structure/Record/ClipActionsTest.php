@@ -8,19 +8,18 @@ use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Record\ClipActions;
 use Arakne\Swf\Parser\Structure\Record\ClipEventFlags;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ClipActionsTest extends TestCase
+class ClipActionsTest extends ParserTestCase
 {
     #[Test]
     public function read()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(529791);
+        $reader = $this->createReader(__DIR__.'/../../../Extractor/Fixtures/core/core.swf', 529791);
 
         $clipActions = ClipActions::read($reader, 9);
 

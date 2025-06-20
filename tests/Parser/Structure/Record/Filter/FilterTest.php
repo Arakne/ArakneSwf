@@ -13,12 +13,13 @@ use Arakne\Swf\Parser\Structure\Record\Filter\GlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\GradientBevelFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class FilterTest extends TestCase
+class FilterTest extends ParserTestCase
 {
     #[Test]
     public function readDropShadow()
@@ -77,9 +78,7 @@ class FilterTest extends TestCase
     #[Test]
     public function readBevel()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(530012);
+        $reader = $this->createReader(__DIR__.'/../../../../Extractor/Fixtures/core/core.swf', 530012);
 
         $filters = Filter::readCollection($reader);
         $this->assertCount(1, $filters);
@@ -102,9 +101,7 @@ class FilterTest extends TestCase
     #[Test]
     public function readGradientGlow()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/graphics.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(107225);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/graphics.swf', 107225);
 
         $filters = Filter::readCollection($reader);
 
@@ -159,9 +156,7 @@ class FilterTest extends TestCase
     #[Test]
     public function readColorMatrix()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/graphics.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(107124);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/graphics.swf', 107124);
 
         $filters = Filter::readCollection($reader);
 
@@ -195,9 +190,7 @@ class FilterTest extends TestCase
     #[Test]
     public function readGradientBevel()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/graphics.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(106553);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/graphics.swf', 106553);
 
         $filters = Filter::readCollection($reader);
 

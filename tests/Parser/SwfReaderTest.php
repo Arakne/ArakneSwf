@@ -3,13 +3,18 @@
 namespace Arakne\Tests\Swf\Parser;
 
 use Arakne\Swf\Parser\SwfReader;
+use OutOfBoundsException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use RuntimeException;
+
 use function file_get_contents;
+use function gzcompress;
+use function str_repeat;
 use function var_dump;
 
-class SwfReaderTest extends TestCase
+class SwfReaderTest extends ParserTestCase
 {
     #[Test]
     public function readBytes()
@@ -20,6 +25,83 @@ class SwfReaderTest extends TestCase
         $this->assertSame(3, $reader->offset);
         $this->assertSame("\x11\x32", $reader->readBytes(2));
         $this->assertSame(5, $reader->offset);
+    }
+
+    #[Test]
+    public function uncompress()
+    {
+        $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+
+        $newReader = $reader->uncompress(255);
+
+        $this->assertNotEquals($reader, $newReader);
+        $this->assertSame(8, $newReader->offset);
+        $this->assertSame("CWF\x05\xFF\x00\x00\x00" . str_repeat('a', 247), $newReader->data);
+    }
+
+    #[Test]
+    public function uncompressWithoutLength()
+    {
+        $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+
+        $newReader = $reader->uncompress();
+
+        $this->assertNotEquals($reader, $newReader);
+        $this->assertSame(8, $newReader->offset);
+        $this->assertSame("CWF\x05\xFF\x00\x00\x00" . str_repeat('a', 247), $newReader->data);
+    }
+
+    #[Test]
+    public function uncompressDataTooLong()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Invalid compressed data');
+
+        $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+
+        $reader->uncompress(100);
+    }
+
+    #[Test]
+    public function chunk()
+    {
+        $reader = new SwfReader('abcdefghijklmnopqrstuvwxyz');
+        $reader->skipBytes(3);
+
+        $chunk = $reader->chunk(10, 15);
+
+        $this->assertNotEquals($reader, $chunk);
+        $this->assertSame(10, $chunk->offset);
+        $this->assertSame(3, $reader->offset);
+    }
+
+    #[Test]
+    public function readBytesTo()
+    {
+        $reader = new SwfReader('abcdefghijklmnopqrstuvwxyz');
+
+        $this->assertSame('abcd', $reader->readBytesTo(4));
+        $this->assertSame(4, $reader->offset);
+
+        $this->assertSame('efgh', $reader->readBytesTo(8));
+        $this->assertSame(8, $reader->offset);
+
+        $this->assertSame('', $reader->readBytesTo(8));
+        $this->assertSame(8, $reader->offset);
+
+        try {
+            $reader->readBytesTo(5);
+        } catch (OutOfBoundsException $e) {
+            $this->assertEquals('Cannot read bytes to an offset before the current offset: 5 < 8', $e->getMessage());
+        }
+
+        $this->assertSame(8, $reader->offset);
     }
 
     #[Test]
@@ -114,9 +196,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readFB()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Fixtures/1317.swf'));
-        $reader->doUncompress(50755);
-        $reader->skipBytes(1341);
+        $reader = $this->createReader(__DIR__.'/../Fixtures/1317.swf', 1341);
         $reader->skipBits(6);
 
         $this->assertEquals(-1.1363677978515625, $reader->readFB(18));
@@ -144,9 +224,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readSB()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Fixtures/1317.swf'));
-        $reader->doUncompress(50755);
-        $reader->skipBytes(34);
+        $reader = $this->createReader(__DIR__.'/../Fixtures/1317.swf', 34);
         $reader->skipBits(5);
 
         $this->assertSame(-37, $reader->readSB(7));
@@ -159,9 +237,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readFixed8()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Extractor/Fixtures/1700/1700.swf'));
-        $reader->doUncompress(248922);
-        $reader->skipBytes(83196);
+        $reader = $this->createReader(__DIR__.'/../Extractor/Fixtures/1700/1700.swf', 83196);
         $this->assertEquals(0.00390625, $reader->readFixed8());
 
         $reader = new SwfReader(file_get_contents(__DIR__.'/Fixtures/uncompressed.swf'));
@@ -176,9 +252,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readFixed()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Extractor/Fixtures/54/54.swf'));
-        $reader->doUncompress(6995);
-        $reader->skipBytes(6861);
+        $reader = $this->createReader(__DIR__.'/../Extractor/Fixtures/54/54.swf', 6861);
 
         $this->assertEquals(23.0, $reader->readFixed());
         $this->assertEquals(23.0, $reader->readFixed());
@@ -192,9 +266,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readFloat16()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(4516881);
-        $reader->skipBytes(103681);
+        $reader = $this->createReader(__DIR__.'/../Extractor/Fixtures/core/core.swf', 103681);
 
         $this->assertEquals(0.0, $reader->readFloat16());
         $this->assertEquals(0.0, $reader->readFloat16());
@@ -226,9 +298,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readFloat()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Extractor/Fixtures/62/62.swf'));
-        $reader->doUncompress(5668);
-        $reader->skipBytes(5584);
+        $reader = $this->createReader(__DIR__.'/../Extractor/Fixtures/62/62.swf', 5584);
 
         $this->assertEqualsWithDelta(1.06, $reader->readFloat(), 0.0001);
         $this->assertEqualsWithDelta(0.0, $reader->readFloat(), 0.0001);
@@ -255,9 +325,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readDouble()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Fixtures/big.swf'));
-        $reader->doUncompress(135);
-        $reader->skipBytes(106);
+        $reader = $this->createReader(__DIR__.'/../Fixtures/big.swf', 106);
 
         $this->assertSame(1234567890123.1235, $reader->readDouble());
 
@@ -268,9 +336,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readUI8()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/Fixtures/Examples1.swf'));
-        $reader->doUncompress(5076);
-        $reader->skipBytes(4467);
+        $reader = $this->createReader(__DIR__.'/Fixtures/Examples1.swf', 4467);
 
         $this->assertSame(255, $reader->readUI8());
         $this->assertSame(153, $reader->readUI8());
@@ -305,9 +371,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readSI32()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Fixtures/big.swf'));
-        $reader->doUncompress(135);
-        $reader->skipBytes(84);
+        $reader = $this->createReader(__DIR__.'/../Fixtures/big.swf', 84);
 
         $this->assertSame(1234567890, $reader->readSI32());
         $reader->skipBytes(7);
@@ -340,9 +404,7 @@ class SwfReaderTest extends TestCase
     #[Test]
     public function readEncodedU32()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../Fixtures/139.swf'));
-        $reader->doUncompress(76904);
-        $reader->skipBytes(38);
+        $reader = $this->createReader(__DIR__.'/../Fixtures/139.swf', 38);
 
         $this->assertSame(1, $reader->readEncodedU32());
         $this->assertSame(39, $reader->offset);

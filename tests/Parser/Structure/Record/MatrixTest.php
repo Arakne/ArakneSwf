@@ -4,19 +4,18 @@ namespace Arakne\Tests\Swf\Parser\Structure\Record;
 
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class MatrixTest extends TestCase
+class MatrixTest extends ParserTestCase
 {
     #[Test]
     public function readOnlyTranslate()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../Fixtures/Examples1.swf'));
-        $reader->doUncompress(5076);
-        $reader->skipBytes(195);
+        $reader = $this->createReader(__DIR__.'/../../Fixtures/Examples1.swf', 195);
 
         $matrix = Matrix::read($reader);
 
@@ -31,9 +30,7 @@ class MatrixTest extends TestCase
     #[Test]
     public function readEmpty()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/139.swf'));
-        $reader->doUncompress(76904);
-        $reader->skipBytes(1895);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/139.swf', 1895);
 
         $matrix = Matrix::read($reader);
 
@@ -48,9 +45,7 @@ class MatrixTest extends TestCase
     #[Test]
     public function readAllParameters()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/1317.swf'));
-        $reader->doUncompress(50755);
-        $reader->skipBytes(2075);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/1317.swf', 2075);
 
         $matrix = Matrix::read($reader);
 

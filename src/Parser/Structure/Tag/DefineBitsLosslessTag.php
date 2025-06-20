@@ -101,9 +101,7 @@ final readonly class DefineBitsLosslessTag
         // @todo check the format in strict mode (in range 3-5)
         if ($bitmapFormat === self::FORMAT_8_BIT) {
             $colors = $reader->readUI8();
-            $len = $end - $reader->offset;
-            assert($len >= 0);
-            $data = gzuncompress($reader->readBytes($len)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $data = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
             $colorSize = $version > 1 ? 4 : 3; // 4 bytes for RGBA, 3 bytes for RGB
             $colorTableSize = $colorSize * ($colors + 1);
 
@@ -111,9 +109,7 @@ final readonly class DefineBitsLosslessTag
             $pixelData = substr($data, $colorTableSize);
         } else {
             $colorTable = null;
-            $len = $end - $reader->offset;
-            assert($len >= 0);
-            $pixelData = gzuncompress($reader->readBytes($len)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $pixelData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
         }
 
         return new DefineBitsLosslessTag(

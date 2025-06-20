@@ -12,6 +12,7 @@ use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Action\WaitForFrameData;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +22,7 @@ use function var_dump;
 
 use const _PHPStan_ea7072c0a\__;
 
-class OpcodeTest extends TestCase
+class OpcodeTest extends ParserTestCase
 {
     #[Test]
     public function readDataGoToFrame()
@@ -85,9 +86,7 @@ class OpcodeTest extends TestCase
     #[Test]
     public function readDataDefineFunction2()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__ . '/../../../Fixtures/sunAndShadow.swf'));
-        $reader->doUncompress(6581);
-        $reader->skipBytes(1150);
+        $reader = $this->createReader(__DIR__ . '/../../../Fixtures/sunAndShadow.swf', 1150);
 
         $data = Opcode::ActionDefineFunction2->readData($reader, 24);
 
@@ -117,9 +116,7 @@ class OpcodeTest extends TestCase
     #[Test]
     public function readDataActionPush()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/simple.swf'));
-        $reader->doUncompress(152);
-        $reader->skipBytes(101);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/simple.swf', 101);
 
         $this->assertEquals([
             new Value(Type::Constant8, 0),
@@ -155,9 +152,7 @@ class OpcodeTest extends TestCase
     #[Test]
     public function readDataDefineFunction()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/function.swf'));
-        $reader->doUncompress(270);
-        $reader->skipBytes(82);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/function.swf', 82);
 
         $data = Opcode::ActionDefineFunction->readData($reader, 25);
 

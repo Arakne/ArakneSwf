@@ -8,19 +8,18 @@ use Arakne\Swf\Parser\Structure\Record\Shape\LineStyle;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeWithStyle;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ShapeWithStyleTest extends TestCase
+class ShapeWithStyleTest extends ParserTestCase
 {
     #[Test]
     public function read()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/1317.swf'));
-        $reader->doUncompress(50755);
-        $reader->skipBytes(39);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/1317.swf', 39);
 
         $data = ShapeWithStyle::read($reader, 3);
 

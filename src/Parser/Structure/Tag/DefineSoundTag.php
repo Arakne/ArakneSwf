@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 final readonly class DefineSoundTag
 {
     public const int TYPE = 14;
@@ -56,9 +54,7 @@ final readonly class DefineSoundTag
         $stereo  = ($flags & 0b00000001) !== 0;
 
         $sampleCount = $reader->readUI32();
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-        $data = $reader->readBytes($len);
+        $data = $reader->readBytesTo($end);
 
         return new self(
             soundId: $soundId,

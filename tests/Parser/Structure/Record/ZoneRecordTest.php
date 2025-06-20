@@ -5,19 +5,18 @@ namespace Arakne\Tests\Swf\Parser\Structure\Record;
 use Arakne\Swf\Parser\Structure\Record\ZoneData;
 use Arakne\Swf\Parser\Structure\Record\ZoneRecord;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ZoneRecordTest extends TestCase
+class ZoneRecordTest extends ParserTestCase
 {
     #[Test]
     public function readCollection()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(103680);
+        $reader = $this->createReader(__DIR__.'/../../../Extractor/Fixtures/core/core.swf', 103680);
 
         $records = ZoneRecord::readCollection($reader, 114780);
         $this->assertCount(1110, $records);

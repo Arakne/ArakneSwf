@@ -7,6 +7,7 @@ use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -14,14 +15,12 @@ use function count;
 use function file_get_contents;
 use function var_dump;
 
-class ActionRecordTest extends TestCase
+class ActionRecordTest extends ParserTestCase
 {
     #[Test]
     public function readCollection()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/simple.swf'));
-        $reader->doUncompress(152);
-        $reader->skipBytes(27);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/simple.swf', 27);
 
         $actions = ActionRecord::readCollection($reader, 147);
 

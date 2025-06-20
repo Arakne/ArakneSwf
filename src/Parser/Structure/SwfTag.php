@@ -126,10 +126,25 @@ final readonly class SwfTag
     ];
 
     public function __construct(
+        /**
+         * The tag type, as defined in the SWF specification.
+         */
         public int $type,
-        /** @var non-negative-int */
+
+        /**
+         * Byte offset of the start of the tag data, after the tag header (type and length).
+         * In case of empty tag (i.e. length is 0), this offset is after the end of the tag.
+         *
+         * @var non-negative-int
+         */
         public int $offset,
-        /** @var non-negative-int */
+
+        /**
+         * The length of the tag data, in bytes.
+         * The length ignore the tag header (type and length).
+         *
+         * @var non-negative-int
+         */
         public int $length,
 
         /**
@@ -141,7 +156,7 @@ final readonly class SwfTag
     /**
      * Parse the tag structure
      *
-     * @param SwfReader $reader The base reader to use for parsing
+     * @param SwfReader $reader The base reader to use for parsing. This reader will not be modified, and a new reader will be created for the tag data.
      * @param non-negative-int $swfVersion The SWF version of the file being parsed
      * @param ErrorCollector|null $errorCollector @todo deprecated, to remove
      *
@@ -149,9 +164,8 @@ final readonly class SwfTag
      */
     public function parse(SwfReader $reader, int $swfVersion, ?ErrorCollector $errorCollector): object
     {
-        // @todo clone reader and handle its length
-        $reader->offset = $this->offset;
         $bytePosEnd = $this->offset + $this->length;
+        $reader = $reader->chunk($this->offset, $bytePosEnd);
 
         $ret = match ($this->type) {
             EndTag::TYPE => new EndTag(),
@@ -222,7 +236,7 @@ final readonly class SwfTag
             ReflexTag::TYPE => ReflexTag::read($reader, $bytePosEnd),
             default => new UnknownTag(
                 code: $this->type,
-                data: $reader->readBytes(max($bytePosEnd - $reader->offset, 0)),
+                data: $reader->readBytesTo($bytePosEnd),
             ),
         };
 
@@ -243,7 +257,7 @@ final readonly class SwfTag
                 TagParseErrorType::ReadAfterEnd,
                 [
                     'length' => $reader->offset - $bytePosEnd,
-                    'data' => substr($reader->b, $bytePosEnd, $reader->offset - $bytePosEnd),
+                    'data' => substr($reader->data, $bytePosEnd, $reader->offset - $bytePosEnd),
                 ]
             );
         } elseif ($reader->offset < $bytePosEnd) {
@@ -252,7 +266,7 @@ final readonly class SwfTag
                 TagParseErrorType::ExtraBytes,
                 [
                     'length' => $bytePosEnd - $reader->offset,
-                    'data' => substr($reader->b, $reader->offset, $bytePosEnd - $reader->offset),
+                    'data' => substr($reader->data, $reader->offset, $bytePosEnd - $reader->offset),
                 ]
             );
         }
@@ -264,14 +278,17 @@ final readonly class SwfTag
      * Read all tags from the SWF file.
      * Stops reading when the end of the file is reached.
      *
-     * @return list<self>
+     * @param SwfReader $reader The reader to use for reading the tags
+     * @param int|null $end The end byte offset to stop reading. If null, it will read until the end of the file.
+     * @param bool $parseId If true, the tag id will be parsed and returned. If false, the id will be null.
+     *
+     * @return iterable<self>
      */
-    public static function readAll(SwfReader $reader): array
+    public static function readAll(SwfReader $reader, ?int $end = null, bool $parseId = true): iterable
     {
-        $tags = [];
-        $len = strlen($reader->b); // @todo length property on SwfReader
+        $end ??= strlen($reader->data); // @todo length property on SwfReader
 
-        while ($reader->offset < $len) {
+        while ($reader->offset < $end) {
             $recordHeader = $reader->readUI16();
             $tagType = $recordHeader >> 6;
             $tagLength = $recordHeader & 0x3f;
@@ -280,9 +297,9 @@ final readonly class SwfTag
                 $tagLength = $reader->readUI32();
             }
 
-            if (self::isDefinitionTagType($tagType) && $tagLength >= 2) {
+            if ($parseId && self::isDefinitionTagType($tagType) && $tagLength >= 2) {
                 // The two following bytes are the character id for definition tags
-                $tags[] = new SwfTag(
+                yield new SwfTag(
                     type: $tagType,
                     offset: $reader->offset,
                     length: $tagLength,
@@ -290,7 +307,7 @@ final readonly class SwfTag
                 );
                 $reader->skipBytes($tagLength - 2); // 2 bytes already consumed
             } else {
-                $tags[] = new SwfTag(
+                yield new SwfTag(
                     type: $tagType,
                     offset: $reader->offset,
                     length: $tagLength,
@@ -298,8 +315,6 @@ final readonly class SwfTag
                 $reader->skipBytes($tagLength);
             }
         }
-
-        return $tags;
     }
 
     /**

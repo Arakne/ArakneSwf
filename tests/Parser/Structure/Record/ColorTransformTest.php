@@ -5,12 +5,13 @@ namespace Arakne\Tests\Swf\Parser\Structure\Record;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ColorTransformTest extends TestCase
+class ColorTransformTest extends ParserTestCase
 {
     #[Test]
     public function identityTransform(): void
@@ -130,9 +131,7 @@ class ColorTransformTest extends TestCase
     #[Test]
     public function read()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/1317.swf'));
-        $reader->doUncompress(50766);
-        $reader->skipBytes(2828);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/1317.swf', 2828);
 
         $transform = ColorTransform::read($reader, true);
 

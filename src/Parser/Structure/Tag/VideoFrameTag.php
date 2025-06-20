@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 final readonly class VideoFrameTag
 {
     public const int TYPE = 61;
@@ -44,15 +42,10 @@ final readonly class VideoFrameTag
      */
     public static function read(SwfReader $reader, int $end): self
     {
-        $streamId = $reader->readUI16();
-        $frameNum = $reader->readUI16();
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
         return new VideoFrameTag(
-            streamId: $streamId,
-            frameNum: $frameNum,
-            videoData: $reader->readBytes($len),
+            streamId: $reader->readUI16(),
+            frameNum: $reader->readUI16(),
+            videoData: $reader->readBytesTo($end),
         );
     }
 }

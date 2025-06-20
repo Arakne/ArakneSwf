@@ -55,14 +55,7 @@ final readonly class DefineFont4Tag
         $fontFlagsBold        = ($flags & 0b00000001) !== 0;
 
         $fontName = $reader->readNullTerminatedString();
-
-        if ($fontFlagsHasFontData) {
-            $len = $end - $reader->offset;
-            assert($len >= 0);
-            $fontData = $reader->readBytes($len);
-        } else {
-            $fontData = null;
-        }
+        $fontData = $fontFlagsHasFontData ? $reader->readBytesTo($end) : null;
 
         return new DefineFont4Tag(
             fontId: $fontId,

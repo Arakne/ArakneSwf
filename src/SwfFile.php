@@ -163,7 +163,7 @@ final class SwfFile
 
         foreach ($parser->tags as $tag) {
             if (!$tagIds || isset($tagIds[$tag->type])) {
-                yield $tag => $parser->parseTag($tag);
+                yield $tag => $parser->parse($tag);
             }
         }
     }
@@ -295,7 +295,7 @@ final class SwfFile
 
     private function parser(): Swf
     {
-        return $this->parser ??= new Swf(
+        return $this->parser ??= Swf::fromString(
             file_get_contents($this->path) ?: throw new InvalidArgumentException('Unable to read the file'),
             $this->errorCollector
         );

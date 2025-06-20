@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 final readonly class JPEGTablesTag
 {
     public const int TYPE = 8;
@@ -42,9 +40,6 @@ final readonly class JPEGTablesTag
      */
     public static function read(SwfReader $reader, int $end): self
     {
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
-        return new self($reader->readBytes($len));  // @todo read until method
+        return new self($reader->readBytesTo($end));
     }
 }

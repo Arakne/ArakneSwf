@@ -8,20 +8,19 @@ use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphFillStyle;
 use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphGradient;
 use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphGradientRecord;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 use function str_repeat;
 
-class MorphFillStyleTest extends TestCase
+class MorphFillStyleTest extends ParserTestCase
 {
     #[Test]
     public function readCollection()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/morphshape.swf'));
-        $reader->doUncompress(1000000);
-        $reader->skipBytes(1429);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/morphshape.swf', 1429);
 
         $styles = MorphFillStyle::readCollection($reader);
 

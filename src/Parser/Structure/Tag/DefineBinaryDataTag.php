@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 final readonly class DefineBinaryDataTag
 {
     public const int TYPE = 87;
@@ -46,10 +44,7 @@ final readonly class DefineBinaryDataTag
         $tag = $reader->readUI16();
         $reader->skipBytes(4); // Reserved, must be 0
 
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
-        $data = $reader->readBytes($len);
+        $data = $reader->readBytesTo($end);
 
         return new DefineBinaryDataTag($tag, $data);
     }

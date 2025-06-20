@@ -6,20 +6,19 @@ use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphFillStyle;
 use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle2;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 use function str_repeat;
 
-class MorphLineStyle2Test extends TestCase
+class MorphLineStyle2Test extends ParserTestCase
 {
     #[Test]
     public function readCollection()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Fixtures/morphshape.swf'));
-        $reader->doUncompress(1000000);
-        $reader->skipBytes(1439);
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/morphshape.swf', 1439);
 
         $styles = MorphLineStyle2::readCollection($reader);
 

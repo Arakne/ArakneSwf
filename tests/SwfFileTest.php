@@ -193,7 +193,7 @@ class SwfFileTest extends TestCase
         $this->assertCount(1, $errors);
 
         $this->assertSame(26, $errors[0]->position->type);
-        $this->assertSame(5893, $errors[0]->position->offset);
+        $this->assertSame(37563, $errors[0]->position->offset);
         $this->assertSame(TagParseErrorType::ExtraBytes, $errors[0]->error);
         $this->assertSame([
             'length' => 8,
@@ -216,7 +216,7 @@ class SwfFileTest extends TestCase
             $error = $e->error;
             $this->assertStringStartsWith('Error parsing tag 26: ExtraBytes', $e->getMessage());
             $this->assertSame(26, $error->position->type);
-            $this->assertSame(5893, $error->position->offset);
+            $this->assertSame(37563, $error->position->offset);
             $this->assertSame(TagParseErrorType::ExtraBytes, $error->error);
             $this->assertSame([
                 'length' => 8,

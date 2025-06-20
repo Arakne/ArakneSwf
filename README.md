@@ -334,7 +334,7 @@ $parser = new Swf(file_get_contents('my_anim.swf'));
 $header = $parser->header;
 
 foreach ($parser->tags as $pos) {
-    $tag = $parser->parseTag($pos);
+    $tag = $parser->parse($pos);
 }
 ```
 

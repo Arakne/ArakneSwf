@@ -7,19 +7,18 @@ use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ButtonRecordTest extends TestCase
+class ButtonRecordTest extends ParserTestCase
 {
     #[Test]
     public function readCollectionV2()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(597297);
+        $reader = $this->createReader(__DIR__.'/../../../Extractor/Fixtures/core/core.swf', 597297);
 
         $records = ButtonRecord::readCollection($reader, 2);
 
@@ -72,9 +71,7 @@ class ButtonRecordTest extends TestCase
     #[Test]
     public function readWithFilter()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(1286804);
+        $reader = $this->createReader(__DIR__.'/../../../Extractor/Fixtures/core/core.swf', 1286804);
 
         $records = ButtonRecord::readCollection($reader, 2);
         $this->assertCount(5, $records);

@@ -16,6 +16,7 @@ The header is accessible through the `header` property, and the list of tags are
 > The result will be one an instance of one of the classes from `Arakne\Swf\Parser\Tag` namespace.
 
 Usage:
+
 ```php
 use Arakne\Swf\Parser\Swf;
 
@@ -25,7 +26,7 @@ $swf->header; // SwfHeader object
 
 foreach ($swf->tags as $tag) {
     if (in_array($tag->type, TAG_IDS_TO_PARSE)) {
-        $parsed = $swf->parseTag($tag);
+        $parsed = $swf->parse($tag);
         // You can now use the parsed tag
     }
 }

@@ -7,19 +7,18 @@ use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\ShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ShapeRecordTest extends TestCase
+class ShapeRecordTest extends ParserTestCase
 {
     #[Test]
     public function readCollection()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../../Fixtures/sunAndShadow.swf'));
-        $reader->doUncompress(6581);
-        $reader->skipBytes(54);
+        $reader = $this->createReader(__DIR__.'/../../../../Fixtures/sunAndShadow.swf', 54);
 
         $records = ShapeRecord::readCollection($reader, 1);
 
@@ -54,9 +53,7 @@ class ShapeRecordTest extends TestCase
     #[Test]
     public function readCollectionV4()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../../Fixtures/sunAndShadow.swf'));
-        $reader->doUncompress(6581);
-        $reader->skipBytes(380);
+        $reader = $this->createReader(__DIR__.'/../../../../Fixtures/sunAndShadow.swf', 380);
 
         $records = ShapeRecord::readCollection($reader, 4);
 

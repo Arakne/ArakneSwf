@@ -69,9 +69,7 @@ final readonly class DefineBitsJPEG4Tag implements DefineBitsJPEGTagInterface
         $alphaDataOffset = $reader->readUI32();
         $deblockParam = $reader->readUI16();
         $imageData = $reader->readBytes($alphaDataOffset);
-        $alphaDataLength = $end - $reader->offset;
-        assert($alphaDataLength >= 0);
-        $alphaData = gzuncompress($reader->readBytes($alphaDataLength)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
+        $alphaData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
 
         return new DefineBitsJPEG4Tag(
             characterId: $characterId,

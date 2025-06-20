@@ -8,6 +8,7 @@ use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
@@ -16,18 +17,20 @@ use Arakne\Swf\Parser\Structure\Tag\PlaceObject3Tag;
 use Arakne\Swf\Parser\Structure\Tag\SetBackgroundColorTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
 use Arakne\Swf\Parser\Swf;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function assert;
 use function file_get_contents;
+use function var_dump;
 
 class SwfTest extends TestCase
 {
     #[Test]
     public function simpleVariables()
     {
-        $swf = new Swf(file_get_contents(__DIR__.'/../Fixtures/simple.swf'));
+        $swf = Swf::fromString(file_get_contents(__DIR__.'/../Fixtures/simple.swf'));
 
         $this->assertSame(6, $swf->header->version);
         $this->assertSame('CWS', $swf->header->signature);
@@ -46,10 +49,10 @@ class SwfTest extends TestCase
         $this->assertSame(1, $swf->tags[2]->type);
         $this->assertSame(0, $swf->tags[3]->type);
 
-        $this->assertEquals(new SetBackgroundColorTag(new Color(0, 0, 0)), $swf->parseTag($swf->tags[0]));
+        $this->assertEquals(new SetBackgroundColorTag(new Color(0, 0, 0)), $swf->parse($swf->tags[0]));
 
         /** @var DoActionTag $doActionTag */
-        $doActionTag = $swf->parseTag($swf->tags[1]);
+        $doActionTag = $swf->parse($swf->tags[1]);
         $this->assertInstanceOf(DoActionTag::class, $doActionTag);
         $this->assertCount(12, $doActionTag->actions);
 
@@ -83,17 +86,17 @@ class SwfTest extends TestCase
 
         $this->assertSame(Opcode::Null, $doActionTag->actions[11]->opcode);
 
-        $this->assertEquals(new ShowFrameTag(), $swf->parseTag($swf->tags[2]));
-        $this->assertEquals(new EndTag(), $swf->parseTag($swf->tags[3]));
+        $this->assertEquals(new ShowFrameTag(), $swf->parse($swf->tags[2]));
+        $this->assertEquals(new EndTag(), $swf->parse($swf->tags[3]));
     }
 
     #[Test]
     public function bigValues()
     {
-        $swf = new Swf(file_get_contents(__DIR__.'/../Fixtures/big.swf'));
+        $swf = Swf::fromString(file_get_contents(__DIR__.'/../Fixtures/big.swf'));
 
         /** @var DoActionTag $doActionTag */
-        $doActionTag = $swf->parseTag($swf->tags[1]);
+        $doActionTag = $swf->parse($swf->tags[1]);
         $this->assertInstanceOf(DoActionTag::class, $doActionTag);
         $this->assertCount(10, $doActionTag->actions);
 
@@ -126,10 +129,10 @@ class SwfTest extends TestCase
     #[Test]
     public function objects()
     {
-        $swf = new Swf(file_get_contents(__DIR__.'/../Fixtures/objects.swf'));
+        $swf = Swf::fromString(file_get_contents(__DIR__.'/../Fixtures/objects.swf'));
 
         /** @var DoActionTag $doActionTag */
-        $doActionTag = $swf->parseTag($swf->tags[1]);
+        $doActionTag = $swf->parse($swf->tags[1]);
         $this->assertInstanceOf(DoActionTag::class, $doActionTag);
         $this->assertCount(45, $doActionTag->actions);
 
@@ -193,11 +196,11 @@ class SwfTest extends TestCase
     #[Test]
     public function parseFloat()
     {
-        $swf = new Swf(file_get_contents(__DIR__.'/../Extractor/Fixtures/62/62.swf'));
+        $swf = Swf::fromString(file_get_contents(__DIR__.'/../Extractor/Fixtures/62/62.swf'));
 
         foreach ($swf->tags as $pos) {
             if ($pos->id === 19) {
-                $tag = $swf->parseTag($pos);
+                $tag = $swf->parse($pos);
             }
         }
 
@@ -239,11 +242,11 @@ class SwfTest extends TestCase
     #[Test]
     public function encodedU32()
     {
-        $swf = new Swf(file_get_contents(__DIR__.'/../Fixtures/139.swf'));
+        $swf = Swf::fromString(file_get_contents(__DIR__.'/../Fixtures/139.swf'));
 
         foreach ($swf->tags as $pos) {
             if ($pos->type === 86) {
-                $tag = $swf->parseTag($pos);
+                $tag = $swf->parse($pos);
                 break;
             }
         }
@@ -252,5 +255,63 @@ class SwfTest extends TestCase
 
         $this->assertSame([0], $tag->sceneOffsets);
         $this->assertSame([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 86, 90, 94, 98, 102, 106, 110, 114, 118, 122, 126, 130, 134, 138, 142, 146, 150, 154, 158, 162], $tag->frameNumbers);
+    }
+
+    #[Test]
+    public function fromStringInvalidSignature()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported SWF signature: inv');
+
+        Swf::fromString('invalid signature');
+    }
+
+    #[Test]
+    public function fromStringInvalidFileLength()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid SWF file length: 5');
+
+        Swf::fromString("FWS\x01\x05\x00\x00\x00\x00\x00");
+    }
+
+    #[Test]
+    public function fromStringSimpleNotCompressed()
+    {
+        $swf = Swf::fromString("FWS\x01\x10\x00\x00\x00\x0F\x80\x00\x01\x01\x00\x00\x00");
+
+        $this->assertSame('FWS', $swf->header->signature);
+        $this->assertSame(1, $swf->header->version);
+        $this->assertSame(16, $swf->header->fileLength);
+        $this->assertEquals(new Rectangle(
+            xmin: -1,
+            xmax: -1,
+            ymin: -1,
+            ymax: -1,
+        ), $swf->header->frameSize);
+        $this->assertSame(1.0, $swf->header->frameRate);
+        $this->assertSame(1, $swf->header->frameCount);
+        $this->assertEquals([new SwfTag(0, 16, 0)], $swf->tags);
+    }
+
+    #[Test]
+    public function fromStringSimpleCompressed()
+    {
+        $before = "CWS\x01\x10\x00\x00\x00";
+        $body = "\x0F\x80\x00\x01\x01\x00\x00\x00";
+        $swf = Swf::fromString($before . gzcompress($body, 9));
+
+        $this->assertSame('CWS', $swf->header->signature);
+        $this->assertSame(1, $swf->header->version);
+        $this->assertSame(16, $swf->header->fileLength);
+        $this->assertEquals(new Rectangle(
+            xmin: -1,
+            xmax: -1,
+            ymin: -1,
+            ymax: -1,
+        ), $swf->header->frameSize);
+        $this->assertSame(1.0, $swf->header->frameRate);
+        $this->assertSame(1, $swf->header->frameCount);
+        $this->assertEquals([new SwfTag(0, 16, 0)], $swf->tags);
     }
 }

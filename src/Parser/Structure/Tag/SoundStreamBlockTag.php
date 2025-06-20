@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 final readonly class SoundStreamBlockTag
 {
     public const int TYPE = 19;
@@ -41,9 +39,6 @@ final readonly class SoundStreamBlockTag
      */
     public static function read(SwfReader $reader, int $end): self
     {
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
-        return new self($reader->readBytes($len));
+        return new self($reader->readBytesTo($end));
     }
 }

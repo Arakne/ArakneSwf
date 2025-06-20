@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 /**
  * This tag mark the swf as created by rfxswf.
  * It can be ignored.
@@ -48,9 +46,6 @@ final readonly class ReflexTag
      */
     public static function read(SwfReader $reader, int $end): self
     {
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
-        return new ReflexTag($reader->readBytes($len));
+        return new ReflexTag($reader->readBytesTo($end));
     }
 }

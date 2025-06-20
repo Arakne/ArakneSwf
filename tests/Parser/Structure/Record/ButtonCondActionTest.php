@@ -7,19 +7,18 @@ use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\Parser\Structure\Record\ButtonCondAction;
 use Arakne\Swf\Parser\SwfReader;
+use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function file_get_contents;
 
-class ButtonCondActionTest extends TestCase
+class ButtonCondActionTest extends ParserTestCase
 {
     #[Test]
     public function readCollection()
     {
-        $reader = new SwfReader(file_get_contents(__DIR__.'/../../../Extractor/Fixtures/core/core.swf'));
-        $reader->doUncompress(10000000);
-        $reader->skipBytes(646131);
+        $reader = $this->createReader(__DIR__.'/../../../Extractor/Fixtures/core/core.swf', 646131);
 
         $actions = ButtonCondAction::readCollection($reader, 646162);
 

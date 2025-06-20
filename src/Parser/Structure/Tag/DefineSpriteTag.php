@@ -24,9 +24,6 @@ use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-use function strlen;
-
 final readonly class DefineSpriteTag
 {
     public const int TYPE = 39;
@@ -53,26 +50,12 @@ final readonly class DefineSpriteTag
     {
         $spriteId = $reader->readUI16();
         $frameCount = $reader->readUI16();
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-        $b = $reader->readBytes($len);
-
-        $io = new SwfReader($b);
 
         // Collect and parse tags
         $tags = [];
 
-        // @todo refactor
-        while ($io->offset < strlen($io->b)) {
-            $recordHeader = $io->readUI16();
-            $tagType = $recordHeader >> 6;
-            $tagLength = $recordHeader & 0x3f;
-            if ($tagLength == 0x3f) {
-                $tagLength = $io->readUI32();
-            }
-            $end = $io->offset + $tagLength;
-            $tags[] = new SwfTag($tagType, $io->offset, $tagLength)->parse($io, $swfVersion, $errorCollector);
-            $io->offset = $end;
+        foreach (SwfTag::readAll($reader, $end, false) as $tag) {
+            $tags[] = $tag->parse($reader, $swfVersion, $errorCollector);
         }
 
         return new DefineSpriteTag(

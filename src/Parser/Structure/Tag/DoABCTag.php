@@ -22,8 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-
 final readonly class DoABCTag
 {
     public const int TYPE = 82;
@@ -44,15 +42,10 @@ final readonly class DoABCTag
      */
     public static function read(SwfReader $reader, int $end): self
     {
-        $flags = $reader->readUI32();
-        $name = $reader->readNullTerminatedString();
-        $len = $end - $reader->offset;
-        assert($len >= 0);
-
         return new DoABCTag(
-            flags: $flags,
-            name: $name,
-            data: $reader->readBytes($len),
+            flags: $reader->readUI32(),
+            name: $reader->readNullTerminatedString(),
+            data: $reader->readBytesTo($end),
         );
     }
 }
