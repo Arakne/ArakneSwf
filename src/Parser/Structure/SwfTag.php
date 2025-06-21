@@ -286,7 +286,7 @@ final readonly class SwfTag
      */
     public static function readAll(SwfReader $reader, ?int $end = null, bool $parseId = true): iterable
     {
-        $end ??= strlen($reader->data); // @todo length property on SwfReader
+        $end ??= $reader->end;
 
         while ($reader->offset < $end) {
             $recordHeader = $reader->readUI16();

@@ -28,6 +28,15 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readBytesOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 4 bytes from offset 0, end is at 2');
+
+        new SwfReader("abcd", 2)->readBytes(4);
+    }
+
+    #[Test]
     public function uncompress()
     {
         $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
@@ -82,6 +91,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function chunkOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('End offset 15 is out of bounds (max: 13)');
+
+        $reader = new SwfReader('abcdefghijklmnopqrstuvwxyz', 13);
+        $reader->chunk(10, 15);
+    }
+
+    #[Test]
     public function readBytesTo()
     {
         $reader = new SwfReader('abcdefghijklmnopqrstuvwxyz');
@@ -102,6 +121,16 @@ class SwfReaderTest extends ParserTestCase
         }
 
         $this->assertSame(8, $reader->offset);
+    }
+
+    #[Test]
+    public function readBytesToOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read bytes to an offset after the end of the stream: 11 > 10');
+
+        $reader = new SwfReader('abcdefghijklmnopqrstuvwxyz', 10);
+        $reader->readBytesTo(11);
     }
 
     #[Test]
@@ -126,6 +155,17 @@ class SwfReaderTest extends ParserTestCase
         $this->assertSame('W', $reader->readChar());
         $this->assertSame(2, $reader->offset);
         $this->assertSame('S', $reader->readChar());
+    }
+
+    #[Test]
+    public function readCharOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 2, end is at 2');
+
+        $reader = new SwfReader('abc', 2);
+        $reader->skipBytes(2);
+        $reader->readChar();
     }
 
     #[Test]
@@ -154,6 +194,16 @@ class SwfReaderTest extends ParserTestCase
 
         $this->assertSame(0, $reader->readUB(3));
         $this->assertSame(17, $reader->offset);
+    }
+
+    #[Test]
+    public function readUBOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 1 bits from offset 1, end is at 2');
+
+        $reader = new SwfReader('abcdefghijklmnopqrstuvwxyz', 2);
+        $reader->readUB(17);
     }
 
     #[Test]
@@ -194,6 +244,17 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readNullTerminatedStringOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read null-terminated string from offset 573, end is at 580');
+
+        $reader = new SwfReader(file_get_contents(__DIR__.'/Fixtures/uncompressed.swf'), 580);
+        $reader->skipBytes(573);
+        $reader->readNullTerminatedString();
+    }
+
+    #[Test]
     public function readFB()
     {
         $reader = $this->createReader(__DIR__.'/../Fixtures/1317.swf', 1341);
@@ -202,6 +263,16 @@ class SwfReaderTest extends ParserTestCase
         $this->assertEquals(-1.1363677978515625, $reader->readFB(18));
         $this->assertEquals(1.1363677978515625, $reader->readFB(18));
         $this->assertSame(0.0, $reader->readFB(0));
+    }
+
+    #[Test]
+    public function readFBOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 1 bits from offset 1, end is at 2');
+
+        $reader = new SwfReader("\x00\x00\x00\x00", 2);
+        $reader->readFB(17);
     }
 
     #[Test]
@@ -222,6 +293,17 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readBoolOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a bool from offset 1, end is at 1');
+
+        $reader = new SwfReader("\x00\x00\x00\x00", 1);
+        $reader->skipBits(8);
+        $reader->readBool();
+    }
+
+    #[Test]
     public function readSB()
     {
         $reader = $this->createReader(__DIR__.'/../Fixtures/1317.swf', 34);
@@ -232,6 +314,16 @@ class SwfReaderTest extends ParserTestCase
         $this->assertSame(-42, $reader->readSB(7));
         $this->assertSame(51, $reader->readSB(7));
         $this->assertSame(0, $reader->readSB(0));
+    }
+
+    #[Test]
+    public function readSBOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 1 bits from offset 1, end is at 2');
+
+        $reader = new SwfReader("\x00\x00\x00\x00", 2);
+        $reader->readSB(17);
     }
 
     #[Test]
@@ -250,6 +342,17 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readFixed8Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 2, end is at 2');
+
+        $reader = new SwfReader("\x00\x00\x00\x00", 2);
+        $reader->skipBytes(1);
+        $reader->readFixed8();
+    }
+
+    #[Test]
     public function readFixed()
     {
         $reader = $this->createReader(__DIR__.'/../Extractor/Fixtures/54/54.swf', 6861);
@@ -261,6 +364,16 @@ class SwfReaderTest extends ParserTestCase
 
         $this->assertEquals(7.5, new SwfReader("\x00\x80\x07\x00")->readFixed());
         $this->assertEquals(-237.49969482421875, new SwfReader("\x14\x80\x12\xFF")->readFixed());
+    }
+
+    #[Test]
+    public function readFixedOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 4 bytes from offset 0, end is at 2');
+
+        $reader = new SwfReader("\x00\x00\x00\x00", 2);
+        $reader->readFixed();
     }
 
     #[Test]
@@ -296,6 +409,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readFloat16Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 1, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readFloat16();
+    }
+
+    #[Test]
     public function readFloat()
     {
         $reader = $this->createReader(__DIR__.'/../Extractor/Fixtures/62/62.swf', 5584);
@@ -323,6 +446,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readFloatOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 4 bytes from offset 0, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readFloat();
+    }
+
+    #[Test]
     public function readDouble()
     {
         $reader = $this->createReader(__DIR__.'/../Fixtures/big.swf', 106);
@@ -334,6 +467,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readDoubleOverflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 4 bytes from offset 0, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readDouble();
+    }
+
+    #[Test]
     public function readUI8()
     {
         $reader = $this->createReader(__DIR__.'/Fixtures/Examples1.swf', 4467);
@@ -342,6 +485,17 @@ class SwfReaderTest extends ParserTestCase
         $this->assertSame(153, $reader->readUI8());
         $this->assertSame(204, $reader->readUI8());
         $this->assertSame(255, $reader->readUI8());
+    }
+
+    #[Test]
+    public function readUI8Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 1, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->skipBytes(1);
+        $reader->readUI8();
     }
 
     #[Test]
@@ -357,6 +511,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readSI16Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 1, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readSI16();
+    }
+
+    #[Test]
     public function readUI16()
     {
         $this->assertSame(0, new SwfReader("\x00\x00")->readUI16());
@@ -369,6 +533,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readUI16Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 1, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readUI16();
+    }
+
+    #[Test]
     public function readSI32()
     {
         $reader = $this->createReader(__DIR__.'/../Fixtures/big.swf', 84);
@@ -376,6 +550,16 @@ class SwfReaderTest extends ParserTestCase
         $this->assertSame(1234567890, $reader->readSI32());
         $reader->skipBytes(7);
         $this->assertSame(-1234567890, $reader->readSI32());
+    }
+
+    #[Test]
+    public function readSI32Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 4 bytes from offset 0, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readSI32();
     }
 
     #[Test]
@@ -391,6 +575,16 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function readUI32Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 4 bytes from offset 0, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readUI32();
+    }
+
+    #[Test]
     public function readSI64()
     {
         $this->assertSame(0, new SwfReader("\x00\x00\x00\x00\x00\x00\x00\x00")->readSI64());
@@ -399,6 +593,16 @@ class SwfReaderTest extends ParserTestCase
         $this->assertSame(9223372036854775807, new SwfReader("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F")->readSI64());
         $this->assertSame((int) -9223372036854775808, new SwfReader("\x00\x00\x00\x00\x00\x00\x00\x80")->readSI64()); // Cast to int is required to avoid automatic cast to float
         $this->assertSame(1234, new SwfReader("\xD2\x04\x00\x00\x00\x00\x00\x00")->readSI64());
+    }
+
+    #[Test]
+    public function readSI64Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read 8 bytes from offset 0, end is at 1');
+
+        $reader = new SwfReader("\x00\x00", 1);
+        $reader->readSI64();
     }
 
     #[Test]
@@ -426,5 +630,15 @@ class SwfReaderTest extends ParserTestCase
         $this->assertSame(268_435_456, new SwfReader("\x80\x80\x80\x80\x01")->readEncodedU32());
         $this->assertSame(4_294_967_295, new SwfReader("\xFF\xFF\xFF\xFF\x0F")->readEncodedU32());
         $this->assertSame(34_359_738_367, new SwfReader("\xFF\xFF\xFF\xFF\x7F")->readEncodedU32());
+    }
+
+    #[Test]
+    public function readEncodedU32Overflow()
+    {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('Cannot read a char from offset 2, end is at 2');
+
+        $reader = new SwfReader("\x80\x80\x01", 2);
+        $reader->readEncodedU32();
     }
 }
