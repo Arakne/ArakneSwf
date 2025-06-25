@@ -30,7 +30,16 @@ final readonly class DefineSoundTag
         public int $soundId,
         public int $soundFormat,
         public int $soundRate,
+        /**
+         * Named SoundSize on spec.
+         * 0 = 8 bits, 1 = 16 bits
+         */
         public bool $is16Bits,
+
+        /**
+         * Named SoundType on spec.
+         * 0 = mono, 1 = stereo
+         */
         public bool $stereo,
         public int $soundSampleCount,
         public string $soundData,

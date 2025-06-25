@@ -76,7 +76,7 @@ final readonly class DefineMorphShape2Tag
         $flags = $reader->readUI8();
         // 6 bits are reserved
         $usesNonScalingStrokes = ($flags & 0b00000010) !== 0;
-        $usesScalingStrokes    = ($flags & 0b00000010) !== 0;
+        $usesScalingStrokes    = ($flags & 0b00000001) !== 0;
 
         // The shape version only change the style records, and because morph shapes does not use basic styles,
         // we can safely ignore the version here

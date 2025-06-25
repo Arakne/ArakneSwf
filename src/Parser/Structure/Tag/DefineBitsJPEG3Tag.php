@@ -49,7 +49,7 @@ final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
          *
          * Note: this field is only present if the {@see $imageData} is a JPEG image.
          */
-        public string $alphaData,
+        public ?string $alphaData,
     ) {
         $this->type = ImageDataType::resolve($this->imageData);
     }
@@ -63,10 +63,18 @@ final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
      */
     public static function read(SwfReader $reader, int $end): self
     {
+        $characterId = $reader->readUI16();
+        $imageData = $reader->readBytes($reader->readUI32());
+        $alphaData = null;
+
+        if ($reader->offset < $end) {
+            $alphaData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+        }
+
         return new DefineBitsJPEG3Tag(
-            characterId: $reader->readUI16(),
-            imageData: $reader->readBytes($reader->readUI32()),
-            alphaData: gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')), // ZLIB uncompress alpha channel
+            characterId: $characterId,
+            imageData: $imageData,
+            alphaData: $alphaData,
         );
     }
 }

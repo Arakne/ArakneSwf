@@ -22,14 +22,8 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\SwfReader;
-use IteratorAggregate;
-use Override;
-use Traversable;
 
-/**
- * @implements IteratorAggregate<int, ActionRecord>
- */
-final readonly class DoActionTag implements IteratorAggregate
+final readonly class DoActionTag
 {
     public const int TYPE = 12;
 
@@ -39,12 +33,6 @@ final readonly class DoActionTag implements IteratorAggregate
          */
         public array $actions,
     ) {}
-
-    #[Override]
-    public function getIterator(): Traversable
-    {
-        yield from $this->actions;
-    }
 
     /**
      * Read a DoAction tag from the reader, until the end offset is reached.

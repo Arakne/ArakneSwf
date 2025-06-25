@@ -51,7 +51,7 @@ final readonly class DefineBitsJPEG4Tag implements DefineBitsJPEGTagInterface
          *
          * Note: this field is only present if the {@see $imageData} is a JPEG image.
          */
-        public string $alphaData,
+        public ?string $alphaData,
     ) {
         $this->type = ImageDataType::resolve($this->imageData);
     }
@@ -69,7 +69,12 @@ final readonly class DefineBitsJPEG4Tag implements DefineBitsJPEGTagInterface
         $alphaDataOffset = $reader->readUI32();
         $deblockParam = $reader->readUI16();
         $imageData = $reader->readBytes($alphaDataOffset);
-        $alphaData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
+
+        if ($end > $reader->offset) {
+            $alphaData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data')); // ZLIB uncompress alpha channel
+        } else {
+            $alphaData = null;
+        }
 
         return new DefineBitsJPEG4Tag(
             characterId: $characterId,
