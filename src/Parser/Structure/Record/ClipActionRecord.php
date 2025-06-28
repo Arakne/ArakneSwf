@@ -56,7 +56,7 @@ final readonly class ClipActionRecord
     {
         $records = [];
 
-        for (;;) { // @todo handle overflow
+        while ($reader->offset < $reader->end) {
             $flags = ClipEventFlags::read($reader, $version);
 
             if ($flags->flags === 0) {

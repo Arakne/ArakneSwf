@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\Shape;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
@@ -78,7 +80,9 @@ final readonly class FillStyle
                 bitmapId: $reader->readUI16(),
                 bitmapMatrix: Matrix::read($reader),
             ),
-            default => throw new Exception(sprintf('Unsupported FillStyle type %d', $type)), // @todo error only on strict mode, ignore the shape instead
+            default => ($reader->errors & Errors::INVALID_DATA)
+                ? throw new ParserInvalidDataException(sprintf('Unsupported FillStyle type %d', $type), $reader->offset)
+                : new FillStyle($type),
         };
 
         $reader->alignByte();

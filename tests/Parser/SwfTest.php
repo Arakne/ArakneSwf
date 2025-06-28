@@ -10,20 +10,34 @@ use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
+use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\PlaceObject3Tag;
 use Arakne\Swf\Parser\Structure\Tag\SetBackgroundColorTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
+use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Swf;
+use Exception;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use Random\Engine\Xoshiro256StarStar;
+use Random\Randomizer;
+
 use function assert;
 use function file_get_contents;
+use function file_put_contents;
+use function flush;
+use function gzcompress;
+use function pack;
+use function strlen;
+use function substr;
 use function var_dump;
+
+use const _PHPStan_ea7072c0a\__;
 
 class SwfTest extends TestCase
 {
@@ -313,5 +327,26 @@ class SwfTest extends TestCase
         $this->assertSame(1.0, $swf->header->frameRate);
         $this->assertSame(1, $swf->header->frameCount);
         $this->assertEquals([new SwfTag(0, 16, 0)], $swf->tags);
+    }
+
+    #[Test]
+    public function fuzzingIgnoreErrors()
+    {
+        $randomizer = new Randomizer(new Xoshiro256StarStar());
+
+        for ($i = 0; $i < 10; ++$i) {
+            $size = 1_000_000;
+            $data = "FWS\x01" . pack('V', $size) . $randomizer->getBytes($size);
+
+            $swf = Swf::fromString($data, errors: 0);
+
+            $this->assertSame('FWS', $swf->header->signature);
+            $this->assertSame(1, $swf->header->version);
+            $this->assertSame($size, $swf->header->fileLength);
+
+            foreach ($swf->tags as $tag) {
+                $swf->parse($tag);
+            }
+        }
     }
 }

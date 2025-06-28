@@ -53,8 +53,8 @@ final readonly class TextRecord
      * Records are read until enmpty flag is found.
      *
      * @param SwfReader $reader
-     * @param non-negative-int $glyphBits Number of bits used to encode glyph index. {@see GlyphEntry::$glyphIndex}.
-     * @param non-negative-int $advanceBits Number of bits used to encode advance. {@see GlyphEntry::$advance}.
+     * @param int<0, 32> $glyphBits Number of bits used to encode glyph index. {@see GlyphEntry::$glyphIndex}.
+     * @param int<0, 32> $advanceBits Number of bits used to encode advance. {@see GlyphEntry::$advance}.
      * @param bool $withAlpha Text color is with alpha channel (for DefineText2)
      *
      * @return list<self>
@@ -63,7 +63,7 @@ final readonly class TextRecord
     {
         $records = [];
 
-        for (;;) { // @todo handle overflow
+        while ($reader->offset < $reader->end) {
             $flags = $reader->readUI8();
 
             if ($flags === 0) {

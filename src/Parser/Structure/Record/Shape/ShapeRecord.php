@@ -22,6 +22,8 @@ namespace Arakne\Swf\Parser\Structure\Record\Shape;
 
 use Arakne\Swf\Parser\SwfReader;
 
+use function assert;
+
 /**
  * Base type for all shape records.
  */
@@ -41,12 +43,16 @@ abstract readonly class ShapeRecord
         $numLineBits = $reader->readUB(4);
         $shapeRecords = [];
 
-        for (;;) {
+        assert($numFillBits < 16);
+        assert($numLineBits < 16);
+
+        while ($reader->offset < $reader->end) {
             $edgeRecord = $reader->readBool();
 
             if ($edgeRecord) {
                 $straightFlag = $reader->readBool();
                 $numBits = $reader->readUB(4);
+                assert($numBits < 16);
 
                 if ($straightFlag) {
                     $generalLineFlag = $reader->readBool();
@@ -83,6 +89,8 @@ abstract readonly class ShapeRecord
 
             if ($stateMoveTo) {
                 $moveBits = $reader->readUB(5);
+                assert($moveBits < 32);
+
                 $moveDeltaX = $reader->readSB($moveBits);
                 $moveDeltaY = $reader->readSB($moveBits);
             } else {
@@ -114,6 +122,9 @@ abstract readonly class ShapeRecord
                 $newLineStyles = LineStyle::readCollection($reader, $version);
                 $numFillBits = $reader->readUB(4);
                 $numLineBits = $reader->readUB(4);
+
+                assert($numFillBits < 16);
+                assert($numLineBits < 16);
             } else {
                 $newFillStyles = [];
                 $newLineStyles = [];

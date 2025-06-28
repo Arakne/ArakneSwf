@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\SwfReader;
 use Exception;
 
@@ -40,11 +42,11 @@ abstract readonly class Filter
     {
         $filters = [];
         $count = $reader->readUI8();
+        $end = $reader->end;
 
-        for ($f = 0; $f < $count; $f++) {
+        for ($f = 0; $f < $count && $reader->offset < $end; $f++) {
             $filterId = $reader->readUI8();
-
-            $filters[] = match ($filterId) {
+            $filter = match ($filterId) {
                 DropShadowFilter::FILTER_ID => DropShadowFilter::read($reader),
                 BlurFilter::FILTER_ID => BlurFilter::read($reader),
                 GlowFilter::FILTER_ID => GlowFilter::read($reader),
@@ -53,8 +55,14 @@ abstract readonly class Filter
                 ConvolutionFilter::FILTER_ID => ConvolutionFilter::read($reader),
                 ColorMatrixFilter::FILTER_ID => ColorMatrixFilter::read($reader),
                 GradientBevelFilter::FILTER_ID => GradientBevelFilter::read($reader),
-                default => throw new Exception(sprintf('Unsupported filter id %d', $filterId)),
+                default => ($reader->errors & Errors::INVALID_DATA)
+                    ? throw new ParserInvalidDataException(sprintf('Unknown filter type %d', $filterId), $reader->offset)
+                    : null
             };
+
+            if ($filter !== null) {
+                $filters[] = $filter;
+            }
         }
 
         return $filters;

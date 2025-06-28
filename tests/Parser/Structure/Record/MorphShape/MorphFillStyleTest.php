@@ -278,4 +278,11 @@ class MorphFillStyleTest extends ParserTestCase
         $reader = new SwfReader("\x01");
         MorphFillStyle::read($reader);
     }
+
+    #[Test]
+    public function readUnsupportedTypeIgnoreError()
+    {
+        $reader = new SwfReader("\x01", errors: 0);
+        $this->assertEquals(new MorphFillStyle(type: 1), MorphFillStyle::read($reader));
+    }
 }

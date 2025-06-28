@@ -20,8 +20,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Action;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
-use Exception;
 
 use function sprintf;
 
@@ -46,36 +48,52 @@ final readonly class ActionRecord
      */
     public static function readCollection(SwfReader $reader, int $end): array
     {
+        if ($reader->offset >= $end) {
+            return [];
+        }
+
+        if ($end > $reader->end) {
+            if ($reader->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadAfterEnd($end, $reader->end);
+            }
+
+            $end = $reader->end;
+        }
+
         $actions =  [];
 
-        while ($reader->offset < $end) {
-            $offset = $reader->offset;
+        $chunk = $reader->chunk($reader->offset, $end);
+        $reader->skipTo($end);
+
+        while ($chunk->offset < $end) {
+            $offset = $chunk->offset;
             $actionLength = 0;
 
-            if (($actionCode = $reader->readUI8()) === 0) {
+            if (($actionCode = $chunk->readUI8()) === 0) {
                 $actions[] = new ActionRecord($offset, Opcode::Null, 0, null);
                 continue;
             }
 
             if ($actionCode >= 0x80) {
-                $actionLength = $reader->readUI16();
+                $actionLength = $chunk->readUI16();
             }
 
             $opcode = Opcode::tryFrom($actionCode);
 
             if (!$opcode) {
-                // @todo error on strict mode
+                if ($reader->errors & Errors::INVALID_DATA) {
+                    throw new ParserInvalidDataException(
+                        sprintf('Invalid action code "%d" at offset %d', $actionCode, $chunk->offset),
+                        $chunk->offset
+                    );
+                }
+
                 continue;
             }
 
             /** @var mixed $actionData */
-            $actionData = $actionLength > 0 ? $opcode->readData($reader, $actionLength) : null;
+            $actionData = $actionLength > 0 ? $opcode->readData($chunk, $actionLength) : null;
             $actions[] = new ActionRecord($offset, $opcode, $actionLength, $actionData);
-        }
-
-        if ($reader->offset > $end) {
-            // @todo error on strict mode
-            throw new Exception(sprintf('Too many bytes read: offset=%d, end=%d', $reader->offset, $end));
         }
 
         return $actions;

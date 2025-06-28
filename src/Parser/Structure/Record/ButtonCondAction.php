@@ -20,8 +20,13 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\SwfReader;
+
+use function sprintf;
+use function var_dump;
 
 final readonly class ButtonCondAction
 {
@@ -71,9 +76,20 @@ final readonly class ButtonCondAction
     {
         $actions = [];
 
-        for (;;) {
+        do {
             $start = $reader->offset;
             $size = $reader->readUI16();
+
+            // The size must be at least 4 bytes (2 for size, 2 for flags).
+            if ($size !== 0 && $size < 4) {
+                if ($reader->errors & Errors::INVALID_DATA) {
+                    throw new ParserInvalidDataException(sprintf('Invalid ButtonCondAction size: %d', $size), $start);
+                }
+
+                // Ignore the record and skip to the end
+                $reader->skipTo($end);
+                break;
+            }
 
             $flags = $reader->readUI8();
             $idleToOverDown    = ($flags & 0b10000000) !== 0;
@@ -106,11 +122,7 @@ final readonly class ButtonCondAction
                 overDownToIdle: $overDownToIdle,
                 actions: $actionRecords,
             );
-
-            if ($size === 0) {
-                break;
-            }
-        }
+        } while ($size !== 0 && $reader->offset < $end);
 
         return $actions;
     }

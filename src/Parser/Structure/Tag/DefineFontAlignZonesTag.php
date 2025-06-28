@@ -46,8 +46,11 @@ final readonly class DefineFontAlignZonesTag
     public static function read(SwfReader $reader, int $end): self
     {
         $fontId = $reader->readUI16();
-        $csmTableHint = $reader->readUB(2);
-        $reader->skipBits(6); // Reserved
+        $flags = $reader->readUI8();
+
+        $csmTableHint = ($flags >> 6) & 3; // 2bits CSMTableHint
+        // 6bits Reserved
+
         $zoneTable = ZoneRecord::readCollection($reader, $end);
 
         return new DefineFontAlignZonesTag(

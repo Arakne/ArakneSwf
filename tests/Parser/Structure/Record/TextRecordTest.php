@@ -40,4 +40,13 @@ class TextRecordTest extends TestCase
         $this->assertEquals(new GlyphEntry(0, 147), $glyphs[10]);
         $this->assertEquals(new GlyphEntry(3, 291), $glyphs[20]);
     }
+
+    #[Test]
+    public function readShouldStopAtEndOfData()
+    {
+        $reader = new SwfReader("\x80\x00\x80\x00\x80\x00\x80\x00");
+        $records = TextRecord::readCollection($reader, 0, 0, false);
+
+        $this->assertCount(4, $records);
+    }
 }

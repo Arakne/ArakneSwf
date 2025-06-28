@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Parser\Structure\Record;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
@@ -42,5 +43,31 @@ class ButtonCondActionTest extends ParserTestCase
         $this->assertEquals(Opcode::ActionCallFunction, $actions[0]->actions[1]->opcode);
         $this->assertEquals(Opcode::ActionPop, $actions[0]->actions[2]->opcode);
         $this->assertEquals(Opcode::Null, $actions[0]->actions[3]->opcode);
+    }
+
+    #[Test]
+    public function readCollectionInvalidSize()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Invalid ButtonCondAction size: 2');
+
+        $reader = new SwfReader("\x02\x00\x00\x00");
+        ButtonCondAction::readCollection($reader, $reader->end);
+    }
+
+    #[Test]
+    public function readCollectionInvalidSizeIgnoreError()
+    {
+        $reader = new SwfReader("\x02\x00\x00\x00", errors: 0);
+        $this->assertSame([], ButtonCondAction::readCollection($reader, $reader->end));
+        $this->assertSame($reader->end, $reader->offset);
+    }
+
+    #[Test]
+    public function readCollectionShouldStopOnStreamEnd()
+    {
+        $reader = new SwfReader("\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00\x10\x00", errors: 0);
+        $this->assertCount(2, ButtonCondAction::readCollection($reader, $reader->end));
+        $this->assertSame($reader->end, $reader->offset);
     }
 }

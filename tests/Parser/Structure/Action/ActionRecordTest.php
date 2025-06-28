@@ -2,6 +2,8 @@
 
 namespace Arakne\Tests\Swf\Parser\Structure\Action;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
@@ -38,7 +40,7 @@ class ActionRecordTest extends ParserTestCase
     #[Test]
     public function readCollectionInvalidOpcodeShouldBeIgnored()
     {
-        $reader = new SwfReader("\x01\x07");
+        $reader = new SwfReader("\x01\x07", errors: 0);
 
         $actions = ActionRecord::readCollection($reader, 2);
 
@@ -48,11 +50,64 @@ class ActionRecordTest extends ParserTestCase
     }
 
     #[Test]
+    public function readCollectionInvalidOpcode()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Invalid action code "1" at offset 1');
+
+        $reader = new SwfReader("\x01\x07");
+        ActionRecord::readCollection($reader, 2);
+    }
+
+    #[Test]
     public function tooManyDataRead()
     {
-        $this->expectExceptionMessage('Too many bytes read: offset=6, end=2');
+        $this->expectExceptionMessage('Trying to access data after the end of the input stream (offset: 2, end: 2)');
 
         $reader = new SwfReader("\x8CABCD\x00");
         ActionRecord::readCollection($reader, 2);
+    }
+
+    #[Test]
+    public function tooManyDataReadIgnoreError()
+    {
+        $reader = new SwfReader("\x8CABCD\x00", errors: 0);
+        $actions = ActionRecord::readCollection($reader, 2);
+
+        $this->assertSame(2, $reader->offset);
+        $this->assertCount(1, $actions);
+        $this->assertSame(Opcode::ActionGoToLabel, $actions[0]->opcode);
+        $this->assertSame('', $actions[0]->data);
+    }
+
+    #[Test]
+    public function endAlreadyReached()
+    {
+        $reader = new SwfReader('');
+        $actions = ActionRecord::readCollection($reader, 0);
+        $this->assertCount(0, $actions);
+    }
+
+    #[Test]
+    public function endOutOfBounds()
+    {
+        $this->expectException(ParserOutOfBoundException::class);
+        $this->expectExceptionMessage('Trying to access data after the end of the input stream (offset: 148, end: 147)');
+
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/simple.swf', 27);
+        $reader = $reader->chunk(27, 147);
+
+        ActionRecord::readCollection($reader, 148);
+    }
+
+    #[Test]
+    public function endOutOfBoundsIgnore()
+    {
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/simple.swf', 27, errors: 0);
+        $reader = $reader->chunk(27, 147);
+
+        $actions = ActionRecord::readCollection($reader, 148);
+        $this->assertContainsOnlyInstancesOf(ActionRecord::class, $actions);
+        $this->assertCount(11, $actions);
     }
 }

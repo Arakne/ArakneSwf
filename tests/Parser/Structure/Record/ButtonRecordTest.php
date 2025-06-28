@@ -108,4 +108,16 @@ class ButtonRecordTest extends ParserTestCase
             0.0,
         ]), $records[0]->filters[0], 0.00001);
     }
+
+    #[Test]
+    public function readCollectionShouldStopOnStreamEnd()
+    {
+        $reader = $this->createReader(__DIR__.'/../../../Extractor/Fixtures/core/core.swf', 597297, errors: 0);
+        $reader = $reader->chunk(597297, 597297 + 100);
+
+        $records = ButtonRecord::readCollection($reader, 2);
+
+        $this->assertCount(8, $records);
+        $this->assertContainsOnlyInstancesOf(ButtonRecord::class, $records);
+    }
 }

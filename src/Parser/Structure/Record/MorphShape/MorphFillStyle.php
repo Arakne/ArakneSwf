@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\MorphShape;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\SwfReader;
@@ -82,7 +84,9 @@ final readonly class MorphFillStyle
                 startBitmapMatrix: Matrix::read($reader),
                 endBitmapMatrix: Matrix::read($reader),
             ),
-            default => throw new UnexpectedValueException(sprintf('Unknown MorphFillStyle type: %d', $type)),
+            default => ($reader->errors & Errors::INVALID_DATA)
+                ? throw new ParserInvalidDataException(sprintf('Unknown MorphFillStyle type: %d', $type), $reader->offset)
+                : new self($type)
         };
     }
 

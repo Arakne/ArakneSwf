@@ -31,6 +31,7 @@ use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTag;
@@ -62,8 +63,22 @@ final class SwfFile
         /**
          * Allow to collect errors during parsing.
          * If not set, errors will be ignored.
+         *
+         * @deprecated
          */
         public readonly ?ErrorCollector $errorCollector = null,
+
+        /**
+         * Configure the error reporting.
+         *
+         * Enabling all errors will stop the parsing on the first, malformed or unexpected data.
+         * This can improve security, but may also fail to parse some legitimate SWF files.
+         *
+         * Disabling all errors will lead to fail-safe parsing, so it will try to parse as much as possible,
+         * even missing or malformed data, without throwing any exception.
+         * This allows to extract from corrupted files, but may lead to unexpected results and security issues.
+         */
+        public readonly int $errors = Errors::ALL,
     ) {}
 
     /**
@@ -297,7 +312,8 @@ final class SwfFile
     {
         return $this->parser ??= Swf::fromString(
             file_get_contents($this->path) ?: throw new InvalidArgumentException('Unable to read the file'),
-            $this->errorCollector
+            $this->errorCollector,
+            $this->errors,
         );
     }
 }

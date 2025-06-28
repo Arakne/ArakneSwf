@@ -47,28 +47,26 @@ final readonly class ZoneRecord
     {
         $records = [];
 
-        while ($reader->offset < $end) {
-            $count = $reader->readUI8(); // Should be 2
+        $chunk = $reader->chunk($reader->offset, $end);
+        $reader->skipTo($end);
+
+        while ($chunk->offset < $end) {
+            $count = $chunk->readUI8(); // Should be 2
             $data = [];
 
             for ($i = 0; $i < $count; ++$i) {
                 $data[] = new ZoneData(
-                    alignmentCoordinate: $reader->readFloat16(),
-                    range: $reader->readFloat16(),
+                    alignmentCoordinate: $chunk->readFloat16(),
+                    range: $chunk->readFloat16(),
                 );
             }
 
-            $flags = $reader->readUI8();
+            $flags = $chunk->readUI8();
             // 6 bits reserved
             $maskY = ($flags & 0b00000010) !== 0;
             $maskX = ($flags & 0b00000001) !== 0;
 
             $records[] = new self($data, $maskY, $maskX);
-        }
-
-        // @todo error only in strict mode
-        if ($reader->offset !== $end) {
-            throw new \RuntimeException('ZoneRecord: too many bytes read');
         }
 
         return $records;

@@ -20,9 +20,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\SwfReader;
 
 use function assert;
+use function sprintf;
 
 /**
  * Structure representing a rectangle (two points)
@@ -147,13 +150,31 @@ final readonly class Rectangle
     public static function read(SwfReader $reader): self
     {
         $nbits = $reader->readUB(5);
+        assert($nbits < 32);
 
-        $ret = new Rectangle(
-            $reader->readSB($nbits),
-            $reader->readSB($nbits),
-            $reader->readSB($nbits),
-            $reader->readSB($nbits),
-        );
+        $xmin = $reader->readSB($nbits);
+        $xmax = $reader->readSB($nbits);
+        $ymin = $reader->readSB($nbits);
+        $ymax = $reader->readSB($nbits);
+
+        // @todo test
+        if ($xmin > $xmax) {
+            if ($reader->errors & Errors::INVALID_DATA) {
+                throw new ParserInvalidDataException(sprintf('Invalid rectangle: xmin (%d) is greater than xmax (%d)', $xmin, $xmax), $reader->offset);
+            }
+
+            $xmin = $xmax;
+        }
+
+        if ($ymin > $ymax) {
+            if ($reader->errors & Errors::INVALID_DATA) {
+                throw new ParserInvalidDataException(sprintf('Invalid rectangle: ymin (%d) is greater than ymax (%d)', $ymin, $ymax), $reader->offset);
+            }
+
+            $ymin = $ymax;
+        }
+
+        $ret = new Rectangle($xmin, $xmax, $ymin, $ymax);
 
         $reader->alignByte();
 

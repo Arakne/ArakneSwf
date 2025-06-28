@@ -2,12 +2,16 @@
 
 namespace Arakne\Tests\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineTextTag;
+use Arakne\Swf\Parser\SwfReader;
 use Arakne\Tests\Swf\Parser\ParserTestCase;
 use PHPUnit\Framework\Attributes\Test;
+
+use function var_dump;
 
 class DefineTextTagTest extends ParserTestCase
 {
@@ -36,5 +40,38 @@ class DefineTextTagTest extends ParserTestCase
         $this->assertCount(1, $tag->textRecords[0]->glyphs);
         $this->assertSame(0, $tag->textRecords[0]->glyphs[0]->glyphIndex);
         $this->assertSame(433, $tag->textRecords[0]->glyphs[0]->advance);
+    }
+
+    #[Test]
+    public function readInvalidGlyphBits()
+    {
+        $this->expectExceptionMessage('Glyph bits (128) or advance bits (1) are out of bounds (0-32)');
+        $this->expectException(ParserInvalidDataException::class);
+
+        $reader = new SwfReader("\x01\x00\x00\x00\x80\x01\x00");
+        DefineTextTag::read($reader, 1);
+    }
+
+    #[Test]
+    public function readInvalidAdvanceBits()
+    {
+        $this->expectExceptionMessage('Glyph bits (1) or advance bits (128) are out of bounds (0-32)');
+        $this->expectException(ParserInvalidDataException::class);
+
+        $reader = new SwfReader("\x01\x00\x00\x00\x01\x80\x00");
+        DefineTextTag::read($reader, 1);
+    }
+
+    #[Test]
+    public function readInvalidGlyphAndAdvanceBitsIgnoreError()
+    {
+        $reader = new SwfReader("\x01\x00\x00\x00\x80\x80\x00", errors: 0);
+        $tag = DefineTextTag::read($reader, 1);
+
+        $this->assertSame(1, $tag->version);
+        $this->assertSame(1, $tag->characterId);
+        $this->assertSame(128, $tag->glyphBits);
+        $this->assertSame(128, $tag->advanceBits);
+        $this->assertCount(0, $tag->textRecords);
     }
 }

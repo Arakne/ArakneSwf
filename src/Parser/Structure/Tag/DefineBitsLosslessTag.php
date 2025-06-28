@@ -20,12 +20,11 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
 use Arakne\Swf\Parser\SwfReader;
-use RuntimeException;
 
-use function assert;
-use function gzuncompress;
 use function sprintf;
 use function substr;
 
@@ -97,11 +96,16 @@ final readonly class DefineBitsLosslessTag
         $bitmapWidth = $reader->readUI16();
         $bitmapHeight = $reader->readUI16();
 
-        // @todo exception only on strict mode. Ignore otherwise
-        // @todo check the format in strict mode (in range 3-5)
+        if (($bitmapFormat < 3 || $bitmapFormat > 5) && $reader->errors & Errors::INVALID_DATA) {
+            throw new ParserInvalidDataException(
+                sprintf('Invalid bitmap format %d for DefineBitsLossless tag (version %d)', $bitmapFormat, $version),
+                $reader->offset
+            );
+        }
+
         if ($bitmapFormat === self::FORMAT_8_BIT) {
             $colors = $reader->readUI8();
-            $data = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $data = $reader->readZLibTo($end);
             $colorSize = $version > 1 ? 4 : 3; // 4 bytes for RGBA, 3 bytes for RGB
             $colorTableSize = $colorSize * ($colors + 1);
 
@@ -109,7 +113,7 @@ final readonly class DefineBitsLosslessTag
             $pixelData = substr($data, $colorTableSize);
         } else {
             $colorTable = null;
-            $pixelData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $pixelData = $reader->readZLibTo($end);
         }
 
         return new DefineBitsLosslessTag(

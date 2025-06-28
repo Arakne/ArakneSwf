@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Action;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 use Exception;
 
@@ -52,9 +55,28 @@ final readonly class Value
         $values = [];
         $bytePosEnd = $reader->offset + $length;
 
+        if ($bytePosEnd > $reader->end) {
+            if ($reader->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadTooManyBytes($reader->offset, $reader->end, $length);
+            }
+
+            $bytePosEnd = $reader->end;
+        }
+
         while ($reader->offset < $bytePosEnd) {
             $typeId = $reader->readUI8();
-            $type = Type::tryFrom($typeId) ?? throw new Exception(sprintf("Internal error: typeId=%d", $typeId)); // @todo how handle this? ignoring will lead data shifting
+            $type = Type::tryFrom($typeId);
+
+            if ($type === null) {
+                if ($reader->errors & Errors::INVALID_DATA) {
+                    throw new ParserInvalidDataException(
+                        sprintf('Invalid value type "%d" at offset %d', $typeId, $reader->offset),
+                        $reader->offset
+                    );
+                }
+
+                continue;
+            }
 
             $values[] = new Value(
                 $type,

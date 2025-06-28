@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTag;
@@ -72,9 +73,9 @@ final readonly class Swf
      *
      * @return self
      */
-    public static function fromString(string $data, ?ErrorCollector $errorCollector = null): self
+    public static function fromString(string $data, ?ErrorCollector $errorCollector = null, int $errors = Errors::ALL): self
     {
-        $reader = new SwfReader($data);
+        $reader = new SwfReader($data, errors: $errors);
 
         return self::read($reader, $errorCollector);
     }

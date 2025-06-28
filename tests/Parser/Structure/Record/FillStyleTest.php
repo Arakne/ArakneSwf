@@ -160,4 +160,10 @@ class FillStyleTest extends TestCase
         $this->expectExceptionMessage('Unsupported FillStyle type 1');
         FillStyle::read(new SwfReader("\x01"), 1);
     }
+
+    #[Test]
+    public function readUnsupportedFullStyleIgnoreError()
+    {
+        $this->assertEquals(new FillStyle(type: 1), FillStyle::read(new SwfReader("\x01", errors: 0), 1));
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Parser\Structure\Record\Filter;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
@@ -234,5 +235,39 @@ class FilterTest extends ParserTestCase
         $this->assertInstanceOf(DropShadowFilter::class, $filters[0]);
         $this->assertInstanceOf(BlurFilter::class, $filters[1]);
         $this->assertInstanceOf(GlowFilter::class, $filters[2]);
+    }
+
+    #[Test]
+    public function readCollectionUnknownFilter()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Unknown filter type 255');
+
+        $reader = new SwfReader(
+            "\x03" .
+            "\x00\x10\x20\x30\x40\x00\x80\x02\x00\x00\x40\x10\x00\x00\x00\xD0\x00\x00\x00\x02\x00\x80\x00\x43" .
+            "\xFF" .
+            "\x02\x10\x20\x30\x40\x00\x80\x02\x00\x00\x40\x10\x00\x80\x00\x43",
+        );
+
+        Filter::readCollection($reader);
+    }
+
+    #[Test]
+    public function readCollectionUnknownFilterIgnoreError()
+    {
+        $reader = new SwfReader(
+            "\x03" .
+            "\x00\x10\x20\x30\x40\x00\x80\x02\x00\x00\x40\x10\x00\x00\x00\xD0\x00\x00\x00\x02\x00\x80\x00\x43" .
+            "\xFF" .
+            "\x02\x10\x20\x30\x40\x00\x80\x02\x00\x00\x40\x10\x00\x80\x00\x43",
+            errors: 0,
+        );
+
+        $filters = Filter::readCollection($reader);
+
+        $this->assertCount(2, $filters);
+        $this->assertInstanceOf(DropShadowFilter::class, $filters[0]);
+        $this->assertInstanceOf(GlowFilter::class, $filters[1]);
     }
 }

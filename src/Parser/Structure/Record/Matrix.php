@@ -22,6 +22,7 @@ namespace Arakne\Swf\Parser\Structure\Record;
 
 use Arakne\Swf\Parser\SwfReader;
 
+use function assert;
 use function round;
 use function var_dump;
 
@@ -144,17 +145,20 @@ final readonly class Matrix
 
         if ($reader->readBool()) {
             $nScaleBits = $reader->readUB(5);
+            assert($nScaleBits < 32);
             $scaleX = $reader->readFB($nScaleBits);
             $scaleY = $reader->readFB($nScaleBits);
         }
 
         if ($reader->readBool()) {
             $nRotateBits = $reader->readUB(5);
+            assert($nRotateBits < 32);
             $rotateSkew0 = $reader->readFB($nRotateBits);
             $rotateSkew1 = $reader->readFB($nRotateBits);
         }
 
-        if (($nTranslateBits = $reader->readUB(5)) != 0) {
+        if (($nTranslateBits = $reader->readUB(5)) !== 0) {
+            assert($nTranslateBits < 32);
             $translateX = $reader->readSB($nTranslateBits);
             $translateY = $reader->readSB($nTranslateBits);
         }

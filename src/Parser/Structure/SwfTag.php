@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure;
 
 use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
@@ -82,8 +84,8 @@ use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Structure\Tag\VideoFrameTag;
 use Arakne\Swf\Parser\SwfReader;
 
-use function strlen;
-use function substr;
+use function assert;
+use function sprintf;
 
 /**
  * Structure for the tag before parsing.
@@ -166,6 +168,10 @@ final readonly class SwfTag
     {
         $bytePosEnd = $this->offset + $this->length;
         $reader = $reader->chunk($this->offset, $bytePosEnd);
+
+        if ($bytePosEnd > $reader->end) {
+            $bytePosEnd = $reader->end;
+        }
 
         $ret = match ($this->type) {
             EndTag::TYPE => new EndTag(),
@@ -251,23 +257,14 @@ final readonly class SwfTag
             );
         }
 
-        if ($reader->offset > $bytePosEnd) {
-            $errorCollector?->add(
-                $this,
-                TagParseErrorType::ReadAfterEnd,
-                [
-                    'length' => $reader->offset - $bytePosEnd,
-                    'data' => substr($reader->data, $bytePosEnd, $reader->offset - $bytePosEnd),
-                ]
-            );
-        } elseif ($reader->offset < $bytePosEnd) {
-            $errorCollector?->add(
-                $this,
-                TagParseErrorType::ExtraBytes,
-                [
-                    'length' => $bytePosEnd - $reader->offset,
-                    'data' => substr($reader->data, $reader->offset, $bytePosEnd - $reader->offset),
-                ]
+        if ($reader->offset < $bytePosEnd && $reader->errors & Errors::EXTRA_DATA) {
+            $len = $bytePosEnd - $reader->offset;
+            assert($len > 0);
+
+            throw new ParserExtraDataException(
+                sprintf('Extra data found after tag %s at offset %d (length = %d)', $this->type, $reader->offset, $len),
+                $reader->offset,
+                $len
             );
         }
 

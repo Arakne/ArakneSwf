@@ -20,10 +20,14 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Record\TextRecord;
 use Arakne\Swf\Parser\SwfReader;
+
+use function sprintf;
 
 final readonly class DefineTextTag
 {
@@ -52,14 +56,33 @@ final readonly class DefineTextTag
      */
     public static function read(SwfReader $reader, int $version): self
     {
+        $characterId = $reader->readUI16();
+        $textBounds = Rectangle::read($reader);
+        $textMatrix = Matrix::read($reader);
+        $glyphBits = $reader->readUI8();
+        $advanceBits = $reader->readUI8();
+
+        if ($glyphBits > 32 || $advanceBits > 32) {
+            if ($reader->errors & Errors::INVALID_DATA) {
+                throw new ParserInvalidDataException(
+                    sprintf('Glyph bits (%d) or advance bits (%d) are out of bounds (0-32)', $glyphBits, $advanceBits),
+                    $reader->offset
+                );
+            }
+
+            $textRecords = [];
+        } else {
+            $textRecords = TextRecord::readCollection($reader, $glyphBits, $advanceBits, withAlpha: $version > 1);
+        }
+
         return new DefineTextTag(
             version: $version,
-            characterId: $reader->readUI16(),
-            textBounds: Rectangle::read($reader),
-            textMatrix: Matrix::read($reader),
-            glyphBits: $glyphBits = $reader->readUI8(),
-            advanceBits: $advanceBits = $reader->readUI8(),
-            textRecords: TextRecord::readCollection($reader, $glyphBits, $advanceBits, withAlpha: $version > 1),
+            characterId: $characterId,
+            textBounds: $textBounds,
+            textMatrix: $textMatrix,
+            glyphBits: $glyphBits,
+            advanceBits: $advanceBits,
+            textRecords: $textRecords,
         );
     }
 }

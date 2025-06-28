@@ -52,7 +52,7 @@ final readonly class DefineSceneAndFrameLabelDataTag
         $sceneOffsets = [];
         $sceneNames = [];
         $sceneCount = $reader->readEncodedU32();
-        for ($i = 0; $i < $sceneCount; $i++) {
+        for ($i = 0; $i < $sceneCount && $reader->offset < $reader->end; $i++) {
             $sceneOffsets[] = $reader->readEncodedU32();
             $sceneNames[] = $reader->readNullTerminatedString();
         }
@@ -60,7 +60,7 @@ final readonly class DefineSceneAndFrameLabelDataTag
         $frameNumbers = [];
         $frameLabels = [];
         $frameLabelCount = $reader->readEncodedU32();
-        for ($i = 0; $i < $frameLabelCount; $i++) {
+        for ($i = 0; $i < $frameLabelCount && $reader->offset < $reader->end; $i++) {
             $frameNumbers[] = $reader->readEncodedU32();
             $frameLabels[] = $reader->readNullTerminatedString();
         }

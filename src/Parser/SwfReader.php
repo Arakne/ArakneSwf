@@ -20,23 +20,25 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
-use Exception;
-use OutOfBoundsException;
-use RuntimeException;
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 
 use function assert;
 use function gzuncompress;
+use function is_array;
+use function max;
+use function min;
 use function ord;
-use function strpos;
+use function str_repeat;
 use function strlen;
+use function strpos;
 use function substr;
 use function unpack;
 
 /**
  * Low-level SWF primitives parser
  * This class is mutable and stateful, be careful when using it
- *
- * @todo handle overflows
  */
 final class SwfReader
 {
@@ -52,6 +54,15 @@ final class SwfReader
      * @var non-negative-int
      */
     public readonly int $end;
+
+    /**
+     * Flags for error reporting.
+     * If, for a given error, the corresponding bit is set, an exception will be thrown when the error occurs.
+     * If not, the error will be silently ignored, and a fallback value will be returned instead.
+     *
+     * @see Errors constants
+     */
+    public readonly int $errors;
 
     /**
      * Current byte offset in the binary data.
@@ -80,13 +91,15 @@ final class SwfReader
     /**
      * @param string $binary The raw binary data of the SWF file.
      * @param non-negative-int|null $end The end offset of the binary data (exclusive). If null, the end of the binary data will be used.
+     * @param int $errors Flags for error reporting.
      */
-    public function __construct(string $binary, ?int $end = null)
+    public function __construct(string $binary, ?int $end = null, int $errors = Errors::ALL)
     {
         assert($end === null || $end <= strlen($binary));
 
         $this->data = $binary;
         $this->end = $end ?? strlen($binary);
+        $this->errors = $errors;
     }
 
     /**
@@ -102,10 +115,10 @@ final class SwfReader
     {
         $offset = $this->offset;
         $compressedMaxLen = $len !== null ? $len - $offset : null;
-        $uncompress = @gzuncompress(substr($this->data, $offset), $compressedMaxLen ?? 0) ?: throw new RuntimeException('Invalid compressed data');
+        $uncompress = @gzuncompress(substr($this->data, $offset), $compressedMaxLen ?? 0) ?: throw ParserInvalidDataException::createInvalidCompressedData($offset);
         $data = substr($this->data, 0, $offset) . substr($uncompress, 0, $compressedMaxLen);
 
-        $self = new self($data);
+        $self = new self($data, errors: $this->errors);
         $self->offset = $offset;
 
         return $self;
@@ -123,12 +136,15 @@ final class SwfReader
     {
         assert($end >= $offset);
 
-        // @todo only throw an error in strict mode
         if ($end > $this->end) {
-            throw new OutOfBoundsException(sprintf('End offset %s is out of bounds (max: %s)', $end, $this->end));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadAfterEnd($end, $this->end);
+            }
+
+            $end = $this->end;
         }
 
-        $self = new self($this->data, $end);
+        $self = new self($this->data, $end, $this->errors);
         $self->offset = $offset;
 
         return $self;
@@ -146,8 +162,15 @@ final class SwfReader
         assert($this->bitOffset === 0);
 
         if ($this->offset + $num > $this->end) {
-            // @todo error only in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot read %s bytes from offset %s, end is at %s', $num, $this->offset, $this->end));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadTooManyBytes($this->offset, $this->end, $num);
+            }
+
+            $len = max($this->end - $this->offset, 0);
+            $ret = substr($this->data, $this->offset, $len) . str_repeat("\0", min($num - $len, 128));
+            $this->offset = $this->end;
+
+            return $ret;
         }
 
         $ret = substr($this->data, $this->offset, $num);
@@ -173,19 +196,55 @@ final class SwfReader
         }
 
         if ($offset < $currentOffset) {
-            // @todo error ony in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot read bytes to an offset before the current offset: %s < %s', $offset, $currentOffset));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw new ParserOutOfBoundException(
+                    sprintf('Cannot read bytes to an offset before the current offset: %s < %s', $offset, $currentOffset),
+                    $offset
+                );
+            }
+
+            return '';
         }
 
         if ($offset > $this->end) {
-            // @todo error only in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot read bytes to an offset after the end of the stream: %s > %s', $offset, $this->end));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadAfterEnd($currentOffset, $this->end);
+            }
+
+            $offset = $this->end;
         }
 
         $ret = substr($this->data, $currentOffset, $offset - $currentOffset);
         $this->offset = $offset;
 
         return $ret;
+    }
+
+    /**
+     * Read ZLib compressed bytes from the binary data until the specified offset, and uncompress them.
+     *
+     * @param non-negative-int $offset The target offset to read bytes to (exclusive).
+     * @return string
+     */
+    public function readZLibTo(int $offset): string
+    {
+        $compressed = $this->readBytesTo($offset);
+
+        if ($compressed === '') {
+            return '';
+        }
+
+        $uncompressed = @gzuncompress($compressed);
+
+        if ($uncompressed === false) {
+            if ($this->errors & Errors::INVALID_DATA) {
+                throw ParserInvalidDataException::createInvalidCompressedData($this->offset);
+            }
+
+            return '';
+        }
+
+        return $uncompressed;
     }
 
     /**
@@ -202,6 +261,20 @@ final class SwfReader
     }
 
     /**
+     * Skip to the specified offset in the current byte stream.
+     *
+     * @param non-negative-int $offset The offset to skip to. Must be greater than or equal to the current offset.
+     * @return void
+     */
+    public function skipTo(int $offset): void
+    {
+        assert($this->bitOffset === 0);
+        assert($offset >= $this->offset);
+
+        $this->offset = $offset;
+    }
+
+    /**
      * Read a single byte (char) from the binary data.
      * This method is equivalent to `readBytes(1)`.
      */
@@ -210,8 +283,11 @@ final class SwfReader
         assert($this->bitOffset === 0);
 
         if ($this->offset >= $this->end) {
-            // @todo error only in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot read a char from offset %s, end is at %s', $this->offset, $this->end));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadAfterEnd($this->offset, $this->end);
+            }
+
+            return "\0";
         }
 
         return $this->data[$this->offset++];
@@ -234,12 +310,25 @@ final class SwfReader
         $end = strpos($b, "\0", $pos);
 
         if ($end === false) {
-            throw new Exception('String terminator not found');
+            if ($this->errors & Errors::INVALID_DATA) {
+                throw new ParserInvalidDataException('String terminator not found', $pos);
+            }
+
+            $ret = substr($b, $pos, max($this->end - $pos, 0));
+            $this->offset = $this->end;
+
+            return $ret;
         }
 
         if ($end >= $this->end) {
-            // @todo error only in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot read null-terminated string from offset %s, end is at %s', $pos, $this->end));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadAfterEnd($pos, $this->end);
+            }
+
+            $ret = substr($b, $pos, max($this->end - $pos, 0));
+            $this->offset = $this->end;
+
+            return $ret;
         }
 
         $ret = substr($b, $pos, $end - $pos);
@@ -264,7 +353,7 @@ final class SwfReader
     /**
      * Read a specified number of bits from the current byte stream and return it as an unsigned integer.
      *
-     * @param non-negative-int $num Number of bits to read
+     * @param int<0, 32> $num Number of bits to read
      *
      * @return non-negative-int
      *
@@ -285,11 +374,14 @@ final class SwfReader
         while ($num > 0) {
             if ($currentByte === -1) {
                 if ($streamOffset >= $this->end) {
-                    // @todo error only in strict mode
-                    throw new OutOfBoundsException(sprintf('Cannot read %s bits from offset %s, end is at %s', $num, $streamOffset - 1, $this->end));
-                }
+                    if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                        throw ParserOutOfBoundException::createReadAfterEnd($streamOffset, $this->end);
+                    }
 
-                $currentByte = ord($this->data[$streamOffset]);
+                    $currentByte = 0;
+                } else {
+                    $currentByte = ord($this->data[$streamOffset]);
+                }
             }
 
             $remainingBits = $bitsToRead = 8 - $bitOffset;
@@ -390,12 +482,17 @@ final class SwfReader
         $offset = $this->bitOffset;
 
         if ($this->currentByte === -1) {
-            if ($this->offset >= $this->end) {
-                // @todo error only in strict mode
-                throw new OutOfBoundsException(sprintf('Cannot read a bool from offset %s, end is at %s', $this->offset, $this->end));
-            }
+            $byteOffset = $this->offset;
 
-            $this->currentByte = ord($this->data[$this->offset]);
+            if ($byteOffset >= $this->end) {
+                if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                    throw ParserOutOfBoundException::createReadAfterEnd($byteOffset, $this->end);
+                }
+
+                $this->currentByte = 0;
+            } else {
+                $this->currentByte = ord($this->data[$byteOffset]);
+            }
         }
 
         $mask = 1 << (7 - $offset);
@@ -417,7 +514,7 @@ final class SwfReader
      * Read the specified number of bits as a signed integer.
      * It performs a two's complement conversion if the sign bit is set (i.e. the highest bit is 1).
      *
-     * @param non-negative-int $num
+     * @param int<0, 32> $num
      *
      * @return int
      */
@@ -566,8 +663,12 @@ final class SwfReader
         $offset = $this->offset;
 
         if ($offset + 1 >= $this->end) {
-            // @todo error only in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot peek UI16 from offset %s, end is at %s', $offset, $this->end));
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadAfterEnd($offset, $this->end);
+            }
+
+            // Not consistent with readUI16() behavior, but it should do the job
+            return 0;
         }
 
         // @phpstan-ignore return.type
@@ -598,8 +699,10 @@ final class SwfReader
     public function readUI32(): int
     {
         // Parse int32 as little-endian
-        // @phpstan-ignore return.type
-        return (int) $this->readUnpack('V', 4);
+        $v = (int) $this->readUnpack('V', 4);
+        assert($v >= 0);
+
+        return $v;
     }
 
     /**
@@ -621,22 +724,34 @@ final class SwfReader
      */
     public function readEncodedU32(): int
     {
-        $value = 0;
-        $offset = 0;
-
-        for (;;) {
-            $b = $this->readUI8();
-            $value |= ($b & 0x7f) << $offset;
-            $offset += 7;
-
-            if (($b & 0x80) === 0) {
-                break;
-            }
+        $result = $this->readUI8();
+        if (($result & 0x00000080) === 0) {
+            assert($result >= 0);
+            return $result;
         }
 
-        assert($value >= 0);
+        $result = ($result & 0x0000007f) | $this->readUI8() << 7;
+        if (($result & 0x00004000) === 0) {
+            assert($result >= 0);
+            return $result;
+        }
 
-        return $value;
+        $result = ($result & 0x00003fff) | $this->readUI8() << 14;
+        if (($result & 0x00200000) === 0) {
+            assert($result >= 0);
+            return $result;
+        }
+
+        $result = ($result & 0x001fffff) | $this->readUI8() << 21;
+        if (($result & 0x10000000) === 0) {
+            assert($result >= 0);
+            return $result;
+        }
+
+        $result = ($result & 0x0fffffff) | $this->readUI8() << 28;
+        assert($result >= 0);
+
+        return $result;
     }
 
     /**
@@ -651,16 +766,20 @@ final class SwfReader
     {
         assert($this->bitOffset === 0);
 
-        if ($this->offset + $size > $this->end) {
-            // @todo error only in strict mode
-            throw new OutOfBoundsException(sprintf('Cannot read %s bytes from offset %s, end is at %s', $size, $this->offset, $this->end));
+        if ($this->offset + $size <= $this->end) {
+            $value = unpack($f, $this->data, $this->offset);
+            $this->offset += $size;
+        } else {
+            if ($this->errors & Errors::OUT_OF_BOUNDS) {
+                throw ParserOutOfBoundException::createReadTooManyBytes($this->offset, $this->end, $size);
+            }
+
+            $value = unpack($f, $this->readBytes($size));
+            $this->offset = $this->end;
         }
 
-        // @todo handle error
-        // @phpstan-ignore offsetAccess.nonOffsetAccessible
-        $value = unpack($f, $this->data, $this->offset)[1];
-        $this->offset += $size;
+        assert(is_array($value) && isset($value[1]));
 
-        return $value;
+        return $value[1];
     }
 }

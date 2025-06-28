@@ -60,7 +60,7 @@ final readonly class ButtonRecord
     {
         $records = [];
 
-        for (;;) { // @todo check overflow
+        while ($reader->offset < $reader->end) {
             $flags = $reader->readUI8();
 
             if ($flags === 0) {

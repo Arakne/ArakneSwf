@@ -34,8 +34,8 @@ final readonly class GlyphEntry
      * The first byte defines the number of entries to read.
      *
      * @param SwfReader $reader
-     * @param non-negative-int $glyphBits Number of bits used to encode glyph index. {@see GlyphEntry::$glyphIndex}.
-     * @param non-negative-int $advanceBits Number of bits used to encode advance. {@see GlyphEntry::$advance}.
+     * @param int<0, 32> $glyphBits Number of bits used to encode glyph index. {@see GlyphEntry::$glyphIndex}.
+     * @param int<0, 32> $advanceBits Number of bits used to encode advance. {@see GlyphEntry::$advance}.
      *
      * @return list<self>
      */

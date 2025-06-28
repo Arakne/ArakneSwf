@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Action;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\SwfReader;
 use Exception;
 
@@ -173,7 +175,9 @@ enum Opcode: int
             self::ActionGetURL2 => GetURL2Data::read($reader),
             self::ActionDefineFunction => DefineFunctionData::read($reader),
             self::ActionGotoFrame2 => GotoFrame2Data::read($reader),
-            default => throw new Exception(sprintf("Unexpected data for opcode %s, actionLength=%d", $this->name, $length)), // @todo error on strict mode
+            default => $reader->errors & Errors::INVALID_DATA
+                ? throw new ParserInvalidDataException(sprintf('Unexpected data for opcode %s, actionLength=%d', $this->name, $length), $reader->offset)
+                : $reader->readBytes($length)
         };
     }
 

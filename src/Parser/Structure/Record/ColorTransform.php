@@ -22,6 +22,8 @@ namespace Arakne\Swf\Parser\Structure\Record;
 
 use Arakne\Swf\Parser\SwfReader;
 
+use function assert;
+
 /**
  * Structure for store color transform
  * Multiplier terms should be divided by 256
@@ -84,6 +86,7 @@ final readonly class ColorTransform
         $hasAddTerms = $reader->readBool();
         $hasMultTerms = $reader->readBool();
         $nbits = $reader->readUB(4);
+        assert($nbits < 16);
 
         $redMultTerm = 256;
         $greenMultTerm = 256;

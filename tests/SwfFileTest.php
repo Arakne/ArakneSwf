@@ -6,6 +6,7 @@ use Arakne\Swf\Avm\Api\ScriptArray;
 use Arakne\Swf\Avm\Api\ScriptObject;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Error\TagParseError;
 use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Error\TagParseException;
@@ -171,34 +172,11 @@ class SwfFileTest extends TestCase
     #[Test]
     public function withExtraBytesIgnoreError()
     {
-        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf');
+        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf', errors: 0);
 
         foreach ($swf->tags() as $tag) {
             $this->assertIsObject($tag);
         }
-    }
-
-    #[Test]
-    public function withExtraBytesCollectError()
-    {
-        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf', $errors = new ErrorCollector());
-
-        foreach ($swf->tags() as $tag) {
-            $this->assertIsObject($tag);
-        }
-
-        /** @var TagParseError[] $errors */
-        $errors = iterator_to_array($errors);
-
-        $this->assertCount(1, $errors);
-
-        $this->assertSame(26, $errors[0]->position->type);
-        $this->assertSame(37563, $errors[0]->position->offset);
-        $this->assertSame(TagParseErrorType::ExtraBytes, $errors[0]->error);
-        $this->assertSame([
-            'length' => 8,
-            'data' => "\xf6\xda\xb3\xb5\xd7\xfb\x31\xc0",
-        ], $errors[0]->payload);
     }
 
     #[Test]
@@ -212,16 +190,10 @@ class SwfFileTest extends TestCase
             }
 
             $this->fail('Expected exception not thrown');
-        } catch (TagParseException $e) {
-            $error = $e->error;
-            $this->assertStringStartsWith('Error parsing tag 26: ExtraBytes', $e->getMessage());
-            $this->assertSame(26, $error->position->type);
-            $this->assertSame(37563, $error->position->offset);
-            $this->assertSame(TagParseErrorType::ExtraBytes, $error->error);
-            $this->assertSame([
-                'length' => 8,
-                'data' => "\xf6\xda\xb3\xb5\xd7\xfb\x31\xc0",
-            ], $error->payload);
+        } catch (ParserExtraDataException $e) {
+            $this->assertStringStartsWith('Extra data found after tag 26 at offset 37582 (length = 8)', $e->getMessage());
+            $this->assertSame(37582, $e->offset);
+            $this->assertSame(8, $e->length);
         }
     }
 

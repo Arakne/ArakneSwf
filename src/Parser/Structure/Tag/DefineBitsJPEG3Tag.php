@@ -22,10 +22,6 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\SwfReader;
-use RuntimeException;
-
-use function gzuncompress;
-use function sprintf;
 
 final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
 {
@@ -68,7 +64,11 @@ final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
         $alphaData = null;
 
         if ($reader->offset < $end) {
-            $alphaData = gzuncompress($reader->readBytesTo($end)) ?: throw new RuntimeException(sprintf('Invalid ZLIB data'));
+            $alphaData = $reader->readZLibTo($end);
+
+            if ($alphaData === '') {
+                $alphaData = null;
+            }
         }
 
         return new DefineBitsJPEG3Tag(

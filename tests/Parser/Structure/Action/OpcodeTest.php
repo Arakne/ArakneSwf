@@ -2,6 +2,8 @@
 
 namespace Arakne\Tests\Swf\Parser\Structure\Action;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Action\DefineFunction2Data;
 use Arakne\Swf\Parser\Structure\Action\DefineFunctionData;
 use Arakne\Swf\Parser\Structure\Action\GetURL2Data;
@@ -125,6 +127,45 @@ class OpcodeTest extends ParserTestCase
     }
 
     #[Test]
+    public function readDataActionPushInvalidType()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Invalid value type "66" at offset 1');
+
+        $reader = new SwfReader("\x42");
+        Opcode::ActionPush->readData($reader, 1);
+    }
+
+    #[Test]
+    public function readDataActionPushInvalidTypeIgnore()
+    {
+        $reader = new SwfReader("\x42", errors: 0);
+        $this->assertSame([], Opcode::ActionPush->readData($reader, 1));
+    }
+
+    #[Test]
+    public function readDataActionPushEndOutOfBound()
+    {
+        $this->expectException(ParserOutOfBoundException::class);
+        $this->expectExceptionMessage('Cannot read 10 bytes from offset 0, end is at 1');
+
+        $reader = new SwfReader("\x42");
+        Opcode::ActionPush->readData($reader, 10);
+    }
+
+    #[Test]
+    public function readDataActionPushEndOutOfBoundIgnore()
+    {
+        $reader = $this->createReader(__DIR__.'/../../../Fixtures/simple.swf', 101, errors: 0);
+        $reader = $reader->chunk(101, 108);
+
+        $this->assertEquals([
+            new Value(Type::Constant8, 0),
+            new Value(Type::Integer, 123),
+        ], Opcode::ActionPush->readData($reader, 10));
+    }
+
+    #[Test]
     public function readDataActionJump()
     {
         $reader = new SwfReader("\x02\x00");
@@ -181,5 +222,11 @@ class OpcodeTest extends ParserTestCase
     {
         $this->expectExceptionMessage('Unexpected data for opcode ActionAdd, actionLength=42');
         Opcode::ActionAdd->readData(new SwfReader(""), 42);
+    }
+
+    #[Test]
+    public function readDataUnsupportedOpcodeIgnoreError()
+    {
+        $this->assertSame('abcd', Opcode::ActionAdd->readData(new SwfReader("abcd", errors: 0), 4));
     }
 }
