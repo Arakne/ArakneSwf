@@ -5,11 +5,7 @@ namespace Arakne\Tests\Swf;
 use Arakne\Swf\Avm\Api\ScriptArray;
 use Arakne\Swf\Avm\Api\ScriptObject;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
-use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\ParserExtraDataException;
-use Arakne\Swf\Parser\Error\TagParseError;
-use Arakne\Swf\Parser\Error\TagParseErrorType;
-use Arakne\Swf\Parser\Error\TagParseException;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
@@ -25,7 +21,6 @@ use PHPUnit\Framework\TestCase;
 
 use function array_map;
 use function iterator_to_array;
-use function var_dump;
 
 class SwfFileTest extends TestCase
 {
@@ -182,7 +177,7 @@ class SwfFileTest extends TestCase
     #[Test]
     public function withExtraBytesThrowError()
     {
-        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf', new ErrorCollector(true));
+        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf');
 
         try {
             foreach ($swf->tags() as $tag) {

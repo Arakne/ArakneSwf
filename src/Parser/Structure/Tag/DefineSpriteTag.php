@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\SwfReader;
 
@@ -46,7 +45,7 @@ final readonly class DefineSpriteTag
      *
      * @return self
      */
-    public static function read(SwfReader $reader, int $swfVersion, ?ErrorCollector $errorCollector, int $end): self
+    public static function read(SwfReader $reader, int $swfVersion, int $end): self
     {
         $spriteId = $reader->readUI16();
         $frameCount = $reader->readUI16();
@@ -55,7 +54,7 @@ final readonly class DefineSpriteTag
         $tags = [];
 
         foreach (SwfTag::readAll($reader, $end, false) as $tag) {
-            $tags[] = $tag->parse($reader, $swfVersion, $errorCollector);
+            $tags[] = $tag->parse($reader, $swfVersion);
         }
 
         return new DefineSpriteTag(

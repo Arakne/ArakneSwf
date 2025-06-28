@@ -30,7 +30,6 @@ use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
-use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
@@ -59,14 +58,6 @@ final class SwfFile
          * The path to the SWF file.
          */
         public readonly string $path,
-
-        /**
-         * Allow to collect errors during parsing.
-         * If not set, errors will be ignored.
-         *
-         * @deprecated
-         */
-        public readonly ?ErrorCollector $errorCollector = null,
 
         /**
          * Configure the error reporting.
@@ -312,7 +303,6 @@ final class SwfFile
     {
         return $this->parser ??= Swf::fromString(
             file_get_contents($this->path) ?: throw new InvalidArgumentException('Unable to read the file'),
-            $this->errorCollector,
             $this->errors,
         );
     }

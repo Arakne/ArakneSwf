@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Parser\Structure;
 
 use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserExtraDataException;
+use Arakne\Swf\Parser\Error\UnknownTagException;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
@@ -14,14 +15,24 @@ use PHPUnit\Framework\Attributes\TestWith;
 
 use function iterator_to_array;
 use function sprintf;
-use function var_dump;
 
 class SwfTagTest extends ParserTestCase
 {
     #[Test]
     public function parseUnknownTag()
     {
+        $this->expectException(UnknownTagException::class);
+        $this->expectExceptionMessage('Unknown tag with code 68 at offset 2');
         $reader = new SwfReader("\x11\x11my unparsed data!");
+        [$tag] = iterator_to_array(SwfTag::readAll($reader));
+
+        $tag->parse($reader, 5, null);
+    }
+
+    #[Test]
+    public function parseUnknownTagIgnoreError()
+    {
+        $reader = new SwfReader("\x11\x11my unparsed data!", errors: 0);
         [$tag] = iterator_to_array(SwfTag::readAll($reader));
 
         $parsed = $tag->parse($reader, 5, null);
@@ -63,7 +74,7 @@ class SwfTagTest extends ParserTestCase
             $this->assertInstanceOf(SwfTag::class, $tag);
 
             // Ensure that the tag can be parsed
-            $parsed = $tag->parse($reader, 9, null);
+            $parsed = $tag->parse($reader, 9);
             $this->assertFalse($parsed instanceof UnknownTag, sprintf('Tag %d should not be unknown', $tag->type));
             $class = $parsed::class;
             $this->assertStringStartsWith('Arakne\Swf\Parser\Structure\Tag\\', $class);

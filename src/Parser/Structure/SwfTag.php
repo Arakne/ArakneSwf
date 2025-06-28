@@ -20,10 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure;
 
-use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserExtraDataException;
-use Arakne\Swf\Parser\Error\TagParseErrorType;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
@@ -130,6 +128,8 @@ final readonly class SwfTag
     public function __construct(
         /**
          * The tag type, as defined in the SWF specification.
+         *
+         * @var non-negative-int
          */
         public int $type,
 
@@ -151,6 +151,8 @@ final readonly class SwfTag
 
         /**
          * The tag id is set only in case of a definition tag (e.g. DefineXXX)
+         *
+         * @var non-negative-int|null
          */
         public ?int $id = null,
     ) {}
@@ -160,11 +162,10 @@ final readonly class SwfTag
      *
      * @param SwfReader $reader The base reader to use for parsing. This reader will not be modified, and a new reader will be created for the tag data.
      * @param non-negative-int $swfVersion The SWF version of the file being parsed
-     * @param ErrorCollector|null $errorCollector @todo deprecated, to remove
      *
      * @return object
      */
-    public function parse(SwfReader $reader, int $swfVersion, ?ErrorCollector $errorCollector): object
+    public function parse(SwfReader $reader, int $swfVersion): object
     {
         $bytePosEnd = $this->offset + $this->length;
         $reader = $reader->chunk($this->offset, $bytePosEnd);
@@ -205,7 +206,7 @@ final readonly class SwfTag
             DefineBitsJPEG3Tag::TYPE => DefineBitsJPEG3Tag::read($reader, $bytePosEnd),
             DefineBitsLosslessTag::TYPE_V2 => DefineBitsLosslessTag::read($reader, 2, $bytePosEnd),
             DefineEditTextTag::TYPE => DefineEditTextTag::read($reader),
-            DefineSpriteTag::TYPE => DefineSpriteTag::read($reader, $swfVersion, $errorCollector, $bytePosEnd),
+            DefineSpriteTag::TYPE => DefineSpriteTag::read($reader, $swfVersion, $bytePosEnd),
             ProductInfo::TYPE => ProductInfo::read($reader),
             FrameLabelTag::TYPE => FrameLabelTag::read($reader, $bytePosEnd),
             SoundStreamHeadTag::TYPE_V2 => SoundStreamHeadTag::read($reader, 2),
@@ -240,22 +241,8 @@ final readonly class SwfTag
             DefineBitsJPEG4Tag::TYPE => DefineBitsJPEG4Tag::read($reader, $bytePosEnd),
             DefineFont4Tag::TYPE_V4 => DefineFont4Tag::read($reader, $bytePosEnd),
             ReflexTag::TYPE => ReflexTag::read($reader, $bytePosEnd),
-            default => new UnknownTag(
-                code: $this->type,
-                data: $reader->readBytesTo($bytePosEnd),
-            ),
+            default => UnknownTag::create($reader, $this->type, $bytePosEnd),
         };
-
-        if ($ret instanceof UnknownTag) {
-            $errorCollector?->add(
-                $this,
-                TagParseErrorType::UnknownTag,
-                [
-                    'code' => $this->type,
-                    'data' => $ret->data,
-                ]
-            );
-        }
 
         if ($reader->offset < $bytePosEnd && $reader->errors & Errors::EXTRA_DATA) {
             $len = $bytePosEnd - $reader->offset;

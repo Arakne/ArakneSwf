@@ -20,15 +20,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
-use Arakne\Swf\Parser\Error\ErrorCollector;
 use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTag;
-
 use InvalidArgumentException;
 
-use function assert;
 use function iterator_to_array;
 use function sprintf;
 
@@ -47,7 +44,6 @@ final readonly class Swf
          * @var list<SwfTag>
          */
         public array $tags,
-        private ?ErrorCollector $errorCollector = null, // @todo to remove
     ) {
         // @todo tag dictionary
     }
@@ -62,33 +58,32 @@ final readonly class Swf
      */
     final public function parse(SwfTag $tag): object
     {
-        return $tag->parse($this->reader, $this->header->version, $this->errorCollector);
+        return $tag->parse($this->reader, $this->header->version);
     }
 
     /**
      * Parse the SWF data from a string
      *
-     * @param string $data The binary SWF data
-     * @param ErrorCollector|null $errorCollector
+     * @param string $data The binary SWF data.
+     * @param int $errors The error handling mode. See {@see Errors} for available modes.
      *
      * @return self
      */
-    public static function fromString(string $data, ?ErrorCollector $errorCollector = null, int $errors = Errors::ALL): self
+    public static function fromString(string $data, int $errors = Errors::ALL): self
     {
         $reader = new SwfReader($data, errors: $errors);
 
-        return self::read($reader, $errorCollector);
+        return self::read($reader);
     }
 
     /**
      * Create the Swf object from a SWF file reader
      *
      * @param SwfReader $reader
-     * @param ErrorCollector|null $errorCollector
      *
      * @return self
      */
-    public static function read(SwfReader $reader, ?ErrorCollector $errorCollector = null): self
+    public static function read(SwfReader $reader): self
     {
         $signature = $reader->readBytes(3);
 
@@ -126,6 +121,6 @@ final readonly class Swf
 
         $tags = iterator_to_array(SwfTag::readAll($reader), false);
 
-        return new self($reader, $header, $tags, $errorCollector);
+        return new self($reader, $header, $tags);
     }
 }

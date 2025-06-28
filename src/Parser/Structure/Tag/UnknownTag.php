@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\UnknownTagException;
+use Arakne\Swf\Parser\SwfReader;
+
 /**
  * Unknown tag.
  * Can be used to represent a tag that is not yet implemented, an error, a custom tag,
@@ -31,4 +35,23 @@ final readonly class UnknownTag
         public int $code,
         public string $data,
     ) {}
+
+    /**
+     * @param SwfReader $reader
+     * @param non-negative-int $code
+     * @param non-negative-int $end
+     *
+     * @return self
+     */
+    public static function create(SwfReader $reader, int $code, int $end): self
+    {
+        if ($reader->errors & Errors::UNKNOWN_TAG) {
+            throw new UnknownTagException($code, $reader->offset);
+        }
+
+        return new UnknownTag(
+            code: $code,
+            data: $reader->readBytesTo($end),
+        );
+    }
 }

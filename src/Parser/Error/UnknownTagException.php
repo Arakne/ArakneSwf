@@ -13,45 +13,36 @@
  * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
  */
 
 declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Error;
 
+use UnexpectedValueException;
+
+use function sprintf;
+
 /**
- * Constants for error flags.
+ * Exception thrown when an unknown tag is encountered in the SWF file.
  */
-final readonly class Errors
+final class UnknownTagException extends UnexpectedValueException implements ParserExceptionInterface
 {
-    /**
-     * Disable all error flags.
-     */
-    public const int NONE = 0;
+    public function __construct(
+        /**
+         * @var non-negative-int
+         */
+        public readonly int $tagCode,
 
-    /**
-     * Enable all error flags.
-     */
-    public const int ALL = -1;
-
-    /**
-     * Trying to access data after the end of the input stream.
-     */
-    public const int OUT_OF_BOUNDS = 1;
-
-    /**
-     * The input data is invalid or corrupted.
-     */
-    public const int INVALID_DATA = 2;
-
-    /**
-     * The input data has more data than expected (i.e. not all data was consumed).
-     */
-    public const int EXTRA_DATA = 4;
-
-    /**
-     * The tag code is unknown or not supported.
-     */
-    public const int UNKNOWN_TAG = 8;
+        /**
+         * @var non-negative-int
+         */
+        public readonly int $offset,
+    ) {
+        parent::__construct(
+            sprintf('Unknown tag with code %d at offset %d', $tagCode, $offset),
+            Errors::UNKNOWN_TAG
+        );
+    }
 }
