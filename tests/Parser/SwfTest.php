@@ -10,34 +10,24 @@ use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
-use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\PlaceObject3Tag;
 use Arakne\Swf\Parser\Structure\Tag\SetBackgroundColorTag;
 use Arakne\Swf\Parser\Structure\Tag\ShowFrameTag;
-use Arakne\Swf\Parser\Structure\Tag\UnknownTag;
 use Arakne\Swf\Parser\Swf;
-use Exception;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-
 use Random\Engine\Xoshiro256StarStar;
 use Random\Randomizer;
 
 use function assert;
 use function file_get_contents;
-use function file_put_contents;
-use function flush;
 use function gzcompress;
 use function pack;
-use function strlen;
 use function substr;
-use function var_dump;
-
-use const _PHPStan_ea7072c0a\__;
 
 class SwfTest extends TestCase
 {
@@ -346,6 +336,25 @@ class SwfTest extends TestCase
 
             foreach ($swf->tags as $tag) {
                 $swf->parse($tag);
+            }
+        }
+    }
+
+    #[Test]
+    public function truncatedSwf()
+    {
+        $content = file_get_contents(__DIR__.'/../Extractor/Fixtures/core/core.swf');
+        $truncated = Swf::fromString(substr($content, 0, 1_000_000), errors: 0);
+        $valid = Swf::fromString($content, errors: 0);
+
+        $this->assertCount(1349, $truncated->tags);
+
+        foreach ($truncated->tags as $index => $tag) {
+            $this->assertEquals($valid->tags[$index], $tag);
+
+            // Check only small tags for performance reasons
+            if ($tag->length < 5000) {
+                $this->assertEquals($valid->parse($valid->tags[$index]), $truncated->parse($tag));
             }
         }
     }

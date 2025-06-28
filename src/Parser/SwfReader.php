@@ -26,10 +26,14 @@ use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 
 use function assert;
 use function gzuncompress;
+use function inflate_add;
+use function inflate_get_status;
+use function inflate_init;
 use function is_array;
 use function max;
 use function min;
 use function ord;
+use function sprintf;
 use function str_repeat;
 use function strlen;
 use function strpos;
@@ -114,12 +118,45 @@ final class SwfReader
     public function uncompress(?int $len = null): self
     {
         $offset = $this->offset;
-        $compressedMaxLen = $len !== null ? $len - $offset : null;
-        $uncompress = @gzuncompress(substr($this->data, $offset), $compressedMaxLen ?? 0) ?: throw ParserInvalidDataException::createInvalidCompressedData($offset);
-        $data = substr($this->data, 0, $offset) . substr($uncompress, 0, $compressedMaxLen);
+        $end = $this->end;
+        $data = substr($this->data, 0, $offset);
+
+        $context = inflate_init(ZLIB_ENCODING_DEFLATE);
+
+        while ($offset < $end && inflate_get_status($context) === ZLIB_OK) {
+            $chunk = substr($this->data, $offset, 4096);
+            $data .= @inflate_add($context, $chunk, ZLIB_NO_FLUSH);
+
+            if ($len !== null && strlen($data) >= $len) {
+                break;
+            }
+
+            $offset += 4096;
+        }
+
+        if ($len !== null && strlen($data) > $len) {
+            if ($this->errors & Errors::INVALID_DATA) {
+                throw new ParserInvalidDataException(
+                    sprintf('Uncompressed data exceeds the maximum length of %d bytes (actual %d bytes)', $len, strlen($data)),
+                    $offset
+                );
+            }
+
+            $data = substr($data, 0, $len);
+        }
+
+        if (($status = inflate_get_status($context)) !== ZLIB_STREAM_END && ($this->errors & Errors::INVALID_DATA)) {
+            $message = match ($status) {
+                ZLIB_OK => 'Truncated compressed data',
+                ZLIB_DATA_ERROR => 'Invalid compressed data: data error',
+                default => sprintf('Invalid compressed data (errno %d)', $status),
+            };
+
+            throw new ParserInvalidDataException($message, $offset);
+        }
 
         $self = new self($data, errors: $this->errors);
-        $self->offset = $offset;
+        $self->offset = $this->offset;
 
         return $self;
     }

@@ -6,10 +6,14 @@ use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 use PHPUnit\Framework\Attributes\Test;
+use Random\Engine\Xoshiro256StarStar;
+use Random\Randomizer;
 
 use function file_get_contents;
 use function gzcompress;
 use function str_repeat;
+use function strlen;
+use function substr;
 
 class SwfReaderTest extends ParserTestCase
 {
@@ -71,13 +75,121 @@ class SwfReaderTest extends ParserTestCase
     public function uncompressDataTooLong()
     {
         $this->expectException(ParserInvalidDataException::class);
-        $this->expectExceptionMessage('Invalid compressed data at offset 8: gzuncompress(): insufficient memory');
+        $this->expectExceptionMessage('Uncompressed data exceeds the maximum length of 100 bytes (actual 255 bytes)');
 
         $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
         $reader = new SwfReader($data);
         $reader->skipBytes(8);
 
         $reader->uncompress(100);
+    }
+
+    #[Test]
+    public function uncompressZipBomb()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Uncompressed data exceeds the maximum length of 5000 bytes (actual 4209796 bytes)');
+
+        $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 10_000_000));
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+        $reader->uncompress(5000);
+    }
+
+    #[Test]
+    public function uncompressDataTooLongIgnoreError()
+    {
+        $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
+        $reader = new SwfReader($data, errors: 0);
+        $reader->skipBytes(8);
+
+        $reader = $reader->uncompress(100);
+        $this->assertSame("CWF\x05\xFF\x00\x00\x00" . str_repeat('a', 92), $reader->data);
+    }
+
+    #[Test]
+    public function uncompressInvalidData()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Invalid compressed data: data error');
+
+        $data = "CWF\x05\xFF\x00\x00\x00invalid data";
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+        $reader->uncompress();
+    }
+
+    #[Test]
+    public function uncompressInvalidDataIgnoreError()
+    {
+        $data = "CWF\x05\xFF\x00\x00\x00invalid data";
+        $reader = new SwfReader($data, errors: 0);
+        $reader->skipBytes(8);
+        $reader = $reader->uncompress();
+
+        $this->assertSame("CWF\x05\xFF\x00\x00\x00", $reader->data);
+    }
+
+    #[Test]
+    public function uncompressInvalidChecksum()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Invalid compressed data: data error');
+
+        $compressed = gzcompress(str_repeat('a', 247));
+        $compressed[5] = '0';
+
+        $data = "CWF\x05\xFF\x00\x00\x00" . $compressed;
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+        $reader->uncompress();
+    }
+
+    #[Test]
+    public function uncompressInvalidChecksumIgnoreError()
+    {
+        $original = new Randomizer(new Xoshiro256StarStar(123))->getBytes(10000);
+        $compressed = gzcompress($original);
+        $compressed[8300] = '0';
+
+        $data = "CWF\x05\xFF\x00\x00\x00" . $compressed;
+        $reader = new SwfReader($data, errors: 0);
+        $reader->skipBytes(8);
+        $reader = $reader->uncompress();
+
+        $len = strlen($reader->data);
+        $this->assertLessThan(10000, $len);
+        $this->assertGreaterThan(4000, $len);
+        $this->assertSame(substr("CWF\x05\xFF\x00\x00\x00" . $original, 0, $len), $reader->data);
+    }
+
+    #[Test]
+    public function uncompressTruncatedData()
+    {
+        $this->expectException(ParserInvalidDataException::class);
+        $this->expectExceptionMessage('Truncated compressed data');
+
+        $compressed = gzcompress(str_repeat('a', 247));
+        $compressed = substr($compressed, 0, (int) (0.9 * strlen($compressed)));
+
+        $data = "CWF\x05\xFF\x00\x00\x00" . $compressed;
+        $reader = new SwfReader($data);
+        $reader->skipBytes(8);
+        $reader->uncompress();
+    }
+
+    #[Test]
+    public function uncompressTruncatedDataIgnoreError()
+    {
+        $compressed = gzcompress(str_repeat('abcdefghijklmnopqrstuvwxyz', 10));
+        $compressed = substr($compressed, 0, (int) (0.7 * strlen($compressed)));
+
+        $data = "CWF\x05\xFF\x00\x00\x00" . $compressed;
+        $reader = new SwfReader($data, errors: 0);
+        $reader->skipBytes(8);
+        $reader = $reader->uncompress();
+
+        $this->assertSame("CWF\x05\xFF\x00\x00\x00abcdefghijklmnopqrstuv", $reader->data);
     }
 
     #[Test]
