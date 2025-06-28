@@ -122,6 +122,7 @@ final class SwfReader
         $data = substr($this->data, 0, $offset);
 
         $context = inflate_init(ZLIB_ENCODING_DEFLATE);
+        assert($context !== false);
 
         while ($offset < $end && inflate_get_status($context) === ZLIB_OK) {
             $chunk = substr($this->data, $offset, 4096);
