@@ -51,17 +51,17 @@ final readonly class DefineFunction2Data
         $numParams = $reader->readUI16();
         $registerCount = $reader->readUI8();
 
-        // @todo use bit operators
-        $preloadParentFlag = $reader->readBool();
-        $preloadRootFlag = $reader->readBool();
-        $suppressSuperFlag = $reader->readBool();
-        $preloadSuperFlag = $reader->readBool();
-        $suppressArgumentsFlag = $reader->readBool();
-        $preloadArgumentsFlag = $reader->readBool();
-        $suppressThisFlag = $reader->readBool();
-        $preloadThisFlag = $reader->readBool();
-        $reader->skipBits(7); // Reserved
-        $preloadGlobalFlag = $reader->readBool();
+        $flags = $reader->readUI8();
+        $preloadParentFlag     = ($flags & 0b10000000) !== 0;
+        $preloadRootFlag       = ($flags & 0b01000000) !== 0;
+        $suppressSuperFlag     = ($flags & 0b00100000) !== 0;
+        $preloadSuperFlag      = ($flags & 0b00010000) !== 0;
+        $suppressArgumentsFlag = ($flags & 0b00001000) !== 0;
+        $preloadArgumentsFlag  = ($flags & 0b00000100) !== 0;
+        $suppressThisFlag      = ($flags & 0b00000010) !== 0;
+        $preloadThisFlag       = ($flags & 0b00000001) !== 0;
+        // 7 bits Reserved
+        $preloadGlobalFlag = ($reader->readUI8() & 0b00000001) !== 0;
 
         $parameters = [];
         $registers = [];

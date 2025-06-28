@@ -157,7 +157,6 @@ final readonly class Rectangle
         $ymin = $reader->readSB($nbits);
         $ymax = $reader->readSB($nbits);
 
-        // @todo test
         if ($xmin > $xmax) {
             if ($reader->errors & Errors::INVALID_DATA) {
                 throw new ParserInvalidDataException(sprintf('Invalid rectangle: xmin (%d) is greater than xmax (%d)', $xmin, $xmax), $reader->offset);

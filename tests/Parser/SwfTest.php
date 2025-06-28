@@ -10,6 +10,7 @@ use Arakne\Swf\Parser\Structure\Record\Filter\ColorMatrixFilter;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSceneAndFrameLabelDataTag;
+use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
@@ -202,12 +203,7 @@ class SwfTest extends TestCase
     {
         $swf = Swf::fromString(file_get_contents(__DIR__.'/../Extractor/Fixtures/62/62.swf'));
 
-        foreach ($swf->tags as $pos) {
-            if ($pos->id === 19) {
-                $tag = $swf->parse($pos);
-            }
-        }
-
+        $tag = $swf->parse($swf->dictionary[19]);
         assert($tag instanceof DefineSpriteTag);
 
         foreach ($tag->tags as $placeObject) {
@@ -241,6 +237,17 @@ class SwfTest extends TestCase
             1.0,
             0.0,
         ], $matrix, 0.00001);
+    }
+
+    #[Test]
+    public function dictionary()
+    {
+        $swf = Swf::fromString(file_get_contents(__DIR__.'/../Extractor/Fixtures/62/62.swf'));
+        $this->assertCount(19, $swf->dictionary);
+        $this->assertContainsOnlyInstancesOf(SwfTag::class, $swf->dictionary);
+
+        $this->assertSame(DefineShape4Tag::TYPE_V4, $swf->dictionary[1]->type);
+        $this->assertSame(DefineSpriteTag::TYPE, $swf->dictionary[19]->type);
     }
 
     #[Test]

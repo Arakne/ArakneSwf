@@ -22,23 +22,18 @@ namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\SwfReader;
 
-use function assert;
-use function count;
-
 final readonly class ExportAssetsTag
 {
     public const int ID = 56;
 
     public function __construct(
-        /** @var list<int> */
-        public array $tags,
-
-        /** @var list<string> */
-        public array $names,
-    ) {
-        // @todo use associative array instead of two lists
-        assert(count($this->tags) === count($this->names));
-    }
+        /**
+         * Map of exported character IDs to their names.
+         *
+         * @var array<non-negative-int, string>
+         */
+        public array $characters,
+    ) {}
 
     /**
      * Read an ExportAssetsTag from the SWF reader
@@ -48,18 +43,13 @@ final readonly class ExportAssetsTag
      */
     public static function read(SwfReader $reader): self
     {
-        $tags = [];
-        $names = [];
+        $characters = [];
         $count = $reader->readUI16();
 
-        for ($i = 0; $i < $count; $i++) {
-            $tags[] = $reader->readUI16();
-            $names[] = $reader->readNullTerminatedString();
+        for ($i = 0; $i < $count && $reader->offset < $reader->end; $i++) {
+            $characters[$reader->readUI16()] = $reader->readNullTerminatedString();
         }
 
-        return new ExportAssetsTag(
-            tags: $tags,
-            names: $names,
-        );
+        return new ExportAssetsTag($characters);
     }
 }

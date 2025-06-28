@@ -34,7 +34,7 @@ use function sprintf;
  */
 final readonly class Swf
 {
-    public function __construct(
+    private function __construct(
         private SwfReader $reader,
         public SwfHeader $header,
 
@@ -44,9 +44,14 @@ final readonly class Swf
          * @var list<SwfTag>
          */
         public array $tags,
-    ) {
-        // @todo tag dictionary
-    }
+
+        /**
+         * Contains all DefineXXX tags, indexed by their character ID.
+         *
+         * @var array<non-negative-int, SwfTag>
+         */
+        public array $dictionary,
+    ) {}
 
     /**
      * Parse the given tag data
@@ -119,8 +124,17 @@ final readonly class Swf
             $frameCount,
         );
 
-        $tags = iterator_to_array(SwfTag::readAll($reader), false);
+        $tags = [];
+        $dictionary = [];
 
-        return new self($reader, $header, $tags);
+        foreach (SwfTag::readAll($reader) as $tag) {
+            $tags[] = $tag;
+
+            if ($tag->id !== null) {
+                $dictionary[$tag->id] = $tag;
+            }
+        }
+
+        return new self($reader, $header, $tags, $dictionary);
     }
 }

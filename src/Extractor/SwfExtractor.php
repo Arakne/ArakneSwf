@@ -42,7 +42,7 @@ use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
 use InvalidArgumentException;
 
-use function array_combine;
+use function array_flip;
 use function assert;
 use function sprintf;
 
@@ -231,7 +231,7 @@ final class SwfExtractor
         foreach ($this->file->tags(ExportAssetsTag::ID) as $tag) {
             assert($tag instanceof ExportAssetsTag);
 
-            $exported += array_combine($tag->names, $tag->tags);
+            $exported += array_flip($tag->characters);
         }
 
         return $this->exported = $exported;
