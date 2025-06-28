@@ -23,7 +23,7 @@ namespace Arakne\Swf\Extractor\Image;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Override;
 
 /**
@@ -34,7 +34,7 @@ interface ImageCharacterInterface extends DrawableInterface
     /**
      * The character id of the image in the SWF file.
      *
-     * @see SwfTagPosition::$id
+     * @see SwfTag::$id
      */
     public int $characterId { get; }
 

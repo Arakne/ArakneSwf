@@ -23,7 +23,7 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function characterId()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE), false);
         $image = new ImageBitsDefinition($tag, $jpegTables);
 
         $this->assertSame(244, $image->characterId);
@@ -33,7 +33,7 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function bounds()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE), false);
 
         $image = new ImageBitsDefinition($tag, $jpegTables);
 
@@ -49,7 +49,7 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function framesCount()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE), false);
 
         $image = new ImageBitsDefinition($tag, $jpegTables);
 
@@ -61,10 +61,10 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function toPng()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::TYPE), false)[0];
 
         /** @var DefineBitsTag $tag */
-        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsTag::TYPE) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $image->toPng());
         }
@@ -74,10 +74,10 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function toBase64Data()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::TYPE), false)[0];
 
         /** @var DefineBitsTag $tag */
-        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsTag::TYPE) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $data = $image->toBase64Data();
 
@@ -91,10 +91,10 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function toBestFormat()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::TYPE), false)[0];
 
         /** @var DefineBitsTag $tag */
-        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsTag::TYPE) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $data = $image->toBestFormat();
 
@@ -107,10 +107,10 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function toJpeg()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::TYPE), false)[0];
 
         /** @var DefineBitsTag $tag */
-        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsTag::TYPE) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $this->assertImageStringEqualsImageFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.png', $image->toJpeg(), 0.005);
         }
@@ -120,7 +120,7 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function transformColors()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::ID, DefineBitsTag::ID), false);
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE), false);
 
         $image = new ImageBitsDefinition($tag, $jpegTables);
         $transformed = $image->transformColors(new ColorTransform(greenMult: 0, blueMult: 0));
@@ -135,10 +135,10 @@ class ImageBitsDefinitionTest extends ImageTestCase
     public function draw()
     {
         $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
-        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::ID), false)[0];
+        $jpegTables = iterator_to_array($swf->tags(JPEGTablesTag::TYPE), false)[0];
 
         /** @var DefineBitsTag $tag */
-        foreach ($swf->tags(DefineBitsTag::ID) as $tag) {
+        foreach ($swf->tags(DefineBitsTag::TYPE) as $tag) {
             $image = new ImageBitsDefinition($tag, $jpegTables);
             $drawer = new SvgCanvas($image->bounds());
             $image->draw($drawer);

@@ -27,7 +27,7 @@ It may also require some PHP extensions, depending on the features you want to u
 - `xml` for sprite export (performed in SVG format)
 - `Imagick` to convert SVG to PNG or JPEG format
 
-> [!NOTE]
+> [!INFO]
 > On some systems, the `Imagick` extension does not support well the SVG format, so the conversion may result in a weird image.
 > In this case, try to install `rsvg-convert` command (package `librsvg2-bin` on Debian/Ubuntu, `librsvg2-tools` on Fedora) or `inkscape`.
 > Inkscape is slower than rsvg, but may produce better results.
@@ -329,20 +329,20 @@ foreach ($file->tags(11, 33) as $pos => $tag) {
 }
 
 // If you want even lower API, you can use `Swf` class from `Parser` package.
-$parser = new Swf(file_get_contents('my_anim.swf'));
+$parser = Swf::fromString(file_get_contents('my_anim.swf'));
 
 $header = $parser->header;
 
 foreach ($parser->tags as $pos) {
-    $tag = $parser->parseTag($pos);
+    $tag = $parser->parse($pos);
 }
 ```
 
 ## License and credit
 
-This library is shared using two licenses:
-- [LGPLv3](./COPYING.LESSER) for the global library
-- [GPLv3](./COPYING) for the [parser library](./src/Parser/README.md)
+This library is shared under the [LGPLv3](./COPYING.LESSER) license.
 
-The parser is derived from the work of Thanos Efraimidis on [SWF.php](https://www.4real.gr/technical-documents-swf-parser.html),
-which is licensed under the GPLv3 license.
+Thanks to
+- [Thanos Efraimidis](https://www.4real.gr/) for his work on SWF parsing ([SWF.php](https://www.4real.gr/technical-documents-swf-parser.html)), which inspired this project.
+- Jindra Petřík with [FFDec](https://github.com/jindrapetrik/jpexs-decompiler), which really helped to understand the SWF format.
+- [Open Flash](https://open-flash.github.io/) for resources and documentation about SWF format.

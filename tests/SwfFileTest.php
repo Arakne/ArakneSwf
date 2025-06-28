@@ -5,12 +5,9 @@ namespace Arakne\Tests\Swf;
 use Arakne\Swf\Avm\Api\ScriptArray;
 use Arakne\Swf\Avm\Api\ScriptObject;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
-use Arakne\Swf\Parser\Error\ErrorCollector;
-use Arakne\Swf\Parser\Error\TagParseError;
-use Arakne\Swf\Parser\Error\TagParseErrorType;
-use Arakne\Swf\Parser\Error\TagParseException;
+use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\FileAttributesTag;
@@ -24,7 +21,6 @@ use PHPUnit\Framework\TestCase;
 
 use function array_map;
 use function iterator_to_array;
-use function var_dump;
 
 class SwfFileTest extends TestCase
 {
@@ -134,9 +130,9 @@ class SwfFileTest extends TestCase
         }
 
         $this->assertCount(2, $tags);
-        $this->assertEquals(new SwfTagPosition(9, 29, 3), $tags[0][0]);
+        $this->assertEquals(new SwfTag(9, 29, 3), $tags[0][0]);
         $this->assertInstanceOf(SetBackgroundColorTag::class, $tags[0][1]);
-        $this->assertEquals(new SwfTagPosition(12, 38, 168338), $tags[1][0]);
+        $this->assertEquals(new SwfTag(12, 38, 168338), $tags[1][0]);
         $this->assertInstanceOf(DoActionTag::class, $tags[1][1]);
     }
 
@@ -171,40 +167,17 @@ class SwfFileTest extends TestCase
     #[Test]
     public function withExtraBytesIgnoreError()
     {
-        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf');
+        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf', errors: 0);
 
         foreach ($swf->tags() as $tag) {
             $this->assertIsObject($tag);
         }
-    }
-
-    #[Test]
-    public function withExtraBytesCollectError()
-    {
-        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf', $errors = new ErrorCollector());
-
-        foreach ($swf->tags() as $tag) {
-            $this->assertIsObject($tag);
-        }
-
-        /** @var TagParseError[] $errors */
-        $errors = iterator_to_array($errors);
-
-        $this->assertCount(1, $errors);
-
-        $this->assertSame(26, $errors[0]->position->type);
-        $this->assertSame(5893, $errors[0]->position->offset);
-        $this->assertSame(TagParseErrorType::ExtraBytes, $errors[0]->error);
-        $this->assertSame([
-            'length' => 8,
-            'data' => "\xf6\xda\xb3\xb5\xd7\xfb\x31\xc0",
-        ], $errors[0]->payload);
     }
 
     #[Test]
     public function withExtraBytesThrowError()
     {
-        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf', new ErrorCollector(true));
+        $swf = new SwfFile(__DIR__.'/Fixtures/1317.swf');
 
         try {
             foreach ($swf->tags() as $tag) {
@@ -212,16 +185,10 @@ class SwfFileTest extends TestCase
             }
 
             $this->fail('Expected exception not thrown');
-        } catch (TagParseException $e) {
-            $error = $e->error;
-            $this->assertStringStartsWith('Error parsing tag 26: ExtraBytes', $e->getMessage());
-            $this->assertSame(26, $error->position->type);
-            $this->assertSame(5893, $error->position->offset);
-            $this->assertSame(TagParseErrorType::ExtraBytes, $error->error);
-            $this->assertSame([
-                'length' => 8,
-                'data' => "\xf6\xda\xb3\xb5\xd7\xfb\x31\xc0",
-            ], $error->payload);
+        } catch (ParserExtraDataException $e) {
+            $this->assertStringStartsWith('Extra data found after tag 26 at offset 37582 (length = 8)', $e->getMessage());
+            $this->assertSame(37582, $e->offset);
+            $this->assertSame(8, $e->length);
         }
     }
 

@@ -3,18 +3,17 @@
 /*
  * This file is part of Arakne-Swf.
  *
- * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  *
  * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ * See the GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Arakne-Swf: derived from SWF.php
- * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
  */
 
 declare(strict_types=1);
@@ -22,10 +21,11 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Tag;
 
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
+use Arakne\Swf\Parser\SwfReader;
 
 final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
 {
-    public const int ID = 35;
+    public const int TYPE = 35;
 
     public ImageDataType $type;
 
@@ -45,8 +45,36 @@ final readonly class DefineBitsJPEG3Tag implements DefineBitsJPEGTagInterface
          *
          * Note: this field is only present if the {@see $imageData} is a JPEG image.
          */
-        public string $alphaData,
+        public ?string $alphaData,
     ) {
         $this->type = ImageDataType::resolve($this->imageData);
+    }
+
+    /**
+     * Read a DefineBitsJPEG3Tag from the given reader
+     *
+     * @param SwfReader $reader
+     * @param non-negative-int $end The end byte position of the tag.
+     * @return self
+     */
+    public static function read(SwfReader $reader, int $end): self
+    {
+        $characterId = $reader->readUI16();
+        $imageData = $reader->readBytes($reader->readUI32());
+        $alphaData = null;
+
+        if ($reader->offset < $end) {
+            $alphaData = $reader->readZLibTo($end);
+
+            if ($alphaData === '') {
+                $alphaData = null;
+            }
+        }
+
+        return new DefineBitsJPEG3Tag(
+            characterId: $characterId,
+            imageData: $imageData,
+            alphaData: $alphaData,
+        );
     }
 }

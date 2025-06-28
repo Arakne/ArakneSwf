@@ -30,13 +30,13 @@ use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
-use Arakne\Swf\Parser\Error\ErrorCollector;
+use Arakne\Swf\Parser\Error\Errors;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Arakne\Swf\Parser\Swf;
-use Arakne\Swf\Parser\SwfIO;
+use Arakne\Swf\Parser\SwfReader;
 use InvalidArgumentException;
 
 use function array_flip;
@@ -60,10 +60,16 @@ final class SwfFile
         public readonly string $path,
 
         /**
-         * Allow to collect errors during parsing.
-         * If not set, errors will be ignored.
+         * Configure the error reporting.
+         *
+         * Enabling all errors will stop the parsing on the first, malformed or unexpected data.
+         * This can improve security, but may also fail to parse some legitimate SWF files.
+         *
+         * Disabling all errors will lead to fail-safe parsing, so it will try to parse as much as possible,
+         * even missing or malformed data, without throwing any exception.
+         * This allows to extract from corrupted files, but may lead to unexpected results and security issues.
          */
-        public readonly ?ErrorCollector $errorCollector = null,
+        public readonly int $errors = Errors::ALL,
     ) {}
 
     /**
@@ -85,21 +91,21 @@ final class SwfFile
             return false;
         }
 
-        $io = new SwfIO($head);
-        $signature = $io->collectBytes(3);
+        $io = new SwfReader($head);
+        $signature = $io->readBytes(3);
 
         if ($signature !== 'CWS' && $signature !== 'FWS') {
             return false;
         }
 
-        $version = $io->collectUI8();
+        $version = $io->readUI8();
 
         // Last version (2024) is 51, so we can safely assume that any version above 60 is invalid
         if ($version > 60) {
             return false;
         }
 
-        $len = $io->collectUI32();
+        $len = $io->readUI32();
 
         if ($len > $maxLength) {
             return false;
@@ -151,7 +157,7 @@ final class SwfFile
      *
      * @param int ...$tagIds The tag IDs to extract. If empty, all tags are extracted.
      *
-     * @return iterable<SwfTagPosition, object>
+     * @return iterable<SwfTag, object>
      */
     public function tags(int ...$tagIds): iterable
     {
@@ -163,7 +169,7 @@ final class SwfFile
 
         foreach ($parser->tags as $tag) {
             if (!$tagIds || isset($tagIds[$tag->type])) {
-                yield $tag => $parser->parseTag($tag);
+                yield $tag => $parser->parse($tag);
             }
         }
     }
@@ -295,9 +301,9 @@ final class SwfFile
 
     private function parser(): Swf
     {
-        return $this->parser ??= new Swf(
+        return $this->parser ??= Swf::fromString(
             file_get_contents($this->path) ?: throw new InvalidArgumentException('Unable to read the file'),
-            $this->errorCollector
+            $this->errors,
         );
     }
 }

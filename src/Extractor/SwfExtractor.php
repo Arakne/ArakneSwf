@@ -28,7 +28,7 @@ use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
-use Arakne\Swf\Parser\Structure\SwfTagPosition;
+use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
@@ -42,7 +42,7 @@ use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
 use InvalidArgumentException;
 
-use function array_combine;
+use function array_flip;
 use function assert;
 use function sprintf;
 
@@ -86,7 +86,7 @@ final class SwfExtractor
     /**
      * Extract all shapes from the SWF file.
      *
-     * The result array will be indexed by the character ID (i.e. {@see SwfTagPosition::$id}).
+     * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
      *
      * Note: Shape will not be processed immediately, but only when requested.
      *
@@ -119,7 +119,7 @@ final class SwfExtractor
     /**
      * Extract all raster images from the SWF file.
      *
-     * The result array will be indexed by the character ID (i.e. {@see SwfTagPosition::$id}).
+     * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
      *
      * @return array<int, LosslessImageDefinition|JpegImageDefinition|ImageBitsDefinition>
      */
@@ -231,7 +231,7 @@ final class SwfExtractor
         foreach ($this->file->tags(ExportAssetsTag::ID) as $tag) {
             assert($tag instanceof ExportAssetsTag);
 
-            $exported += array_combine($tag->names, $tag->tags);
+            $exported += array_flip($tag->characters);
         }
 
         return $this->exported = $exported;
@@ -261,7 +261,7 @@ final class SwfExtractor
     {
         $images = [];
 
-        foreach ($this->file->tags(DefineBitsLosslessTag::V1_ID, DefineBitsLosslessTag::V2_ID) as $pos => $tag) {
+        foreach ($this->file->tags(DefineBitsLosslessTag::TYPE_V1, DefineBitsLosslessTag::TYPE_V2) as $pos => $tag) {
             assert($tag instanceof DefineBitsLosslessTag);
 
             if (($id = $pos->id) === null) {
@@ -283,7 +283,7 @@ final class SwfExtractor
         $jpegTables = null;
 
         /** @var JPEGTablesTag|DefineBitsTag $tag */
-        foreach ($this->file->tags(JPEGTablesTag::ID, DefineBitsTag::ID) as $tag) {
+        foreach ($this->file->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE) as $tag) {
             if ($tag instanceof JPEGTablesTag) {
                 $jpegTables = $tag;
                 continue;
@@ -307,7 +307,7 @@ final class SwfExtractor
     {
         $images = [];
 
-        foreach ($this->file->tags(DefineBitsJPEG2Tag::ID, DefineBitsJPEG3Tag::ID, DefineBitsJPEG4Tag::ID) as $pos => $tag) {
+        foreach ($this->file->tags(DefineBitsJPEG2Tag::TYPE, DefineBitsJPEG3Tag::TYPE, DefineBitsJPEG4Tag::TYPE) as $pos => $tag) {
             assert($tag instanceof DefineBitsJPEG2Tag || $tag instanceof DefineBitsJPEG3Tag || $tag instanceof DefineBitsJPEG4Tag);
 
             if (($id = $pos->id) === null) {

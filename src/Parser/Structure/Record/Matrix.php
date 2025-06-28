@@ -3,25 +3,28 @@
 /*
  * This file is part of Arakne-Swf.
  *
- * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  *
  * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ * See the GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with Arakne-Swf.
+ * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Arakne-Swf: derived from SWF.php
- * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
  */
 
 declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
 
+use Arakne\Swf\Parser\SwfReader;
+
+use function assert;
 use function round;
+use function var_dump;
 
 /**
  * Represents a 2D transformation matrix
@@ -129,5 +132,39 @@ final readonly class Matrix
         }
 
         return 'matrix(' . round($scaleX, 4) . ', ' . round($rotateSkew0, 4) . ', ' . round($rotateSkew1, 4) . ', ' . round($scaleY, 4) . ', ' . round($this->translateX / 20, 4) . ', ' . round($this->translateY / 20, 4) . ')';
+    }
+
+    public static function read(SwfReader $reader): self
+    {
+        $scaleX = 1.0;
+        $scaleY = 1.0;
+        $rotateSkew0 = 0.0;
+        $rotateSkew1 = 0.0;
+        $translateX = 0;
+        $translateY = 0;
+
+        if ($reader->readBool()) {
+            $nScaleBits = $reader->readUB(5);
+            assert($nScaleBits < 32);
+            $scaleX = $reader->readFB($nScaleBits);
+            $scaleY = $reader->readFB($nScaleBits);
+        }
+
+        if ($reader->readBool()) {
+            $nRotateBits = $reader->readUB(5);
+            assert($nRotateBits < 32);
+            $rotateSkew0 = $reader->readFB($nRotateBits);
+            $rotateSkew1 = $reader->readFB($nRotateBits);
+        }
+
+        if (($nTranslateBits = $reader->readUB(5)) !== 0) {
+            assert($nTranslateBits < 32);
+            $translateX = $reader->readSB($nTranslateBits);
+            $translateY = $reader->readSB($nTranslateBits);
+        }
+
+        $reader->alignByte();
+
+        return new Matrix($scaleX, $scaleY, $rotateSkew0, $rotateSkew1, $translateX, $translateY);
     }
 }
