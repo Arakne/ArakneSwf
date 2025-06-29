@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf;
 
 use Arakne\Swf\Avm\Api\ScriptArray;
 use Arakne\Swf\Avm\Api\ScriptObject;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -19,8 +20,13 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
+use Random\Randomizer;
+
 use function array_map;
+use function file_get_contents;
+use function file_put_contents;
 use function iterator_to_array;
+use function var_dump;
 
 class SwfFileTest extends TestCase
 {
@@ -134,6 +140,15 @@ class SwfFileTest extends TestCase
         $this->assertInstanceOf(SetBackgroundColorTag::class, $tags[0][1]);
         $this->assertEquals(new SwfTag(12, 38, 168338), $tags[1][0]);
         $this->assertInstanceOf(DoActionTag::class, $tags[1][1]);
+    }
+
+    #[Test]
+    public function tagsIgnoreInvalid()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/corrupted.swf', errors: Errors::IGNORE_INVALID_TAG);
+        $tags = iterator_to_array($swf->tags(), false);
+
+        $this->assertCount(15, $tags);
     }
 
     #[Test]

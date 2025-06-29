@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 
 final readonly class DefineFont4Tag
@@ -41,6 +43,9 @@ final readonly class DefineFont4Tag
      * @param non-negative-int $end The end offset of the tag data
      *
      * @return self
+     *
+     * @throws ParserOutOfBoundException
+     * @throws ParserInvalidDataException
      */
     public static function read(SwfReader $reader, int $end): self
     {

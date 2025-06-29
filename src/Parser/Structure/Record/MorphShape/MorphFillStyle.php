@@ -20,12 +20,11 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record\MorphShape;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\SwfReader;
-use UnexpectedValueException;
 
 final readonly class MorphFillStyle
 {

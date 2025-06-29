@@ -20,11 +20,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Action;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
-use Exception;
 
 use function sprintf;
 

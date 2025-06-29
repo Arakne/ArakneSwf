@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-use Arakne\Swf\Parser\Swf;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 
 final readonly class FileAttributesTag
@@ -41,6 +41,7 @@ final readonly class FileAttributesTag
      * @param SwfReader $reader
      *
      * @return self
+     * @throws ParserOutOfBoundException
      */
     public static function read(SwfReader $reader): self
     {

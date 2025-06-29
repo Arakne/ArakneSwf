@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Error;
 
+use Arakne\Swf\Error\Errors;
 use UnexpectedValueException;
 
 /**

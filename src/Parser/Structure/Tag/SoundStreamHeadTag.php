@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 
 final readonly class SoundStreamHeadTag
@@ -47,6 +48,7 @@ final readonly class SoundStreamHeadTag
      * @param int<1, 2> $version The version of the tag, either 1 or 2
      *
      * @return self
+     * @throws ParserOutOfBoundException
      */
     public static function read(SwfReader $reader, int $version): self
     {

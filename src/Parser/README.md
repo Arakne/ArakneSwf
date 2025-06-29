@@ -42,9 +42,9 @@ When an error is disabled, the parser will try to provide a partial or default v
 See [`Errors`](./Error/Errors.php) to get the list of available errors.
 
 ```php
-use Arakne\Swf\Parser\Swf;
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserExceptionInterface;
+use Arakne\Swf\Parser\Swf;
 
 // Enable all errors, but accept unknown tags
 $swf = Swf::fromString(file_get_contents('path/to/file.swf'), errors: Errors::ALL & ~Errors::UNKNOWN_TAG);

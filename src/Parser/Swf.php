@@ -20,13 +20,13 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use InvalidArgumentException;
 
-use function iterator_to_array;
 use function sprintf;
 
 /**
@@ -60,6 +60,7 @@ final readonly class Swf
      * @return object
      *
      * @see SwfTag::parse()
+     * @throws ParserExceptionInterface
      */
     final public function parse(SwfTag $tag): object
     {
@@ -73,6 +74,7 @@ final readonly class Swf
      * @param int $errors The error handling mode. See {@see Errors} for available modes.
      *
      * @return self
+     * @throws ParserExceptionInterface
      */
     public static function fromString(string $data, int $errors = Errors::ALL): self
     {
@@ -87,6 +89,7 @@ final readonly class Swf
      * @param SwfReader $reader
      *
      * @return self
+     * @throws ParserExceptionInterface
      */
     public static function read(SwfReader $reader): self
     {

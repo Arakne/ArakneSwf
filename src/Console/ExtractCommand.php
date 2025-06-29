@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Console;
 
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
@@ -30,6 +31,7 @@ use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\SwfFile;
+use Exception;
 use InvalidArgumentException;
 use Throwable;
 
@@ -42,6 +44,7 @@ use function file_put_contents;
 use function is_dir;
 use function json_encode;
 use function mkdir;
+use function printf;
 
 final readonly class ExtractCommand
 {
@@ -167,7 +170,7 @@ final readonly class ExtractCommand
 
     public function process(ExtractOptions $options, string $file): bool
     {
-        $swf = new SwfFile($file);
+        $swf = new SwfFile($file, errors: Errors::IGNORE_INVALID_TAG & ~Errors::EXTRA_DATA);
 
         if (!$swf->valid()) {
             echo "error: The file $file is not a valid SWF file", PHP_EOL;
@@ -221,13 +224,19 @@ final readonly class ExtractCommand
 
     private function processCharacter(ExtractOptions $options, SwfFile $file, string $name, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
     {
-        return match (true) {
-            $character instanceof Timeline => $this->processTimeline($options, $file, $name, $character),
-            $character instanceof SpriteDefinition => $this->processSprite($options, $file, $name, $character),
-            $character instanceof ImageCharacterInterface => $this->processImage($options, $file->path, $name, $character),
-            $character instanceof ShapeDefinition => $this->processShape($options, $file->path, $name, $character),
-            $character instanceof MissingCharacter => (print "The character $name is missing in the SWF file" . PHP_EOL) && false,
-        };
+        try {
+            return match (true) {
+                $character instanceof Timeline => $this->processTimeline($options, $file, $name, $character),
+                $character instanceof SpriteDefinition => $this->processSprite($options, $file, $name, $character),
+                $character instanceof ImageCharacterInterface => $this->processImage($options, $file->path, $name, $character),
+                $character instanceof ShapeDefinition => $this->processShape($options, $file->path, $name, $character),
+                $character instanceof MissingCharacter => printf('The character %s is missing in the SWF file or unsupported' . PHP_EOL, $name) && false,
+            };
+        } catch (Exception $e){
+            printf('An error occurred while processing the character %s: %s' . PHP_EOL, $name, $e->getMessage());
+
+            return false;
+        }
     }
 
     private function processVariables(ExtractOptions $options, string $name, SwfFile $swf): bool

@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\EditTextLayout;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -58,6 +60,9 @@ final readonly class DefineEditTextTag
      * @param SwfReader $reader
      *
      * @return self
+     *
+     * @throws ParserOutOfBoundException
+     * @throws ParserInvalidDataException
      */
     public static function read(SwfReader $reader): self
     {

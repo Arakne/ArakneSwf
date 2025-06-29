@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Record\FontLayout;
 use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
@@ -66,6 +68,9 @@ final readonly class DefineFont2Or3Tag
      * @param int<2, 3> $version The tag version (2 or 3)
      *
      * @return self
+     *
+     * @throws ParserOutOfBoundException
+     * @throws ParserInvalidDataException
      */
     public static function read(SwfReader $reader, int $version): self
     {

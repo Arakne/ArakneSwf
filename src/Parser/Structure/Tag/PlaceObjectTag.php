@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\SwfReader;
@@ -42,6 +43,7 @@ final readonly class PlaceObjectTag
      * @param non-negative-int $end The end byte offset for this tag
      *
      * @return self
+     * @throws ParserOutOfBoundException
      */
     public static function read(SwfReader $reader, int $end): self
     {

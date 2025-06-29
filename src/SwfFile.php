@@ -22,6 +22,7 @@ namespace Arakne\Swf;
 
 use Arakne\Swf\Avm\Processor;
 use Arakne\Swf\Avm\State;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
@@ -30,7 +31,7 @@ use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfHeader;
 use Arakne\Swf\Parser\Structure\SwfTag;
@@ -91,21 +92,21 @@ final class SwfFile
             return false;
         }
 
-        $io = new SwfReader($head);
-        $signature = $io->readBytes(3);
+        $reader = new SwfReader($head);
+        $signature = $reader->readBytes(3);
 
         if ($signature !== 'CWS' && $signature !== 'FWS') {
             return false;
         }
 
-        $version = $io->readUI8();
+        $version = $reader->readUI8();
 
         // Last version (2024) is 51, so we can safely assume that any version above 60 is invalid
         if ($version > 60) {
             return false;
         }
 
-        $len = $io->readUI32();
+        $len = $reader->readUI32();
 
         if ($len > $maxLength) {
             return false;
@@ -116,6 +117,8 @@ final class SwfFile
 
     /**
      * Get the SWF file header.
+     *
+     * @throws ParserExceptionInterface
      */
     public function header(): SwfHeader
     {
@@ -124,6 +127,8 @@ final class SwfFile
 
     /**
      * Get the display size of SWF file frames.
+     *
+     * @throws ParserExceptionInterface
      */
     public function displayBounds(): Rectangle
     {
@@ -134,6 +139,7 @@ final class SwfFile
      * Get the frame rate of the SWF file.
      *
      * @return positive-int
+     * @throws ParserExceptionInterface
      */
     public function frameRate(): int
     {
@@ -158,10 +164,12 @@ final class SwfFile
      * @param int ...$tagIds The tag IDs to extract. If empty, all tags are extracted.
      *
      * @return iterable<SwfTag, object>
+     * @throws ParserExceptionInterface
      */
     public function tags(int ...$tagIds): iterable
     {
         $parser = $this->parser();
+        $ignoreInvalidTags = ($this->errors & Errors::INVALID_TAG) === 0;
 
         if ($tagIds) {
             $tagIds = array_flip($tagIds);
@@ -169,7 +177,13 @@ final class SwfFile
 
         foreach ($parser->tags as $tag) {
             if (!$tagIds || isset($tagIds[$tag->type])) {
-                yield $tag => $parser->parse($tag);
+                try {
+                    yield $tag => $parser->parse($tag);
+                } catch (ParserExceptionInterface $e) {
+                    if (!$ignoreInvalidTags) {
+                        throw $e;
+                    }
+                }
             }
         }
     }
@@ -184,6 +198,7 @@ final class SwfFile
      * @param Processor|null $processor The execution processor. If null, a new processor is created with default settings.
      *
      * @return State
+     * @throws ParserExceptionInterface
      */
     public function execute(?State $state = null, ?Processor $processor = null): State
     {
@@ -208,7 +223,9 @@ final class SwfFile
      *
      * @param State|null $state The initial state. If null, a new state is created.
      * @param Processor|null $processor The execution processor. If null, a new processor is created with default settings.
+     *
      * @return array<string, mixed>
+     * @throws ParserExceptionInterface
      */
     public function variables(?State $state = null, ?Processor $processor = null): array
     {
@@ -226,6 +243,7 @@ final class SwfFile
      * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      *
      * @throws InvalidArgumentException When the name is not exported.
+     * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::byName()
      */
@@ -245,7 +263,9 @@ final class SwfFile
      * which can rely on memory caching.
      *
      * @param int $id The character ID of the asset to extract.
+     *
      * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::character()
      */
@@ -263,6 +283,7 @@ final class SwfFile
      *       So don't forget to cast them to string if you need to use them as strings.
      *
      * @return array<array-key, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
+     * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::exported()
      * @see SwfExtractor::character()
@@ -289,6 +310,7 @@ final class SwfFile
      * @param bool $useFileDisplayBounds If true, the timeline will be adjusted to the file display bounds (i.e. {@see SwfFile::displayBounds()}). If false, the bounds will be the highest bounds of all frames.
      *
      * @return Timeline
+     * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::timeline()
      */
@@ -299,6 +321,10 @@ final class SwfFile
         return $extractor->timeline($useFileDisplayBounds);
     }
 
+    /**
+     * @return Swf
+     * @throws ParserExceptionInterface
+     */
     private function parser(): Swf
     {
         return $this->parser ??= Swf::fromString(

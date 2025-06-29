@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\SwfReader;
 
@@ -41,6 +42,7 @@ final readonly class DoActionTag
      * @param non-negative-int $end The end byte offset of the tag.
      *
      * @return self
+     * @throws ParserExceptionInterface
      */
     public static function read(SwfReader $reader, int $end): self
     {

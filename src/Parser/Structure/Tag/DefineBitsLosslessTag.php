@@ -20,8 +20,9 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
 use Arakne\Swf\Parser\SwfReader;
 
@@ -88,6 +89,8 @@ final readonly class DefineBitsLosslessTag
      * @param non-negative-int $end The end position of the tag in the stream, used to determine the end of the pixel data
      *
      * @return self
+     * @throws ParserOutOfBoundException
+     * @throws ParserInvalidDataException
      */
     public static function read(SwfReader $reader, int $version, int $end): self
     {

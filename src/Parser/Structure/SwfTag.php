@@ -20,7 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Structure\Tag\CSMTextSettingsTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBinaryDataTag;
@@ -164,6 +165,7 @@ final readonly class SwfTag
      * @param non-negative-int $swfVersion The SWF version of the file being parsed
      *
      * @return object
+     * @throws ParserExceptionInterface
      */
     public function parse(SwfReader $reader, int $swfVersion): object
     {
@@ -267,6 +269,7 @@ final readonly class SwfTag
      * @param bool $parseId If true, the tag id will be parsed and returned. If false, the id will be null.
      *
      * @return iterable<self>
+     * @throws ParserExceptionInterface
      */
     public static function readAll(SwfReader $reader, ?int $end = null, bool $parseId = true): iterable
     {

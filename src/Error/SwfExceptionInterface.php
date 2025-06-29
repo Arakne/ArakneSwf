@@ -13,24 +13,19 @@
  * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ * Copyright (C) 2024 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
  */
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Error;
+namespace Arakne\Swf\Error;
 
-use Arakne\Swf\Error\SwfExceptionInterface;
+use Throwable;
 
 /**
- * Base interface for all parser exceptions.
+ * Base exception type for all the library exceptions.
  */
-interface ParserExceptionInterface extends SwfExceptionInterface
+interface SwfExceptionInterface extends Throwable
 {
-    /**
-     * The offset in the input stream where the error occurred.
-     *
-     * @var non-negative-int
-     */
-    public int $offset { get; }
+
 }

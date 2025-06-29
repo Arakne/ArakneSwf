@@ -2,7 +2,7 @@
 
 namespace Arakne\Tests\Swf\Parser\Structure;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Error\UnknownTagException;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;

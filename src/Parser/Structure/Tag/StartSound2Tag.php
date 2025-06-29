@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Record\SoundInfo;
 use Arakne\Swf\Parser\SwfReader;
 
@@ -36,7 +38,11 @@ final readonly class StartSound2Tag
      * Read a StartSound2Tag from the given reader
      *
      * @param SwfReader $reader
+     *
      * @return self
+     *
+     * @throws ParserOutOfBoundException
+     * @throws ParserInvalidDataException
      */
     public static function read(SwfReader $reader): self
     {

@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 
@@ -114,6 +114,8 @@ final class SwfReader
      *                                   it will be truncated to this length.
      *                                   If null, the uncompressed data will be read until the end of the stream.
      * @return self
+     *
+     * @throws ParserInvalidDataException If the uncompressed data exceeds the specified length or if the compressed data is invalid.
      */
     public function uncompress(?int $len = null): self
     {
@@ -169,6 +171,7 @@ final class SwfReader
      * @param non-negative-int $end The end offset to read to (exclusive).
      *
      * @return self
+     * @throws ParserOutOfBoundException If the end offset is greater than the end of the binary data
      */
     public function chunk(int $offset, int $end): self
     {
@@ -194,6 +197,7 @@ final class SwfReader
      * @param non-negative-int $num Number of bytes to read
      *
      * @return string
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readBytes(int $num): string
     {
@@ -222,6 +226,7 @@ final class SwfReader
      *
      * @param non-negative-int $offset The target offset to read bytes to (exclusive).
      * @return string
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readBytesTo(int $offset): string
     {
@@ -263,6 +268,9 @@ final class SwfReader
      *
      * @param non-negative-int $offset The target offset to read bytes to (exclusive).
      * @return string
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
+     * @throws ParserInvalidDataException If the compressed data is invalid or cannot be uncompressed
      */
     public function readZLibTo(int $offset): string
     {
@@ -315,6 +323,8 @@ final class SwfReader
     /**
      * Read a single byte (char) from the binary data.
      * This method is equivalent to `readBytes(1)`.
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readChar(): string
     {
@@ -337,6 +347,10 @@ final class SwfReader
      * The null byte is not included in the returned string.
      *
      * @return string
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
+     * @throws ParserInvalidDataException If the null terminator is not found
+     *
      * @see SwfReader::readBytes() for reading a fixed length string
      */
     public function readNullTerminatedString(): string
@@ -394,6 +408,7 @@ final class SwfReader
      * @param int<0, 32> $num Number of bits to read
      *
      * @return non-negative-int
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      *
      * @see SwfReader::skipBits() for skipping bits without using their value
      * @see SwfReader::readBool() for reading a single bit as a boolean
@@ -484,7 +499,9 @@ final class SwfReader
      * the value will be fully fractional (i.e. without the integer part).
      *
      * @param non-negative-int $num Number of bits to read (must be between 0 and 32)
+     *
      * @return float
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readFB(int $num): float
     {
@@ -514,6 +531,8 @@ final class SwfReader
     /**
      * Read a single bit and return true if it is 1, false if it is 0.
      * This method is equivalent to `readUB(1) === 1`.
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readBool(): bool
     {
@@ -555,6 +574,7 @@ final class SwfReader
      * @param int<0, 32> $num
      *
      * @return int
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readSB(int $num): int
     {
@@ -577,6 +597,7 @@ final class SwfReader
      * The first byte is the fractional part, and the second byte is the integer part.
      *
      * @return float
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readFixed8(): float
     {
@@ -588,6 +609,7 @@ final class SwfReader
      * The first two bytes are the fractional part, and the next two bytes are the integer part.
      *
      * @return float
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readFixed(): float
     {
@@ -602,6 +624,7 @@ final class SwfReader
      * - 10 bits for the mantissa
      *
      * @return float
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readFloat16(): float
     {
@@ -637,6 +660,8 @@ final class SwfReader
 
     /**
      * Read a 32-bit floating point number from the current byte stream.
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readFloat(): float
     {
@@ -645,6 +670,8 @@ final class SwfReader
 
     /**
      * Read a 64-bit double-precision floating point number from the current byte stream.
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readDouble(): float
     {
@@ -659,6 +686,7 @@ final class SwfReader
      * Read a single byte as a signed integer.
      *
      * @return int<0, 255>
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readUI8(): int
     {
@@ -667,6 +695,8 @@ final class SwfReader
 
     /**
      * Read two bytes as a signed integer.
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readSI16(): int
     {
@@ -683,6 +713,7 @@ final class SwfReader
      * Read two bytes as an unsigned integer.
      *
      * @return int<0, 65535>
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readUI16(): int
     {
@@ -695,6 +726,7 @@ final class SwfReader
      * Calling multiple times this method will return the same value until the read cursor is moved.
      *
      * @return int<0, 65535>
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function peekUI16(): int
     {
@@ -715,6 +747,8 @@ final class SwfReader
 
     /**
      * Read int32 value
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readSI32(): int
     {
@@ -733,6 +767,7 @@ final class SwfReader
      * Read 32-bit unsigned integer
      *
      * @return non-negative-int
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readUI32(): int
     {
@@ -745,6 +780,8 @@ final class SwfReader
 
     /**
      * Read int 64
+     *
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readSI64(): int
     {
@@ -759,6 +796,7 @@ final class SwfReader
      * The result is a 4 bytes unsigned integer.
      *
      * @return non-negative-int
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     public function readEncodedU32(): int
     {
@@ -799,6 +837,7 @@ final class SwfReader
      * @param positive-int $size The size of the data to read in bytes.
      *
      * @return scalar
+     * @throws ParserOutOfBoundException If the read operation exceeds the end of the binary data
      */
     private function readUnpack(string $f, int $size): mixed
     {

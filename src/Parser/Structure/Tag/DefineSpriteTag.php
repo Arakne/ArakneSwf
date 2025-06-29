@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\SwfReader;
 
@@ -44,9 +46,11 @@ final readonly class DefineSpriteTag
      * @param non-negative-int $end The end byte offset of the tag.
      *
      * @return self
+     * @throws ParserExceptionInterface
      */
     public static function read(SwfReader $reader, int $swfVersion, int $end): self
     {
+        $ignoreTagError = ($reader->errors & Errors::INVALID_TAG) === 0;
         $spriteId = $reader->readUI16();
         $frameCount = $reader->readUI16();
 
@@ -54,7 +58,13 @@ final readonly class DefineSpriteTag
         $tags = [];
 
         foreach (SwfTag::readAll($reader, $end, false) as $tag) {
-            $tags[] = $tag->parse($reader, $swfVersion);
+            try {
+                $tags[] = $tag->parse($reader, $swfVersion);
+            } catch (ParserExceptionInterface $e) {
+                if (!$ignoreTagError) {
+                    throw $e;
+                }
+            }
         }
 
         return new DefineSpriteTag(

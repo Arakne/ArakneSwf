@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserInvalidDataException;
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphFillStyle;
 use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle2;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -63,6 +65,9 @@ final readonly class DefineMorphShape2Tag
      * @param SwfReader $reader
      *
      * @return self
+     *
+     * @throws ParserOutOfBoundException
+     * @throws ParserInvalidDataException
      */
     public static function read(SwfReader $reader): self
     {

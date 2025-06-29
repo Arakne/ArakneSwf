@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 
 final readonly class DefineSoundTag
@@ -50,7 +51,9 @@ final readonly class DefineSoundTag
      *
      * @param SwfReader $reader
      * @param non-negative-int $end The end byte offset of the tag
+     *
      * @return self
+     * @throws ParserOutOfBoundException
      */
     public static function read(SwfReader $reader, int $end): self
     {

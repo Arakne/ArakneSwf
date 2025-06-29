@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace Arakne\Swf\Parser\Error;
+namespace Arakne\Swf\Error;
 
 /**
  * Constants for error flags.
@@ -34,6 +34,11 @@ final readonly class Errors
      * Enable all error flags.
      */
     public const int ALL = -1;
+
+    /**
+     * Enable all errors, but ignore invalid tags instead of raising an error.
+     */
+    public const int IGNORE_INVALID_TAG = self::ALL & ~self::INVALID_TAG;
 
     /**
      * Trying to access data after the end of the input stream.
@@ -54,4 +59,18 @@ final readonly class Errors
      * The tag code is unknown or not supported.
      */
     public const int UNKNOWN_TAG = 8;
+
+    /**
+     * An error occurred while reading a tag.
+     *
+     * If this flag is not set, the tag will be skipped if an error occurs,
+     * so all other errors will be ignored.
+     *
+     * Enabling all errors except this one will provide a good balance
+     * between detect invalid tags and fail-safe reading.
+     *
+     * No exception is associated with this flag, it simply indicates if an invalid tag should be skipped,
+     * or if the parsing error should be raised.
+     */
+    public const int INVALID_TAG = 16;
 }

@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\UnknownTagException;
 use Arakne\Swf\Parser\SwfReader;
 
@@ -42,6 +42,7 @@ final readonly class UnknownTag
      * @param non-negative-int $end
      *
      * @return self
+     * @throws UnknownTagException
      */
     public static function create(SwfReader $reader, int $code, int $end): self
     {

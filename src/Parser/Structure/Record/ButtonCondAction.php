@@ -20,13 +20,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Record;
 
-use Arakne\Swf\Parser\Error\Errors;
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Structure\Action\ActionRecord;
 use Arakne\Swf\Parser\SwfReader;
 
 use function sprintf;
-use function var_dump;
 
 final readonly class ButtonCondAction
 {

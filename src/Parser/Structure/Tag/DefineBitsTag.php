@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
 
 final readonly class DefineBitsTag
@@ -38,6 +39,7 @@ final readonly class DefineBitsTag
      * @param non-negative-int $end The end byte offset of the tag in the SWF file
      *
      * @return self
+     * @throws ParserOutOfBoundException
      */
     public static function read(SwfReader $reader, int $end): self
     {

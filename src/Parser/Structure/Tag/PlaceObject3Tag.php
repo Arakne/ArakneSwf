@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Parser\Structure\Tag;
 
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Structure\Record\ClipActions;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
@@ -117,7 +118,9 @@ final readonly class PlaceObject3Tag
      *
      * @param SwfReader $reader
      * @param non-negative-int $swfVersion The SWF version of the file being read
+     *
      * @return self
+     * @throws ParserExceptionInterface
      */
     public static function read(SwfReader $reader, int $swfVersion): self
     {

@@ -27,7 +27,7 @@ It may also require some PHP extensions, depending on the features you want to u
 - `xml` for sprite export (performed in SVG format)
 - `Imagick` to convert SVG to PNG or JPEG format
 
-> [!INFO]
+> [!NOTE]
 > On some systems, the `Imagick` extension does not support well the SVG format, so the conversion may result in a weird image.
 > In this case, try to install `rsvg-convert` command (package `librsvg2-bin` on Debian/Ubuntu, `librsvg2-tools` on Fedora) or `inkscape`.
 > Inkscape is slower than rsvg, but may produce better results.
@@ -217,7 +217,7 @@ and pass it to the method `draw()` of the character.
 You can also render sprites and shapes as raster images, and animations as animated images (GIF, WebP).
 The conversion from vector to raster image is done using the `Arakne\Swf\Extractor\Drawer\Converter\Converter` class.
 
-> [!INFO]
+> [!NOTE]
 > It internally uses `Imagick` to convert SVG to raster images, so you need to have the `Imagick` extension installed.
 
 ```php
