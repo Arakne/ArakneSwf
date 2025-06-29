@@ -183,12 +183,14 @@ final readonly class ExtractCommand
         try {
             foreach ($options->characters as $characterId) {
                 $success = $this->processCharacter($options, $swf, (string)$characterId, $extractor->character($characterId)) && $success;
+                $extractor->releaseIfOutOfMemory();
             }
 
             foreach ($options->exported as $name) {
                 try {
                     $character = $extractor->byName($name);
                     $success = $this->processCharacter($options, $swf, $name, $character) && $success;
+                    $extractor->releaseIfOutOfMemory();
                 } catch (InvalidArgumentException) {
                     echo "The character $name is not exported in the SWF file", PHP_EOL;
                     $success = false;
@@ -198,6 +200,7 @@ final readonly class ExtractCommand
             if ($options->allSprites) {
                 foreach ($extractor->sprites() as $id => $sprite) {
                     $success = $this->processCharacter($options, $swf, (string)$id, $sprite) && $success;
+                    $extractor->releaseIfOutOfMemory();
                 }
             }
 
@@ -205,15 +208,18 @@ final readonly class ExtractCommand
                 foreach ($extractor->exported() as $name => $id) {
                     $character = $extractor->character($id);
                     $success = $this->processCharacter($options, $swf, (string) $name, $character) && $success;
+                    $extractor->releaseIfOutOfMemory();
                 }
             }
 
             if ($options->timeline) {
                 $success = $this->processCharacter($options, $swf, 'timeline', $extractor->timeline(false)) && $success;
+                $extractor->releaseIfOutOfMemory();
             }
 
             if ($options->variables) {
                 $success = $this->processVariables($options, 'variables', $swf) && $success;
+                $extractor->releaseIfOutOfMemory();
             }
         } finally {
             $extractor->release();

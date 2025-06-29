@@ -15,6 +15,8 @@ use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
 
+use ReflectionProperty;
+
 use function array_keys;
 
 class SwfExtractorTest extends ImageTestCase
@@ -362,5 +364,20 @@ class SwfExtractorTest extends ImageTestCase
         $timeline = $extractor->timeline();
 
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/filters/146.svg', $timeline->toSvg());
+    }
+
+    #[Test]
+    public function releaseIfOutOfMemory()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/filters/146.swf');
+        $extractor = new SwfExtractor($swf);
+        $extractor->character(1);
+        $this->assertNotEmpty(new ReflectionProperty($extractor, 'characters')->getValue($extractor));
+
+        $this->assertFalse($extractor->releaseIfOutOfMemory(1_000_000_000));
+        $this->assertNotEmpty(new ReflectionProperty($extractor, 'characters')->getValue($extractor));
+
+        $this->assertTrue($extractor->releaseIfOutOfMemory(1000));
+        $this->assertEmpty(new ReflectionProperty($extractor, 'characters')->getValue($extractor));
     }
 }

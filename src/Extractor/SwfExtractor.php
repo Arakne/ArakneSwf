@@ -40,6 +40,7 @@ use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\ExportAssetsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
 use Arakne\Swf\SwfFile;
+use Arakne\Swf\Util\Memory;
 use InvalidArgumentException;
 
 use function array_flip;
@@ -252,6 +253,29 @@ final class SwfExtractor
         $this->shapes = null;
         $this->exported = null;
         $this->timeline = null;
+    }
+
+    /**
+     * Release resources if the memory usage is above the given limit.
+     *
+     * This method will call {@see SwfExtractor::release()} if the current memory usage is above the given limit.
+     * If no limit is given, it will use 75% of the maximum memory as limit.
+     *
+     * @param int|null $memoryLimit The memory limit in bytes. If null, it will use 75% of the maximum memory.
+     * @return bool true if the resources were released, false if nothing was done.
+     */
+    public function releaseIfOutOfMemory(?int $memoryLimit = null): bool
+    {
+        $shouldRelease = $memoryLimit === null
+            ? Memory::usage() >= 0.75
+            : Memory::current() >= $memoryLimit
+        ;
+
+        if ($shouldRelease) {
+            $this->release();
+        }
+
+        return $shouldRelease;
     }
 
     /**

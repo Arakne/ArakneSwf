@@ -202,6 +202,12 @@ $character = $extractor->byName('my_sprite');
 // You can also extract all exported characters
 foreach ($extractor->exported() as $name => $id) {
     $character = $extractor->character($id);
+    
+    // When you work with large SWF files, you can reach the memory limit of PHP.
+    // In this case, you can call `releaseIfOutOfMemory()` during the extraction process to free memory.
+    // It can take as parameter the maximum memory usage in bytes, or leave it empty to use 75% of the memory limit.
+    // Note: release memory have a performance cost, so use it only when you really need it, or with high limit.
+    $extractor->releaseIfOutOfMemory();
 }
 
 // If you want to parse multiple SWF files, it's advised to call `release()` method on the extractor
