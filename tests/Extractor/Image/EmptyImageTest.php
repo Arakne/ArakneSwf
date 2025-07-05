@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Extractor\Image;
 
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\EmptyImage;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
@@ -9,10 +10,13 @@ use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+use SimpleXMLElement;
+
 use function imagecolorat;
 use function imagecreatefromstring;
 use function imagesx;
 use function imagesy;
+use function var_dump;
 
 class EmptyImageTest extends ImageTestCase
 {
@@ -62,5 +66,12 @@ class EmptyImageTest extends ImageTestCase
         $this->assertSame(1, imagesx($gd));
         $this->assertSame(1, imagesy($gd));
         $this->assertSame(0xFF0000, imagecolorat($gd, 0, 0));
+    }
+
+    #[Test]
+    public function draw()
+    {
+        $svg = new EmptyImage(42)->draw(new SvgCanvas(new Rectangle(0, 20, 0, 20)))->render();
+        $this->assertStringContainsString(new EmptyImage(42)->toBase64Data(), $svg);
     }
 }

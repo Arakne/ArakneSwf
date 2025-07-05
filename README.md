@@ -344,6 +344,96 @@ foreach ($parser->tags as $pos) {
 }
 ```
 
+### Security & error handling
+
+#### Checking file validity
+
+If you want to open untrusted SWF files, you should always check if the file is valid before processing it.
+You can do this by calling the `valid()` method on the `SwfFile` instance.
+This method takes the maximum expected size of the uncompressed SWF file as an optional parameter, and will return `false` 
+if the file has invalid header, or if the length of the file is greater than the expected size.
+
+```php
+use Arakne\Swf\SwfFile;
+
+$file = new SwfFile('my_anim.swf');
+
+if (!$file->valid(1_000_000)) { // 1 MB is the maximum expected size
+    echo 'Invalid SWF file';
+    exit(1);
+}
+```
+
+> [!NOTE]
+> The `valid()` method does not check the content of the SWF file, it only
+> checks the header and the length of the file.
+> The content of the SWF file is checked during the parsing process, so it's validity is guaranteed 
+> by strict error handling.
+
+#### Parsing
+
+The library provides a way to fine tune the error handling, which let you choose between strict error handling 
+which will detect any invalid data, but may reject valid files, or a more permissive error handling which will try
+to recover from errors, but may produce unexpected results and security issues.
+
+To configure the error handling, simply pass desired error flags to the second parameter of the `SwfFile` constructor.
+Error flags are defined in the [`Arakne\Swf\Error\Errors`](./src/Error/Errors.php) class, and you can combine them using bitwise OR operator (`|`).
+
+If an error occurs, and it's not ignored, the library will throw an exception of type `Arakne\Swf\Error\SwfExceptionInterface`.
+
+```php
+use Arakne\Swf\SwfFile;
+use Arakne\Swf\Error\Errors;
+
+// All errors will be ignored, and the library will try to recover from errors.
+$failSafe = new SwfFile('my_anim.swf', errors: Errors::NONE);
+
+// Strict error handling, which will throw an exception on any error.
+$strict = new SwfFile('my_anim.swf', errors: Errors::ALL);
+
+// Fine tune the error handling to ignore some errors
+$strict = new SwfFile('my_anim.swf', errors: Errors::ALL & ~Errors::INVALID_TAG & ~Errors::UNPROCESSABLE_DATA & ~Errors::EXTRA_DATA);
+```
+
+Here the description and recommandations for each error flag:
+
+| Error flag                   | Description                                                                                                                                                                    | Recommandation                                                                                                                                          |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Errors::NONE`               | All errors will be silently ignored, and fallback values will be used.                                                                                                         | Use only if you are in sandboxed environment, may produce unexpected results and security issues like DOS.                                              |
+| `Errors::ALL`                | All errors will be thrown as exceptions. This is the strictest error handling.                                                                                                 | Useful if you do not trust the origin of SWF files. Don't forget to catch exception when processing the file.                                           |
+| `Errors::OUT_OF_BOUNDS`      | If disabled, ignore when a tag is truncated, and the parser try to read beyond the end of the tag or SWF file. The parser will return null value instead.                      | It's really advised to not disable this error, as it may lead to unexpected results and DOS.                                                            |
+| `Errors::INVALID_DATA`       | If disabled, ignore when the parser detects invalid data in the SWF file, like invalid ids, or incoherent data. The parser will keep the value and continue the parsing.       | Disable this flag only if you want to recover corrupted or truncated SWF files. It's not recommended to disable this flag when parsing untrusted files. |
+| `Errors::EXTRA_DATA`         | Detects when a tag contains extra data after the end of the tag. If disabled, the parser will ignore the extra data and continue parsing.                                      | This flag can be safely disabled, as it cannot lead to unexpected results.                                                                              |
+| `Errors::UNKOWN_TAG`         | Raise an error when the parser encounters an unknown tag. If disabled, `UnknownTag` will be returned.                                                                          | Disable this flag if you want to parse raw tags and keep the data. Do not lead to unexpected results nor security issues.                               |
+| `Errors::INVALID_TAG`        | If disabled, ignore tags that raise an error when parsing. If enabled, parsing errors will be rethrown.                                                                        | Disable this flag is the safest way to provide a fail-safe parsing, but do not allow parsing highly corrupted or truncated SWF files.                   |
+| `Errors::CIRCULAR_REFERENCE` | If disabled, circular references on display list will be ignored, and replaced by an empty display list.                                                                       | It's not recommended to disable this flag, as it will always result to invalid display. Enable only if your goal is to get a very lenient renderer.     |
+| `Errors::UNPROCESSABLE_DATA` | If disabled, ignore when the parser encounters data that cannot be processed, like invalid character reference or placement tag. The parser will skip the instruction instead. | This flag can be safely disabled, invalid data will simply ignored or replaced by empty elements.                                                       |
+
+Common flags to use are:
+- `Errors::NONE` if you want to parse highly corrupted files and extract as much data as possible. Only use this in a sandboxed environment, and always check the output.
+- `Errors::ALL` most strict parser, and so the safest one. Use it if you do not trust the origin of SWF files like on an API endpoint.
+- `Errors::OUT_OF_BOUNDS | Errors::INVALID_DATA | Errors::UNKOWN_TAG | Errors::CIRCULAR_REFERENCE` for lenient and safe parsing, which will skip invalid data, without throwing exceptions.
+- `Errors::OUT_OF_BOUNDS` if you want to parse truncated SWF files. Always check the output, as it may lead to unexpected results.
+
+#### Rendering
+
+Rendering to SVG is mostly safe, as SVG is a vector format and does not execute any code.
+However, rendering to raster images (PNG, JPEG, GIF, WebP) may lead to security issues, as it uses the 
+`Imagick` extension to convert SVG to raster images, which is known to have some security issues.
+
+So, if you want to render untrusted SWF files, it's recommended to only render as SVG, and not raster images.
+
+#### AVM interpreter
+
+It's not recommended to use the AVM interpreter on untrusted SWF files, as it may lead to security issues.
+But if you want to use it, you can disable all function and object calls by setting the `allowFunctionCall` to `false` when creating the `Processor` instance.
+This will prevent the interpreter from executing any code, and only extract constants variables.
+
+#### Found a security issue?
+
+If you found a security issue, unexpected behavior, infinite loop or any other issue, please report it on the [GitHub issues](https://github.com/Arakne/ArakneSwf/issues).
+Even with `Errors::NONE` the parsing should safely complete, but the output may be unexpected.
+
 ## License and credit
 
 This library is shared under the [LGPLv3](./COPYING.LESSER) license.

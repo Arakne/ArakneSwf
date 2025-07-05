@@ -170,7 +170,7 @@ final readonly class ExtractCommand
 
     public function process(ExtractOptions $options, string $file): bool
     {
-        $swf = new SwfFile($file, errors: Errors::IGNORE_INVALID_TAG & ~Errors::EXTRA_DATA);
+        $swf = new SwfFile($file, errors: Errors::IGNORE_INVALID_TAG & ~Errors::EXTRA_DATA & ~Errors::UNPROCESSABLE_DATA);
 
         if (!$swf->valid()) {
             echo "error: The file $file is not a valid SWF file", PHP_EOL;

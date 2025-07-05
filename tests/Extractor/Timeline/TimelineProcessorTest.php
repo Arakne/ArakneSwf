@@ -194,4 +194,65 @@ class TimelineProcessorTest extends TestCase
         $processor = new TimelineProcessor($extractor);
         $this->assertEquals(Timeline::empty(), $processor->process($sprite->tag->tags));
     }
+
+    #[Test]
+    public function moveDepthNotExists()
+    {
+        $this->expectException(ProcessingInvalidDataException::class);
+        $this->expectExceptionMessage('Cannot modify object as depth 2: it was not found');
+
+        $swf = $this->builder->createSwfFile([
+            [
+                DefineShapeTag::TYPE_V1,
+                "\x01\x00\x10\x88" .
+                "\x00" . // no fill
+                "\x01\x01\x00\xFF\x00\x00" . // line style: 1px, red
+                "\x01" . // numFillBits = 0, numLineBits = 1
+                "\x24\x1C\x2A\x00"
+            ],
+            [
+                DefineSpriteTag::TYPE,
+                "\x02\x00\x01\x00" . $this->builder->buildTags([
+                    [PlaceObject2Tag::TYPE, "\x01\x02\x00"],
+                    [ShowFrameTag::TYPE, ""],
+                    [EndTag::TYPE, ""],
+                ])
+            ]
+        ]);
+        $extractor = new SwfExtractor($swf);
+        $sprite = $extractor->character(2);
+        $this->assertInstanceOf(SpriteDefinition::class, $sprite);
+
+        $processor = new TimelineProcessor($extractor);
+        $processor->process($sprite->tag->tags);
+    }
+
+    #[Test]
+    public function moveDepthNotExistsIgnoreError()
+    {
+        $swf = $this->builder->createSwfFile([
+            [
+                DefineShapeTag::TYPE_V1,
+                "\x01\x00\x10\x88" .
+                "\x00" . // no fill
+                "\x01\x01\x00\xFF\x00\x00" . // line style: 1px, red
+                "\x01" . // numFillBits = 0, numLineBits = 1
+                "\x24\x1C\x2A\x00"
+            ],
+            [
+                DefineSpriteTag::TYPE,
+                "\x02\x00\x01\x00" . $this->builder->buildTags([
+                    [PlaceObject2Tag::TYPE, "\x01\x02\x00"],
+                    [ShowFrameTag::TYPE, ""],
+                    [EndTag::TYPE, ""],
+                ])
+            ]
+        ], errors: 0);
+        $extractor = new SwfExtractor($swf);
+        $sprite = $extractor->character(2);
+        $this->assertInstanceOf(SpriteDefinition::class, $sprite);
+
+        $processor = new TimelineProcessor($extractor);
+        $this->assertEquals(Timeline::empty(), $processor->process($sprite->tag->tags));
+    }
 }
