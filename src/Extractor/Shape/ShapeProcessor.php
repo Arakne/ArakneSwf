@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Extractor\Error\ProcessingInvalidDataException;
+use Arakne\Swf\Extractor\Image\EmptyImage;
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Shape\FillType\Bitmap;
 use Arakne\Swf\Extractor\Shape\FillType\LinearGradient;
@@ -28,7 +31,6 @@ use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
-use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\FillStyle;
@@ -36,7 +38,9 @@ use Arakne\Swf\Parser\Structure\Record\Shape\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
-use InvalidArgumentException;
+
+use function assert;
+use function sprintf;
 
 /**
  * Process define shape action tags to create shape objects
@@ -167,9 +171,6 @@ final readonly class ShapeProcessor
                 case $shape instanceof EndShapeRecord:
                     $builder->merge(...$edges);
                     return $builder->export();
-
-                default:
-                    throw new InvalidArgumentException('Unknown shape type: '.$shape::class);
             }
         }
 
@@ -179,30 +180,68 @@ final readonly class ShapeProcessor
     private function createFillType(FillStyle $style): Solid|LinearGradient|RadialGradient|Bitmap
     {
         return match ($style->type) {
-            FillStyle::SOLID => new Solid($style->color ?? new Color(0, 0, 0, 0)), // @todo transparent factory method
-            FillStyle::LINEAR_GRADIENT => new LinearGradient($style->matrix ?? new Matrix(), $style->gradient ?? new Gradient(0, 0, [])),
-            FillStyle::RADIAL_GRADIENT => new RadialGradient($style->matrix ?? new Matrix(), $style->gradient ?? new Gradient(0, 0, [])),
-            FillStyle::FOCAL_GRADIENT => new RadialGradient($style->matrix ?? new Matrix(), $style->focalGradient ?? new Gradient(0, 0, [], 0.0)),
+            FillStyle::SOLID => $this->createSolidFill($style),
+            FillStyle::LINEAR_GRADIENT => $this->createLinearGradientFill($style),
+            FillStyle::RADIAL_GRADIENT => $this->createRadialGradientFill($style, $style->gradient),
+            FillStyle::FOCAL_GRADIENT => $this->createRadialGradientFill($style, $style->focalGradient),
             FillStyle::REPEATING_BITMAP => $this->createBitmapFill($style, smoothed: true, repeat: true),
             FillStyle::CLIPPED_BITMAP => $this->createBitmapFill($style, smoothed: true, repeat: false),
             FillStyle::NON_SMOOTHED_REPEATING_BITMAP => $this->createBitmapFill($style, smoothed: false, repeat: true),
             FillStyle::NON_SMOOTHED_CLIPPED_BITMAP => $this->createBitmapFill($style, smoothed: false, repeat: false),
-            default => throw new InvalidArgumentException('Unknown fill style: ' . $style->type),
+            default => $this->extractor->errorEnabled(Errors::UNPROCESSABLE_DATA)
+                ? throw new ProcessingInvalidDataException(sprintf('Unknown fill style: %d', $style->type))
+                : new Solid(new Color(0, 0, 0, 0))
         };
+    }
+
+    private function createSolidFill(FillStyle $style): Solid
+    {
+        $color = $style->color;
+        assert($color !== null);
+
+        return new Solid($color);
+    }
+
+    private function createLinearGradientFill(FillStyle $style): LinearGradient
+    {
+        $matrix = $style->matrix;
+        $gradient = $style->gradient;
+
+        assert($matrix !== null && $gradient !== null);
+
+        return new LinearGradient($matrix, $gradient);
+    }
+
+    private function createRadialGradientFill(FillStyle $style, ?Gradient $gradient): RadialGradient
+    {
+        $matrix = $style->matrix;
+
+        assert($matrix !== null);
+        assert($gradient !== null);
+
+        return new RadialGradient($matrix, $gradient);
     }
 
     private function createBitmapFill(FillStyle $style, bool $smoothed, bool $repeat): Bitmap
     {
-        // @todo null image instead of exception
-        $character = $this->extractor->character($style->bitmapId ?? throw new InvalidArgumentException('Bitmap id not not set'));
+        $bitmapId = $style->bitmapId;
+        $matrix = $style->bitmapMatrix;
+
+        assert($bitmapId !== null && $matrix !== null);
+
+        $character = $this->extractor->character($bitmapId);
 
         if (!$character instanceof ImageCharacterInterface) {
-            throw new InvalidArgumentException('Bitmap id is not a valid image character');
+            if ($this->extractor->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
+                throw new ProcessingInvalidDataException(sprintf('The character %d is not a valid image character', $bitmapId));
+            }
+
+            $character = new EmptyImage($bitmapId);
         }
 
         return new Bitmap(
             $character,
-            $style->bitmapMatrix ?? throw new InvalidArgumentException('Bitmap matrix not set'),
+            $matrix,
             smoothed: $smoothed,
             repeat: $repeat,
         );

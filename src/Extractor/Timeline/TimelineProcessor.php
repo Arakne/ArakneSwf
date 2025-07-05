@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Timeline;
 
+use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Error\SwfExceptionInterface;
+use Arakne\Swf\Extractor\Error\ProcessingInvalidDataException;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -36,6 +39,7 @@ use Arakne\Swf\Parser\Structure\Tag\SoundStreamHeadTag;
 
 use function assert;
 use function ksort;
+use function sprintf;
 
 /**
  * Processor for render the timeline from swf tags
@@ -69,10 +73,23 @@ final readonly class TimelineProcessor
     ) {}
 
     /**
+     * Check if the given error is enabled
+     *
+     * @param int $error The error code to check
+     * @return bool True if the error is enabled, false otherwise
+     */
+    public function errorEnabled(int $error): bool
+    {
+        return $this->extractor->errorEnabled($error);
+    }
+
+    /**
      * Process display tags to render frames of the timeline
      *
      * @param iterable<object> $tags
+     *
      * @return Timeline
+     * @throws SwfExceptionInterface
      */
     public function process(iterable $tags): Timeline
     {
@@ -148,17 +165,25 @@ final readonly class TimelineProcessor
                 && !$frameDisplayTag instanceof PlaceObject2Tag
                 && !$frameDisplayTag instanceof PlaceObject3Tag
             ) {
-                // @todo use error collector
-                throw new \Exception('Invalid tag ' . get_class($frameDisplayTag));
-                //var_dump('Invalid tag ' . get_class($frameDisplayTag));
-                //continue;
+                if ($this->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
+                    throw new ProcessingInvalidDataException(
+                        sprintf('Invalid tag type %s in timeline', $frameDisplayTag::class),
+                    );
+                }
+
+                continue;
             }
 
             $isNewObject = !($frameDisplayTag->move ?? false);
 
             // New object without characterId is not allowed
             if ($isNewObject && $frameDisplayTag->characterId === null) {
-                // @todo: handle PlaceObject3Tag::className if present
+                if ($this->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
+                    throw new ProcessingInvalidDataException(
+                        sprintf('New object at depth %d without characterId', $frameDisplayTag->depth),
+                    );
+                }
+
                 continue;
             }
 
@@ -171,7 +196,13 @@ final readonly class TimelineProcessor
                 $objectProperties = $objectsByDepth[$frameDisplayTag->depth] ?? null;
 
                 if (!$objectProperties) {
-                    continue; // @todo error ?
+                    if ($this->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
+                        throw new ProcessingInvalidDataException(
+                            sprintf('Cannot modify object as depth %d: it was not found', $frameDisplayTag->depth),
+                        );
+                    }
+
+                    continue;
                 }
 
                 assert(!$frameDisplayTag instanceof PlaceObjectTag); // Modify is not possible with PlaceObjectTag
@@ -218,6 +249,14 @@ final readonly class TimelineProcessor
             }
         }
 
+        if (!$frames) {
+            if ($this->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
+                throw new ProcessingInvalidDataException('No frames found in the timeline: ShowFrame tag is missing');
+            }
+
+            return Timeline::empty();
+        }
+
         $spriteBounds = !$empty ? new Rectangle($xmin, $xmax, $ymin, $ymax) : new Rectangle(0, 0, 0, 0); // Empty sprite, use empty bounds
 
         // Use same bounds on all frames
@@ -237,7 +276,9 @@ final readonly class TimelineProcessor
      * Handle display of a new object
      *
      * @param PlaceObjectTag|PlaceObject2Tag|PlaceObject3Tag $tag
+     *
      * @return FrameObject
+     * @throws SwfExceptionInterface
      */
     private function placeNewObject(PlaceObjectTag|PlaceObject2Tag|PlaceObject3Tag $tag): FrameObject
     {
@@ -276,7 +317,9 @@ final readonly class TimelineProcessor
      *
      * @param PlaceObject2Tag|PlaceObject3Tag $tag
      * @param FrameObject $objectProperties
+     *
      * @return FrameObject
+     * @throws SwfExceptionInterface
      */
     private function modifyObject(PlaceObject2Tag|PlaceObject3Tag $tag, FrameObject $objectProperties): FrameObject
     {
@@ -312,7 +355,7 @@ final readonly class TimelineProcessor
         if ($tag->colorTransform || isset($tag->clipDepth) || isset($tag->name)) {
             $objectProperties = $objectProperties->with(
                 colorTransform: $tag->colorTransform,
-                clipDepth: $tag->clipDepth ?? null, // @todo test clipDepth update ?
+                clipDepth: $tag->clipDepth ?? null,
                 name: $tag->name ?? null,
             );
         }

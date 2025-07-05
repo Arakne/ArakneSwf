@@ -20,14 +20,19 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Sprite;
 
+use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Error\SwfExceptionInterface;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
+use Arakne\Swf\Extractor\Error\CircularReferenceException;
 use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Override;
+
+use function sprintf;
 
 /**
  * Store an SWF sprite character
@@ -37,6 +42,7 @@ use Override;
 final class SpriteDefinition implements DrawableInterface
 {
     private ?Timeline $timeline = null;
+    private bool $processing = false;
 
     public function __construct(
         private TimelineProcessor $processor,
@@ -57,11 +63,35 @@ final class SpriteDefinition implements DrawableInterface
     /**
      * Get the timeline object
      * The timeline is processed only once and cached
+     *
+     * @throws SwfExceptionInterface
      */
     public function timeline(): Timeline
     {
         if (!$this->timeline) {
-            $this->timeline = $this->processor->process($this->tag->tags);
+            if ($this->processing) {
+                if ($this->processor->errorEnabled(Errors::CIRCULAR_REFERENCE)) {
+                    throw new CircularReferenceException(
+                        sprintf('Circular reference detected while processing sprite %d', $this->id),
+                        $this->id,
+                    );
+                }
+
+                return $this->timeline = Timeline::empty();
+            }
+
+            $this->processing = true;
+
+            try {
+                $timeline = $this->processor->process($this->tag->tags);
+
+                // In case of ignored circular reference, a timeline object can already assign here
+                // by the processor call, so we only assign it if it's not already set
+                $this->timeline ??= $timeline;
+            } finally {
+                $this->processing = false;
+            }
+
             unset($this->processor); // Remove the processor to remove cyclic reference
         }
 
@@ -101,6 +131,7 @@ final class SpriteDefinition implements DrawableInterface
      * Convert the sprite to SVG string
      *
      * @param non-negative-int $frame The frame to render
+     * @throws SwfExceptionInterface
      */
     public function toSvg(int $frame = 0): string
     {

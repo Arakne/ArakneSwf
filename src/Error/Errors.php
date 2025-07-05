@@ -73,4 +73,15 @@ final readonly class Errors
      * or if the parsing error should be raised.
      */
     public const int INVALID_TAG = 16;
+
+    /**
+     * A circular reference was detected during processing display list or timeline.
+     */
+    public const int CIRCULAR_REFERENCE = 32;
+
+    /**
+     * The data was successfully parsed (i.e. format is valid),
+     * but cannot be processed due to missing or incoherent data.
+     */
+    public const int UNPROCESSABLE_DATA = 64;
 }

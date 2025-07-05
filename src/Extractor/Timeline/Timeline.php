@@ -148,4 +148,13 @@ final readonly class Timeline implements DrawableInterface
             yield $f => $drawer->render();
         }
     }
+
+    /**
+     * Create an empty timeline with no frames and size of 0x0
+     * This value is used as fallback value when an error occurs during the timeline parsing
+     */
+    public static function empty(): self
+    {
+        return new Timeline(new Rectangle(0, 0, 0, 0), new Frame(new Rectangle(0, 0, 0, 0), [], [], null));
+    }
 }

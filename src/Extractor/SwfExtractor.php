@@ -28,6 +28,7 @@ use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
+use Arakne\Swf\Parser\Error\ParserExceptionInterface;
 use Arakne\Swf\Parser\Structure\SwfTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
@@ -85,6 +86,18 @@ final class SwfExtractor
     ) {}
 
     /**
+     * Check if the given error is enabled.
+     *
+     * @param int $error The error code. This should be one of the {@see SwfFile::ERROR_*} constants.
+     *
+     * @return bool
+     */
+    public function errorEnabled(int $error): bool
+    {
+        return ($this->file->errors & $error) !== 0;
+    }
+
+    /**
      * Extract all shapes from the SWF file.
      *
      * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
@@ -92,6 +105,7 @@ final class SwfExtractor
      * Note: Shape will not be processed immediately, but only when requested.
      *
      * @return array<int, ShapeDefinition>
+     * @throws ParserExceptionInterface
      */
     public function shapes(): array
     {
@@ -111,6 +125,7 @@ final class SwfExtractor
                 continue;
             }
 
+
             $shapes[$id] = new ShapeDefinition($processor, $id, $tag);
         }
 
@@ -123,6 +138,7 @@ final class SwfExtractor
      * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
      *
      * @return array<int, LosslessImageDefinition|JpegImageDefinition|ImageBitsDefinition>
+     * @throws ParserExceptionInterface
      */
     public function images(): array
     {
@@ -134,6 +150,7 @@ final class SwfExtractor
 
     /**
      * @return array<int, SpriteDefinition>
+     * @throws ParserExceptionInterface
      */
     public function sprites(): array
     {
@@ -165,6 +182,7 @@ final class SwfExtractor
      * @param bool $useFileDisplayBounds If true, the timeline will be adjusted to the file display bounds (i.e. {@see SwfFile::displayBounds()}). If false, the bounds will be the highest bounds of all frames.
      *
      * @return Timeline
+     * @throws ParserExceptionInterface
      */
     public function timeline(bool $useFileDisplayBounds = true): Timeline
     {
@@ -188,7 +206,9 @@ final class SwfExtractor
      * When the character ID is not found, a {@see MissingCharacter} will be returned.
      *
      * @param int $characterId
+     *
      * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @throws ParserExceptionInterface
      */
     public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
@@ -200,8 +220,10 @@ final class SwfExtractor
     /**
      * Get a character by its exported name.
      *
-     * @see SwfExtractor::exported() to get the list of exported names.
      * @throws InvalidArgumentException If the given name is not exported.
+     * @throws ParserExceptionInterface
+     *
+     * @see SwfExtractor::exported() to get the list of exported names.
      */
     public function byName(string $name): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
@@ -220,6 +242,7 @@ final class SwfExtractor
      * Note: Due to the way PHP handles array keys, numeric keys will be converted to integers.
      *
      * @return array<array-key, int>
+     * @throws ParserExceptionInterface
      */
     public function exported(): array
     {
@@ -280,6 +303,7 @@ final class SwfExtractor
 
     /**
      * @return array<int, LosslessImageDefinition>
+     * @throws ParserExceptionInterface
      */
     private function extractLosslessImages(): array
     {
@@ -300,6 +324,7 @@ final class SwfExtractor
 
     /**
      * @return array<int, ImageBitsDefinition>
+     * @throws ParserExceptionInterface
      */
     private function extractDefineBits(): array
     {
@@ -326,6 +351,7 @@ final class SwfExtractor
 
     /**
      * @return array<int, JpegImageDefinition>
+     * @throws ParserExceptionInterface
      */
     private function extractJpeg(): array
     {

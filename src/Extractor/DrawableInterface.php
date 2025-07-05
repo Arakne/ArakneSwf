@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor;
 
+use Arakne\Swf\Error\SwfExceptionInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -31,6 +32,8 @@ interface DrawableInterface
 {
     /**
      * Size and offset of the character
+     *
+     * @throws SwfExceptionInterface
      */
     public function bounds(): Rectangle;
 
@@ -40,6 +43,7 @@ interface DrawableInterface
      * @param bool $recursive If true, will count the frames of all children recursively
      *
      * @return positive-int
+     * @throws SwfExceptionInterface
      */
     public function framesCount(bool $recursive = false): int;
 
@@ -51,6 +55,7 @@ interface DrawableInterface
      * @return D The passed drawer
      *
      * @template D as DrawerInterface
+     * @throws SwfExceptionInterface
      */
     public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface;
 
@@ -61,7 +66,9 @@ interface DrawableInterface
      * The current instance of the character should not be modified, a new instance should be returned
      *
      * @param ColorTransform $colorTransform
+     *
      * @return self The transformed character
+     * @throws SwfExceptionInterface
      */
     public function transformColors(ColorTransform $colorTransform): self;
 }
