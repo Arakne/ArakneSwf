@@ -25,7 +25,4 @@ use Arakne\Swf\Error\SwfExceptionInterface;
 /**
  * Base interface for all extractor exceptions.
  */
-interface ExtractorExceptionInterface extends SwfExceptionInterface
-{
-
-}
+interface ExtractorExceptionInterface extends SwfExceptionInterface {}

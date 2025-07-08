@@ -25,7 +25,4 @@ use Throwable;
 /**
  * Base exception type for all the library exceptions.
  */
-interface SwfExceptionInterface extends Throwable
-{
-
-}
+interface SwfExceptionInterface extends Throwable {}

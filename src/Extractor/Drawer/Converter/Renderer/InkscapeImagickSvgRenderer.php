@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\Drawer\Converter\Renderer;
 
 use InvalidArgumentException;
-
 use Override;
 
 use function count;

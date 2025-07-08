@@ -39,6 +39,9 @@ final readonly class ImportAssetsTag
          */
         public int $version,
 
+        /**
+         * Path, or URL, of the SWF to import.
+         */
         public string $url,
 
         /**

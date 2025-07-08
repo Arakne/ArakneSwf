@@ -21,9 +21,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Record\Filter;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
-
 use Arakne\Swf\Parser\SwfReader;
-
 use Override;
 
 use function assert;

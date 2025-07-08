@@ -32,7 +32,7 @@ final readonly class ClipPathBuilder implements DrawerInterface
     {
         foreach ($shape->paths as $path) {
             $element = $this->builder->addPath($this->clipPath, $path);
-            $element->addAttribute('transform', 'translate(' . $shape->xOffset/20 . ',' . $shape->yOffset/20 . ')');
+            $element->addAttribute('transform', 'translate(' . $shape->xOffset / 20 . ',' . $shape->yOffset / 20 . ')');
         }
     }
 

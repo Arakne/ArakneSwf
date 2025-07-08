@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Parser;
 
+use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 use Arakne\Swf\Parser\SwfReader;
@@ -58,6 +59,17 @@ class SwfReaderTest extends ParserTestCase
     }
 
     #[Test]
+    public function uncompressEndStreamDetection()
+    {
+        $reader = new SwfReader(file_get_contents(__DIR__.'/Fixtures/95.swf'));
+        $reader->skipBytes(8);
+        $reader = $reader->uncompress(5183);
+
+        $this->assertSame(5183, $reader->end);
+        $this->assertSame(8, $reader->offset);
+    }
+
+    #[Test]
     public function uncompressWithoutLength()
     {
         $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
@@ -74,7 +86,7 @@ class SwfReaderTest extends ParserTestCase
     #[Test]
     public function uncompressDataTooLong()
     {
-        $this->expectException(ParserInvalidDataException::class);
+        $this->expectException(ParserExtraDataException::class);
         $this->expectExceptionMessage('Uncompressed data exceeds the maximum length of 100 bytes (actual 255 bytes)');
 
         $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 247));
@@ -87,7 +99,7 @@ class SwfReaderTest extends ParserTestCase
     #[Test]
     public function uncompressZipBomb()
     {
-        $this->expectException(ParserInvalidDataException::class);
+        $this->expectException(ParserExtraDataException::class);
         $this->expectExceptionMessage('Uncompressed data exceeds the maximum length of 5000 bytes (actual 4209796 bytes)');
 
         $data = "CWF\x05\xFF\x00\x00\x00" . gzcompress(str_repeat('a', 10_000_000));

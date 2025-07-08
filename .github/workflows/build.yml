@@ -83,10 +83,10 @@ jobs:
 
             - name: Run type coverage
               run: ./vendor/bin/phpstan
-#
-#            - name: Run checkstyle
-#              run: PHP_CS_FIXER_IGNORE_ENV=1 ./vendor/bin/php-cs-fixer check --diff
-#
+
+            - name: Run checkstyle
+              run: ./vendor/bin/php-cs-fixer check --diff
+
 #            - name: Run Infection
 #              run: |
 #                ./infection.phar --logger-github

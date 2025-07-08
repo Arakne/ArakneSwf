@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser;
 
 use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Parser\Error\ParserExtraDataException;
 use Arakne\Swf\Parser\Error\ParserInvalidDataException;
 use Arakne\Swf\Parser\Error\ParserOutOfBoundException;
 
@@ -130,7 +131,7 @@ final class SwfReader
             $chunk = substr($this->data, $offset, 4096);
             $data .= @inflate_add($context, $chunk, ZLIB_NO_FLUSH);
 
-            if ($len !== null && strlen($data) >= $len) {
+            if ($len !== null && strlen($data) > $len) {
                 break;
             }
 
@@ -138,10 +139,11 @@ final class SwfReader
         }
 
         if ($len !== null && strlen($data) > $len) {
-            if ($this->errors & Errors::INVALID_DATA) {
-                throw new ParserInvalidDataException(
+            if ($this->errors & Errors::EXTRA_DATA) {
+                throw new ParserExtraDataException(
                     sprintf('Uncompressed data exceeds the maximum length of %d bytes (actual %d bytes)', $len, strlen($data)),
-                    $offset
+                    $offset,
+                    $len
                 );
             }
 
@@ -640,7 +642,7 @@ final class SwfReader
 
         if ($exponent === 0) {
             // Denormalized number
-            return  ($sign === 0 ? 1.0 : -1.0) * (2**-15) * $mantissa / 1024.0;
+            return  ($sign === 0 ? 1.0 : -1.0) * (2 ** -15) * $mantissa / 1024.0;
         }
 
         if ($exponent === 0x1f) {

@@ -238,7 +238,7 @@ final readonly class ExtractCommand
                 $character instanceof ShapeDefinition => $this->processShape($options, $file->path, $name, $character),
                 $character instanceof MissingCharacter => printf('The character %s is missing in the SWF file or unsupported' . PHP_EOL, $name) && false,
             };
-        } catch (Exception $e){
+        } catch (Exception $e) {
             printf('An error occurred while processing the character %s: %s' . PHP_EOL, $name, $e->getMessage());
 
             return false;

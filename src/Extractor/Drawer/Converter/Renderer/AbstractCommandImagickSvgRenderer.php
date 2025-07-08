@@ -22,7 +22,6 @@ namespace Arakne\Swf\Extractor\Drawer\Converter\Renderer;
 
 use Imagick;
 use Override;
-
 use RuntimeException;
 
 use function escapeshellarg;
