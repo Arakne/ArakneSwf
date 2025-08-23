@@ -14,7 +14,6 @@ use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
-
 use ReflectionProperty;
 
 use function array_keys;
@@ -339,6 +338,16 @@ class SwfExtractorTest extends ImageTestCase
 
         $timeline = $extractor->timeline();
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mask/189.svg', $timeline->toSvg());
+    }
+
+    #[Test]
+    public function withClipDepthOnSprite()
+    {
+        $swf = new SwfFile(__DIR__ . '/Fixtures/mask/sprite_mask.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->timeline();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/mask/sprite_mask.svg', $timeline->toSvg());
     }
 
     #[Test]
