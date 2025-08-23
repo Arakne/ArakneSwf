@@ -32,8 +32,6 @@ class ClipPathBuilderTest extends TestCase
         $extractor = new SwfExtractor($swf);
 
         $extractor->character(1)->draw($this->builder); // Image
-        $extractor->character(4)->draw($this->builder); // Sprite
-        $extractor->character(29)->timeline()->frames[0]->draw($this->builder); // Frame
 
         $this->builder->startClip($extractor->character(1), new Matrix(), 0);
         $this->builder->endClip('');
@@ -41,6 +39,35 @@ class ClipPathBuilderTest extends TestCase
         $this->assertNull($this->builder->render());
         $this->assertCount(1, (array) $this->root->children());
         $this->assertEmpty((array) $this->root->clipPath->children());
+    }
+
+    #[Test]
+    public function buildWithSprite()
+    {
+        $swf = new SwfFile(__DIR__.'/../../Fixtures/mob-leponge/mob-leponge.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $extractor->character(4)->draw($this->builder); // Sprite
+
+        $this->builder->startClip($extractor->character(1), new Matrix(), 0);
+        $this->builder->endClip('');
+
+        $expected = <<<'XML'
+        <?xml version="1.0"?>
+        <svg xmlns="http://www.w3.org/2000/svg">
+            <clipPath>
+                <path fill-rule="evenodd" fill="url(#gradient-R63dfb90eb595e9795bdd21b4fefc7c4b)" stroke="none" d="M5.15 0Q5.15 2.15 3.65 3.65Q2.15 5.15 0 5.15Q-2.15 5.15 -3.65 3.65Q-5.15 2.15 -5.15 0Q-5.15 -2.15 -3.65 -3.65Q-2.15 -5.15 0 -5.15Q2.15 -5.15 3.65 -3.65Q5.15 -2.15 5.15 0" transform="matrix(1, 0, 0, 1, -5.15, -5.15) translate(5.15,5.15)"/>
+            </clipPath>
+            <radialGradient gradientTransform="matrix(0.0068, 0, 0, 0.0068, 0, 0)" gradientUnits="userSpaceOnUse" spreadMethod="pad" id="gradient-R63dfb90eb595e9795bdd21b4fefc7c4b" cx="0" cy="0" r="819.2">
+                <stop offset="0" stop-color="#99795a"/>
+                <stop offset="0.44705882352941" stop-color="#99734f" stop-opacity="0.43137254901961"/>
+                <stop offset="0.83137254901961" stop-color="#9c6e44" stop-opacity="0"/>
+            </radialGradient>
+        </svg>
+        XML;
+
+        $this->assertNull($this->builder->render());
+        $this->assertXmlStringEqualsXmlString($expected, $this->root->asXML());
     }
 
     #[Test]

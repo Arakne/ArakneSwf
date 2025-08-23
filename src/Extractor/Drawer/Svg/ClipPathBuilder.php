@@ -13,15 +13,19 @@ use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Override;
 use SimpleXMLElement;
 
+use function implode;
+
 /**
  * Builder for <clipPath> SVG element.
- * Only shapes are supported, all other methods are ignored.
+ * Only shapes and sprites are supported, all other methods are ignored.
  */
 final readonly class ClipPathBuilder implements DrawerInterface
 {
     public function __construct(
         private SimpleXMLElement $clipPath,
         private SvgBuilder $builder,
+        /** @var list<Matrix> */
+        private array $transform = [],
     ) {}
 
     #[Override]
@@ -32,7 +36,15 @@ final readonly class ClipPathBuilder implements DrawerInterface
     {
         foreach ($shape->paths as $path) {
             $element = $this->builder->addPath($this->clipPath, $path);
-            $element->addAttribute('transform', 'translate(' . $shape->xOffset / 20 . ',' . $shape->yOffset / 20 . ')');
+
+            $transforms = [];
+
+            foreach ($this->transform as $matrix) {
+                $transforms[] = $matrix->toSvgTransformation();
+            }
+
+            $transforms[] = 'translate(' . $shape->xOffset / 20 . ',' . $shape->yOffset / 20 . ')';
+            $element->addAttribute('transform', implode(' ', $transforms));
         }
     }
 
@@ -40,7 +52,10 @@ final readonly class ClipPathBuilder implements DrawerInterface
     public function image(ImageCharacterInterface $image): void {}
 
     #[Override]
-    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal, ?string $name = null): void {}
+    public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal, ?string $name = null): void
+    {
+        $object->draw(new self($this->clipPath, $this->builder, [...$this->transform, $matrix]));
+    }
 
     #[Override]
     public function startClip(DrawableInterface $object, Matrix $matrix, int $frame): string
