@@ -1,3 +1,8 @@
+0.2.2
+-----
+
+- (Drawer) Allow use of sprite with clip depth
+
 0.2.1
 -----
 
