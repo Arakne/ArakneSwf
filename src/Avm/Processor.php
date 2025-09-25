@@ -41,7 +41,6 @@ use function is_integer;
 use function is_object;
 use function is_string;
 use function method_exists;
-use function var_dump;
 
 /**
  * Execute the parsed AVM bytecode.
@@ -138,7 +137,7 @@ final readonly class Processor
     private function setVariable(State $state): void
     {
         $value = array_pop($state->stack);
-        $name = array_pop($state->stack);
+        $name = (string) array_pop($state->stack);
 
         $state->variables[$name] = $value;
     }
@@ -148,13 +147,17 @@ final readonly class Processor
         $index = count($state->stack) - 1;
         assert($index >= 0);
 
+        $varName = $state->stack[$index];
+        assert(is_string($varName) || is_integer($varName));
+
         // @phpstan-ignore assign.propertyType
-        $state->stack[$index] = $state->variables[$state->stack[$index]] ?? null;
+        $state->stack[$index] = $state->variables[$varName] ?? null;
     }
 
     private function getMember(State $state): void
     {
         $propertyName = array_pop($state->stack);
+        assert(is_string($propertyName) || is_int($propertyName));
         $scriptObject = array_pop($state->stack);
 
         if ($scriptObject === null) {
@@ -218,6 +221,7 @@ final readonly class Processor
             $key = $args[$i];
             $value = $args[$i + 1];
 
+            assert(is_string($key) || is_int($key));
             $properties[$key] = $value;
         }
 

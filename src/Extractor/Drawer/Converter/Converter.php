@@ -85,9 +85,9 @@ final readonly class Converter
 
         [$newWidth, $newHeight] = $this->resizer->scale($width, $height);
 
-        $xml['width'] = (string) $newWidth; // @phpstan-ignore offsetAssign.valueType
-        $xml['height'] = (string) $newHeight;  // @phpstan-ignore offsetAssign.valueType
-        $xml['viewBox'] = sprintf('0 0 %h %h', $width, $height);  // @phpstan-ignore offsetAssign.valueType
+        $xml['width'] = (string) $newWidth;
+        $xml['height'] = (string) $newHeight;
+        $xml['viewBox'] = sprintf('0 0 %h %h', $width, $height);
 
         $svg = $xml->asXML();
         assert($svg !== false);
