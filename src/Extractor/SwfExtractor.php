@@ -40,6 +40,7 @@ use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\ExportAssetsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
+use Arakne\Swf\Parser\Structure\Tag\SymbolClassTag;
 use Arakne\Swf\SwfFile;
 use Arakne\Swf\Util\Memory;
 use InvalidArgumentException;
