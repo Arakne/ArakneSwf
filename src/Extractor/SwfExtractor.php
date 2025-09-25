@@ -252,10 +252,13 @@ final class SwfExtractor
 
         $exported = [];
 
-        foreach ($this->file->tags(ExportAssetsTag::ID) as $tag) {
-            assert($tag instanceof ExportAssetsTag);
-
-            $exported += array_flip($tag->characters);
+        foreach ($this->file->tags(ExportAssetsTag::ID, SymbolClassTag::TYPE) as $tag) {
+            if ($tag instanceof ExportAssetsTag) {
+                $exported += array_flip($tag->characters);
+            }
+            elseif ($tag instanceof SymbolClassTag) {
+                $exported += array_flip($tag->symbols);
+            }
         }
 
         return $this->exported = $exported;
