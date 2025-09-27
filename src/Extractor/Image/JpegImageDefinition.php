@@ -106,7 +106,7 @@ final class JpegImageDefinition implements ImageCharacterInterface
         if ($this->tag->type === ImageDataType::Jpeg && !isset($this->tag->alphaData)) {
             $transformed = TransformedImage::createFromJpeg($this->characterId, $this->bounds(), $colorTransform, $this->tag->imageData);
         } else {
-            $transformed = TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, clone $this->toGD());
+            $transformed = TransformedImage::createFromPng($this->characterId, $this->bounds(), $colorTransform, $this->toPng());
         }
 
         $cache[$transformed] = $colorTransform;

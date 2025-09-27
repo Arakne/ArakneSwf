@@ -34,12 +34,15 @@ use function base64_encode;
  *
  * @internal
  */
-final readonly class TransformedImage implements ImageCharacterInterface
+final class TransformedImage implements ImageCharacterInterface
 {
+    private ?string $transformedPngData = null;
+
     private function __construct(
-        public int $characterId,
-        private Rectangle $bounds,
-        private string $pngData,
+        public readonly int $characterId,
+        private readonly Rectangle $bounds,
+        private readonly string $basePngData,
+        private readonly ColorTransform $colorTransform,
     ) {}
 
     #[Override]
@@ -57,31 +60,43 @@ final readonly class TransformedImage implements ImageCharacterInterface
     #[Override]
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
-        return self::createFromPng($this->characterId, $this->bounds, $colorTransform, $this->pngData);
+        return new self(
+            $this->characterId,
+            $this->bounds,
+            $this->basePngData,
+            $this->colorTransform->append($colorTransform),
+        );
     }
 
     #[Override]
     public function toBase64Data(): string
     {
-        return 'data:image/png;base64,' . base64_encode($this->pngData);
+        return 'data:image/png;base64,' . base64_encode($this->toPng());
     }
 
     #[Override]
     public function toPng(): string
     {
-        return $this->pngData;
+        if ($this->transformedPngData !== null) {
+            return $this->transformedPngData;
+        }
+
+        $gd = GD::fromPng($this->basePngData);
+        $gd->transformColors($this->colorTransform);
+
+        return $this->transformedPngData = $gd->toPng();
     }
 
     #[Override]
     public function toJpeg(int $quality = -1): string
     {
-        return GD::fromPng($this->pngData)->toJpeg($quality);
+        return GD::fromPng($this->toPng())->toJpeg($quality);
     }
 
     #[Override]
     public function toBestFormat(): ImageData
     {
-        return new ImageData(ImageDataType::Png, $this->pngData);
+        return new ImageData(ImageDataType::Png, $this->toPng());
     }
 
     #[Override]
@@ -104,7 +119,7 @@ final readonly class TransformedImage implements ImageCharacterInterface
      */
     public static function createFromPng(int $characterId, Rectangle $bounds, ColorTransform $colorTransform, string $pngData): self
     {
-        return self::createFromGD($characterId, $bounds, $colorTransform, GD::fromPng($pngData));
+        return new self($characterId, $bounds, $pngData, $colorTransform);
     }
 
     /**
@@ -125,8 +140,6 @@ final readonly class TransformedImage implements ImageCharacterInterface
     /**
      * Apply the color transform on the parsed GD image and return a new instance.
      *
-     * Note: the GD image is modified in place, so be sure to clone it if you need to keep the original.
-     *
      * @param int $characterId The original character ID {@see ImageCharacterInterface::$characterId}
      * @param Rectangle $bounds The original bounds {@see ImageCharacterInterface::bounds()}
      * @param ColorTransform $colorTransform The color transform to apply
@@ -136,9 +149,6 @@ final readonly class TransformedImage implements ImageCharacterInterface
      */
     public static function createFromGD(int $characterId, Rectangle $bounds, ColorTransform $colorTransform, GD $image): self
     {
-        $image->transformColors($colorTransform);
-        $pngData = $image->toPng();
-
-        return new self($characterId, $bounds, $pngData);
+        return new self($characterId, $bounds, $image->toPng(), $colorTransform);
     }
 }

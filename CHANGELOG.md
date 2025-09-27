@@ -1,3 +1,9 @@
+0.2.3
+-----
+
+- (Image) Ignore fully transparent pixels when applying color transform
+- (Image) Fix alpha channel handling when applying color transform
+
 0.2.2
 -----
 

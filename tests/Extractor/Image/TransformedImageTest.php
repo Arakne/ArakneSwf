@@ -59,6 +59,32 @@ class TransformedImageTest extends ImageTestCase
         $this->assertSame(1, $image->framesCount(true));
     }
 
+    #[Test]
+    public function fromPngTransparentPixelShouldBeIgnored()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, 173, 0, 83),
+            new ColorTransform(
+                redMult: 64,
+                greenMult: 128,
+                blueMult: 192,
+                alphaMult: 256,
+                redAdd: 50,
+                greenAdd: -50,
+                blueAdd: 100,
+                alphaAdd: 75,
+            ),
+            file_get_contents(__DIR__ . '/../Fixtures/g2/20.png')
+        );
+
+        $this->assertImageStringEqualsImageFile(__DIR__ . '/../Fixtures/g2/20-transformed.png', $image->toPng());
+        $this->assertSame(1, $image->characterId);
+        $this->assertEquals(new Rectangle(0, 173, 0, 83), $image->bounds());
+        $this->assertSame(1, $image->framesCount());
+        $this->assertSame(1, $image->framesCount(true));
+    }
+
     #[
         Test,
         TestWith([new ColorTransform(), __DIR__.'/../Fixtures/maps/jpeg-525.jpg']),

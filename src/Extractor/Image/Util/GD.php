@@ -35,7 +35,6 @@ use function imagealphablending;
 use function imagecolorallocate;
 use function imagecolorallocatealpha;
 use function imagecolorat;
-use function imagecolorstotal;
 use function imagecreate;
 use function imagecreatefromstring;
 use function imagecreatetruecolor;
@@ -57,7 +56,6 @@ use function stream_get_contents;
 use function strlen;
 use function strpos;
 use function substr;
-use function var_dump;
 
 /**
  * Wrapper for GD functions.
@@ -207,7 +205,14 @@ final class GD
 
                 assert(is_int($color));
 
-                $a = 127 - (($color >> 24) & 0x7F);
+                $a = (127 - (($color >> 24) & 0x7F)) << 1; // Convert to flash alpha (0-255)
+
+                if ($a === 0) {
+                    // Transparent pixel, skip it: flash does not apply color transform on it
+                    imagesetpixel($img, $x, $y, 0x7F000000);
+                    continue;
+                }
+
                 $r = ($color >> 16) & 0xFF;
                 $g = ($color >> 8) & 0xFF;
                 $b = $color & 0xFF;
@@ -224,9 +229,9 @@ final class GD
                 $g = $g < 0 ? 0 : $g;
                 $b = $b > 255 ? 255 : $b;
                 $b = $b < 0 ? 0 : $b;
-                $a = $a > 127 ? 127 : $a;
+                $a = $a > 255 ? 255 : $a;
                 $a = $a < 0 ? 0 : $a;
-                $a = 127 - $a;
+                $a = 127 - ($a >> 1); // Convert back to GD alpha (0-127)
 
                 $newColor = ($a << 24) | ($r << 16) | ($g << 8) | $b;
 
@@ -245,6 +250,7 @@ final class GD
         $stream = fopen('php://memory', 'r+');
         assert($stream !== false);
 
+        imagesavealpha($this->image, true);
         imagepng($this->image, $stream, $compression) ?: throw new RuntimeException('Failed to convert image to PNG');
         rewind($stream);
 
