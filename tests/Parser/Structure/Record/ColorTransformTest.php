@@ -129,6 +129,43 @@ class ColorTransformTest extends ParserTestCase
     }
 
     #[Test]
+    public function append()
+    {
+        $transform1 = new ColorTransform(
+            redMult: 123,
+            greenMult: 156,
+            blueMult: 230,
+            alphaMult: 256,
+            redAdd: 42,
+            greenAdd: 66,
+            blueAdd: 120,
+            alphaAdd: 58,
+        );
+
+        $transform2 = new ColorTransform(
+            redMult: 150,
+            greenMult: 200,
+            blueMult: 120,
+            alphaMult: 256,
+            redAdd: -50,
+            greenAdd: -20,
+            blueAdd: 5,
+            alphaAdd: 0,
+        );
+
+        $combined = $transform1->append($transform2);
+
+        $this->assertSame(72, $combined->redMult);
+        $this->assertSame(121, $combined->greenMult);
+        $this->assertSame(107, $combined->blueMult);
+        $this->assertSame(256, $combined->alphaMult);
+        $this->assertSame(-26, $combined->redAdd);
+        $this->assertSame(31, $combined->greenAdd);
+        $this->assertSame(61, $combined->blueAdd);
+        $this->assertSame(58, $combined->alphaAdd);
+    }
+
+    #[Test]
     public function read()
     {
         $reader = $this->createReader(__DIR__.'/../../../Fixtures/1317.swf', 2828);

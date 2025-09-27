@@ -77,7 +77,7 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     #[Override]
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
-        return TransformedImage::createFromGD($this->characterId, $this->bounds(), $colorTransform, clone $this->toGD());
+        return TransformedImage::createFromPng($this->characterId, $this->bounds(), $colorTransform, $this->toPng());
     }
 
     #[Override]

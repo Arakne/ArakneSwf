@@ -389,4 +389,18 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertTrue($extractor->releaseIfOutOfMemory(1000));
         $this->assertEmpty(new ReflectionProperty($extractor, 'characters')->getValue($extractor));
     }
+
+    #[Test]
+    public function colorTransformOnTransparentPixelShouldBeIgnored()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/o3/o3.swf');
+        $extractor = new SwfExtractor($swf);
+        $sprite = $extractor->character(31);
+
+        $this->assertInstanceOf(SpriteDefinition::class, $sprite);
+        $this->assertXmlStringEqualsXmlFile(
+            __DIR__ . '/Fixtures/o3/sprite-31.svg',
+            $sprite->toSvg()
+        );
+    }
 }

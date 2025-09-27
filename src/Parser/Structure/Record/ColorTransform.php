@@ -81,6 +81,30 @@ final readonly class ColorTransform
         return new Color((int) $red, (int) $green, (int) $blue, (int) $alpha);
     }
 
+    /**
+     * Append another color transform to this one and return a new instance
+     * The result transform is equivalent to applying this transform, then the next one sequentially
+     *
+     * Note: This is not exactly the same as applying the two transforms one after the other to a color,
+     *       because of clamping to 0-255 range after each transform.
+     *
+     * @param ColorTransform $next
+     * @return self
+     */
+    public function append(self $next): self
+    {
+        return new self(
+            redMult: ($this->redMult * $next->redMult) >> 8,
+            greenMult: ($this->greenMult * $next->greenMult) >> 8,
+            blueMult: ($this->blueMult * $next->blueMult) >> 8,
+            alphaMult: ($this->alphaMult * $next->alphaMult) >> 8,
+            redAdd: (($this->redAdd * $next->redMult) >> 8) + $next->redAdd,
+            greenAdd: (($this->greenAdd * $next->greenMult) >> 8) + $next->greenAdd,
+            blueAdd: (($this->blueAdd * $next->blueMult) >> 8) + $next->blueAdd,
+            alphaAdd: (($this->alphaAdd * $next->alphaMult) >> 8) + $next->alphaAdd,
+        );
+    }
+
     public static function read(SwfReader $reader, bool $withAlpha): self
     {
         $hasAddTerms = $reader->readBool();
