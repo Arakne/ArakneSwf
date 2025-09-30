@@ -23,6 +23,7 @@ namespace Arakne\Swf\Extractor\Drawer\Converter;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\Converter\Renderer\ImagickSvgRendererInterface;
 use Arakne\Swf\Extractor\Drawer\Converter\Renderer\ImagickSvgRendererResolver;
+use Arakne\Swf\Extractor\Drawer\Svg\SvgBuilder;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Closure;
 use Imagick;
@@ -61,6 +62,22 @@ final readonly class Converter
          * If null, the best available renderer will be used.
          */
         private ?ImagickSvgRendererInterface $svgRenderer = null,
+
+        /**
+         * Enable subpixel stroke width (default: true)
+         *
+         * If true, the stroke width will be according to the actual SWF stroke width (can be a float value).
+         * In this case, stroke below 1px will be rendered by the antialiasing of the renderer, so in a blurry and non-opaque way.
+         * This rendering differs from flash, which always render stroke with a minimum of 1px width.
+         *
+         * If false, the minimum stroke width will be 1px, and `non-scaling-stroke` will be used to avoid stroke scaling
+         * when the SVG is resized.
+         * This allows to approximate the flash rendering at native size, but the relative stroke width will not be preserved,
+         * so rescaling will not be accurate.
+         *
+         * @see SvgBuilder::$subpixelStrokeWidth
+         */
+        private bool $subpixelStrokeWidth = true,
     ) {}
 
     /**
@@ -73,7 +90,7 @@ final readonly class Converter
      */
     public function toSvg(DrawableInterface $drawable, int $frame = 0): string
     {
-        $svg = $drawable->draw(new SvgCanvas($drawable->bounds()), $frame)->render();
+        $svg = $drawable->draw(new SvgCanvas($drawable->bounds(), $this->subpixelStrokeWidth), $frame)->render();
 
         if (!$this->resizer) {
             return $svg;

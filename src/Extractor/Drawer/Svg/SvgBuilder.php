@@ -58,6 +58,20 @@ final class SvgBuilder
          * It should be the root or the defs element
          */
         private readonly SimpleXMLElement $svg,
+
+        /**
+         * Enable subpixel stroke width (default: true)
+         *
+         * If true, the stroke width will be according to the actual SWF stroke width (can be a float value).
+         * In this case, stroke below 1px will be rendered by the antialiasing of the renderer, so in a blurry and non-opaque way.
+         * This rendering differs from flash, which always render stroke with a minimum of 1px width.
+         *
+         * If false, the minimum stroke width will be 1px, and `non-scaling-stroke` will be used to avoid stroke scaling
+         * when the SVG is resized.
+         * This allows to approximate the flash rendering at native size, but the relative stroke width will not be preserved,
+         * so rescaling will not be accurate.
+         */
+        public readonly bool $subpixelStrokeWidth = true,
     ) {}
 
     public function addGroup(Rectangle $bounds): SimpleXMLElement
@@ -97,7 +111,14 @@ final class SvgBuilder
         }
 
         if ($path->style->lineWidth > 0) {
-            $pathElement->addAttribute('stroke-width', (string) ($path->style->lineWidth / 20));
+            $width = $path->style->lineWidth / 20;
+
+            if (!$this->subpixelStrokeWidth && $width < 1) {
+                $width = 1;
+                $pathElement->addAttribute('vector-effect', 'non-scaling-stroke');
+            }
+
+            $pathElement->addAttribute('stroke-width', (string) $width);
             $pathElement->addAttribute('stroke-linecap', 'round'); // @todo use style from LINESTYLE2 if available
             $pathElement->addAttribute('stroke-linejoin', 'round');
         }

@@ -43,12 +43,14 @@ final class IncludedSvgCanvas extends AbstractSvgCanvas
     /**
      * @param AbstractSvgCanvas $root The root canvas
      * @param SimpleXMLElement $defs The <defs> element of the root canvas
+     * @param bool $subpixelStrokeWidth Enable subpixel stroke width
      */
     public function __construct(
         private readonly AbstractSvgCanvas $root,
         private readonly SimpleXMLElement $defs,
+        bool $subpixelStrokeWidth = true,
     ) {
-        parent::__construct(new SvgBuilder($this->defs));
+        parent::__construct(new SvgBuilder($this->defs, $subpixelStrokeWidth));
     }
 
     #[Override]

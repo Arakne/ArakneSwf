@@ -102,7 +102,7 @@ abstract class AbstractSvgCanvas implements DrawerInterface
     #[Override]
     final public function include(DrawableInterface $object, Matrix $matrix, int $frame = 0, array $filters = [], BlendMode $blendMode = BlendMode::Normal, ?string $name = null): void
     {
-        $included = new IncludedSvgCanvas($this, $this->defs());
+        $included = new IncludedSvgCanvas($this, $this->defs(), $this->builder->subpixelStrokeWidth);
 
         $object->draw($included, $frame);
 

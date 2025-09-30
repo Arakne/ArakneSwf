@@ -18,8 +18,8 @@ class InkscapeConverterTest extends ConverterTest
         }
     }
 
-    protected function createConverter(?ImageResizerInterface $resizer = null, string $backgroundColor = 'transparent'): Converter
+    protected function createConverter(?ImageResizerInterface $resizer = null, string $backgroundColor = 'transparent', bool $subpixelStrokeWidth = true): Converter
     {
-        return new Converter($resizer, $backgroundColor, new InkscapeImagickSvgRenderer());
+        return new Converter($resizer, $backgroundColor, new InkscapeImagickSvgRenderer(), $subpixelStrokeWidth);
     }
 }

@@ -125,24 +125,29 @@ final readonly class Timeline implements DrawableInterface
      * Render a single frame to SVG
      *
      * @param non-negative-int $frame Frame number to render. If greater than the number of frames, the last frame will be rendered.
+     * @param bool $subpixelStrokeWidth Enable subpixel stroke width.
+     *                                  If false, the minimum stroke width will be 1px to approximate Flash rendering.
      */
-    public function toSvg(int $frame = 0): string
+    public function toSvg(int $frame = 0, bool $subpixelStrokeWidth = true): string
     {
         $maxFrame = count($this->frames) - 1;
         $toRender = $this->frames[min($frame, $maxFrame)];
 
-        return $toRender->draw(new SvgCanvas($toRender->bounds), $frame)->render();
+        return $toRender->draw(new SvgCanvas($toRender->bounds, $subpixelStrokeWidth), $frame)->render();
     }
 
     /**
      * Render all frames to SVG
      *
+     * @param bool $subpixelStrokeWidth Enable subpixel stroke width.
+     *                                  If false, the minimum stroke width will be 1px to approximate Flash rendering.
+     *
      * @return iterable<int, string> Renderer frames, with the frame number as key
      */
-    public function toSvgAll(): iterable
+    public function toSvgAll(bool $subpixelStrokeWidth = true): iterable
     {
         foreach ($this->frames as $f => $frame) {
-            $drawer = new SvgCanvas($frame->bounds);
+            $drawer = new SvgCanvas($frame->bounds, $subpixelStrokeWidth);
             $frame->draw($drawer, $f);
 
             yield $f => $drawer->render();
