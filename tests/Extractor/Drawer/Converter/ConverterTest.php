@@ -28,9 +28,9 @@ use function var_dump;
 
 class ConverterTest extends ImageTestCase
 {
-    protected function createConverter(?ImageResizerInterface $resizer = null, string $backgroundColor = 'transparent'): Converter
+    protected function createConverter(?ImageResizerInterface $resizer = null, string $backgroundColor = 'transparent', bool $subpixelStrokeWidth = true): Converter
     {
-        return new Converter($resizer, $backgroundColor);
+        return new Converter($resizer, $backgroundColor, subpixelStrokeWidth: $subpixelStrokeWidth);
     }
 
     #[Test]
@@ -80,6 +80,25 @@ class ConverterTest extends ImageTestCase
         $this->assertSame('image/png', $info['mime']);
         $this->assertSame(40, $info[0]);
         $this->assertSame(42, $info[1]);
+    }
+
+    #[Test]
+    public function toPngWithoutSubpixelStroke()
+    {
+        $converter = $this->createConverter(subpixelStrokeWidth: false);
+        $drawable = (new SwfFile(__DIR__.'/../../Fixtures/1305/1305.swf'))->assetByName('anim0R');
+        $png = $converter->toPng($drawable);
+
+        $this->assertImageStringEqualsImageFile([
+            __DIR__.'/../../Fixtures/1305/anim0R_no_sp_stroke.png',
+            __DIR__.'/../../Fixtures/1305/anim0R_no_sp_stroke_rsvg.png',
+        ], $png, 0.05);
+
+        $info = getimagesizefromstring($png);
+
+        $this->assertSame('image/png', $info['mime']);
+        $this->assertEqualsWithDelta(62, $info[0], 1.0);
+        $this->assertEqualsWithDelta(33, $info[1], 1.0);
     }
 
     #[Test]

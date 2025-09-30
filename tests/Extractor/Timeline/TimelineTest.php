@@ -9,6 +9,8 @@ use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function file_put_contents;
+
 class TimelineTest extends TestCase
 {
     #[Test]
@@ -50,6 +52,19 @@ class TimelineTest extends TestCase
 
         foreach ($timeline->toSvgAll() as $f => $svg) {
             $this->assertXmlStringEqualsXmlFile(__DIR__ . '/../Fixtures/1047/65_frames/65-'.$f.'.svg', $svg);
+        }
+    }
+
+    #[Test]
+    public function toSvgAllWithoutSubpixelStroke()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+
+        foreach ($timeline->toSvgAll(false) as $f => $svg) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__ . '/../Fixtures/1047/65_frames/65-'.$f.'-no-sp-stroke.svg', $svg);
         }
     }
 

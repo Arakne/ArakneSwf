@@ -92,10 +92,13 @@ final class ShapeDefinition implements DrawableInterface
 
     /**
      * Convert the shape to an SVG string
+     *
+     * @param bool $subpixelStrokeWidth Enable subpixel stroke width.
+     *                                  If false, the minimum stroke width will be 1px to approximate Flash rendering.
      */
-    public function toSvg(): string
+    public function toSvg(bool $subpixelStrokeWidth = true): string
     {
-        return $this->draw(new SvgCanvas($this->bounds()))->render();
+        return $this->draw(new SvgCanvas($this->bounds(), $subpixelStrokeWidth))->render();
     }
 
     #[Override]

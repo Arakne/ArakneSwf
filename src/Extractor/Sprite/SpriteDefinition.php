@@ -131,10 +131,13 @@ final class SpriteDefinition implements DrawableInterface
      * Convert the sprite to SVG string
      *
      * @param non-negative-int $frame The frame to render
+     * @param bool $subpixelStrokeWidth Enable subpixel stroke width.
+     *                                  If false, the minimum stroke width will be 1px to approximate Flash rendering.
+     *
      * @throws SwfExceptionInterface
      */
-    public function toSvg(int $frame = 0): string
+    public function toSvg(int $frame = 0, bool $subpixelStrokeWidth = true): string
     {
-        return $this->timeline()->toSvg($frame);
+        return $this->timeline()->toSvg($frame, $subpixelStrokeWidth);
     }
 }

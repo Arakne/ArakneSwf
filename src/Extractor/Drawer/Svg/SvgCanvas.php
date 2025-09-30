@@ -33,13 +33,28 @@ final class SvgCanvas extends AbstractSvgCanvas
     private ?SimpleXMLElement $defs = null;
     private int $lastId = 0;
 
-    public function __construct(Rectangle $bounds)
-    {
+    public function __construct(
+        Rectangle $bounds,
+
+        /**
+         * Enable subpixel stroke width (default: true)
+         *
+         * If true, the stroke width will be according to the actual SWF stroke width (can be a float value).
+         * In this case, stroke below 1px will be rendered by the antialiasing of the renderer, so in a blurry and non-opaque way.
+         * This rendering differs from flash, which always render stroke with a minimum of 1px width.
+         *
+         * If false, the minimum stroke width will be 1px, and `non-scaling-stroke` will be used to avoid stroke scaling
+         * when the SVG is resized.
+         * This allows to approximate the flash rendering at native size, but the relative stroke width will not be preserved,
+         * so rescaling will not be accurate.
+         */
+        bool $subpixelStrokeWidth = true,
+    ) {
         $this->root = $root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>');
         $root->addAttribute('width', ($bounds->width() / 20) . 'px');
         $root->addAttribute('height', ($bounds->height() / 20) . 'px');
 
-        parent::__construct(new SvgBuilder($root));
+        parent::__construct(new SvgBuilder($root, $subpixelStrokeWidth));
     }
 
     #[Override]

@@ -17,6 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 use ReflectionProperty;
 
 use function array_keys;
+use function file_put_contents;
 
 class SwfExtractorTest extends ImageTestCase
 {
@@ -54,6 +55,29 @@ class SwfExtractorTest extends ImageTestCase
 
         $this->assertSame($shapes[1]->shape(), $shapes[1]->shape());
         $this->assertSame($shapes[2]->shape(), $shapes[2]->shape());
+    }
+
+    #[Test]
+    public function shapesWithoutSubpixelStroke()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/2.swf'));
+        $shapes = $extractor->shapes();
+
+        $this->assertCount(2, $shapes);
+        $this->assertContainsOnly(ShapeDefinition::class, $shapes);
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/2-no-sp-stroke.svg', $shapes[1]->toSvg(subpixelStrokeWidth: false));
+        $this->assertXmlStringEqualsXmlString(
+            <<<'SVG'
+            <?xml version="1.0"?>
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25.3px" height="4.8px">
+                <g transform="matrix(1, 0, 0, 1, -0.05, 0)">
+                    <path fill="#000000" stroke="none" fill-rule="evenodd" d="M25.35 2.4Q25.3 3.4 21.6 4.1L12.7 4.8L3.75 4.1Q0 3.4 0.05 2.4Q0 1.4 3.75 0.7L12.7 0L21.6 0.7Q25.3 1.4 25.35 2.4"/>
+                </g>
+            </svg>
+            SVG,
+            $shapes[2]->toSvg(subpixelStrokeWidth: false)
+        );
     }
 
     #[Test]
