@@ -1,3 +1,8 @@
+0.3.0
+-----
+
+- (Drawer) Add option to set a minimum stroke with of 1px on SVG to approximate flash rendering
+
 0.2.3
 -----
 
