@@ -128,7 +128,7 @@ final readonly class Timeline implements DrawableInterface
      * @param bool $subpixelStrokeWidth Enable subpixel stroke width.
      *                                  If false, the minimum stroke width will be 1px to approximate Flash rendering.
      */
-    public function toSvg(int $frame = 0, bool $subpixelStrokeWidth = true): string
+    public function toSvg(int $frame = 0, bool $subpixelStrokeWidth = false): string
     {
         $maxFrame = count($this->frames) - 1;
         $toRender = $this->frames[min($frame, $maxFrame)];
@@ -144,7 +144,7 @@ final readonly class Timeline implements DrawableInterface
      *
      * @return iterable<int, string> Renderer frames, with the frame number as key
      */
-    public function toSvgAll(bool $subpixelStrokeWidth = true): iterable
+    public function toSvgAll(bool $subpixelStrokeWidth = false): iterable
     {
         foreach ($this->frames as $f => $frame) {
             $drawer = new SvgCanvas($frame->bounds, $subpixelStrokeWidth);

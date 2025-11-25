@@ -136,7 +136,7 @@ final class SpriteDefinition implements DrawableInterface
      *
      * @throws SwfExceptionInterface
      */
-    public function toSvg(int $frame = 0, bool $subpixelStrokeWidth = true): string
+    public function toSvg(int $frame = 0, bool $subpixelStrokeWidth = false): string
     {
         return $this->timeline()->toSvg($frame, $subpixelStrokeWidth);
     }

@@ -77,7 +77,7 @@ final readonly class Converter
          *
          * @see SvgBuilder::$subpixelStrokeWidth
          */
-        private bool $subpixelStrokeWidth = true,
+        private bool $subpixelStrokeWidth = false,
     ) {}
 
     /**

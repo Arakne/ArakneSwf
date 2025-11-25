@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
+use Arakne\Swf\Extractor\Shape\MorphShapeDefinition;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
@@ -101,6 +102,13 @@ final readonly class FrameObject
         public BlendMode $blendMode = BlendMode::Normal,
 
         /**
+         * The morph ratio for MorphShape characters.
+         * Value between 0 (start shape) and 65535 (end shape).
+         * Only used when the object is a MorphShapeDefinition.
+         */
+        public ?int $ratio = null,
+
+        /**
          * Color transformations to apply to the object
          *
          * This property is fill by the `transformColors()` method,
@@ -118,10 +126,18 @@ final readonly class FrameObject
 
     /**
      * Get the object to display after applying the color transformations
+     * and morph ratio (for MorphShapeDefinition).
      */
     public function transformedObject(): DrawableInterface
     {
         $object = $this->object;
+
+        // For morph shapes, get the shape at the correct ratio
+        if ($object instanceof MorphShapeDefinition && $this->ratio !== null) {
+            // Ratio is 0-65535, convert to 0.0-1.0
+            $ratioFloat = $this->ratio / 65535.0;
+            $object = new MorphShapeAtRatio($object, $ratioFloat);
+        }
 
         if ($this->colorTransform) {
             $object = $object->transformColors($this->colorTransform);
@@ -156,6 +172,7 @@ final readonly class FrameObject
             $this->name,
             $this->filters,
             $this->blendMode,
+            $this->ratio,
             [...$this->colorTransforms, $colorTransform],
         );
     }
@@ -172,6 +189,7 @@ final readonly class FrameObject
      * @param BlendMode|null $blendMode
      * @param int|null $clipDepth
      * @param string|null $name
+     * @param int|null $ratio
      *
      * @return self
      */
@@ -185,6 +203,7 @@ final readonly class FrameObject
         ?BlendMode $blendMode = null,
         ?int $clipDepth = null,
         ?string $name = null,
+        ?int $ratio = null,
     ): self {
         // When a new character ID is provided, a new object must be provided too
         assert($characterId === null || $object !== null);
@@ -200,6 +219,7 @@ final readonly class FrameObject
             $name ?? $this->name,
             $filters ?? $this->filters,
             $blendMode ?? $this->blendMode,
+            $ratio ?? $this->ratio,
             $this->colorTransforms,
         );
     }

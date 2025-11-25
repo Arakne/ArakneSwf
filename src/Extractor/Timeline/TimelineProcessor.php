@@ -309,6 +309,7 @@ final readonly class TimelineProcessor
             $tag->name ?? null,
             filters: $tag->surfaceFilterList ?? [],
             blendMode: BlendMode::tryFrom($tag->blendMode ?? 1) ?? BlendMode::Normal,
+            ratio: $tag->ratio ?? null,
         );
     }
 
@@ -358,6 +359,11 @@ final readonly class TimelineProcessor
                 clipDepth: $tag->clipDepth ?? null,
                 name: $tag->name ?? null,
             );
+        }
+
+        // Update ratio for morph shapes
+        if ($tag->ratio !== null) {
+            $objectProperties = $objectProperties->with(ratio: $tag->ratio);
         }
 
         return $objectProperties;

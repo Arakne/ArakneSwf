@@ -48,7 +48,7 @@ final class IncludedSvgCanvas extends AbstractSvgCanvas
     public function __construct(
         private readonly AbstractSvgCanvas $root,
         private readonly SimpleXMLElement $defs,
-        bool $subpixelStrokeWidth = true,
+        bool $subpixelStrokeWidth = false,
     ) {
         parent::__construct(new SvgBuilder($this->defs, $subpixelStrokeWidth));
     }

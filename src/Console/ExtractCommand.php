@@ -26,6 +26,7 @@ use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
+use Arakne\Swf\Extractor\Shape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
@@ -206,6 +207,8 @@ final readonly class ExtractCommand
 
             if ($options->allExported) {
                 foreach ($extractor->exported() as $name => $id) {
+                    var_dump($name, $id);
+
                     $character = $extractor->character($id);
                     $success = $this->processCharacter($options, $swf, (string) $name, $character) && $success;
                     $extractor->releaseIfOutOfMemory();
@@ -228,7 +231,7 @@ final readonly class ExtractCommand
         return $success;
     }
 
-    private function processCharacter(ExtractOptions $options, SwfFile $file, string $name, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
+    private function processCharacter(ExtractOptions $options, SwfFile $file, string $name, ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
     {
         try {
             return match (true) {
@@ -236,6 +239,7 @@ final readonly class ExtractCommand
                 $character instanceof SpriteDefinition => $this->processSprite($options, $file, $name, $character),
                 $character instanceof ImageCharacterInterface => $this->processImage($options, $file->path, $name, $character),
                 $character instanceof ShapeDefinition => $this->processShape($options, $file->path, $name, $character),
+                $character instanceof MorphShapeDefinition => $this->processMorphShape($options, $file, $name, $character),
                 $character instanceof MissingCharacter => printf('The character %s is missing in the SWF file or unsupported' . PHP_EOL, $name) && false,
             };
         } catch (Exception $e) {
@@ -337,6 +341,65 @@ final readonly class ExtractCommand
         return $this->writeToOutputDir($shape->toSvg(), $file, $options, $name, 'svg');
     }
 
+    private function processMorphShape(ExtractOptions $options, SwfFile $file, string $name, MorphShapeDefinition $morphShape): bool
+    {
+        $success = true;
+
+        // Process animation formats (animated webp/gif)
+        foreach ($options->animationFormat as $formater) {
+            $success = $this->writeToOutputDir(
+                $formater->format($morphShape, $file->frameRate(), $options->fullAnimation),
+                $file->path,
+                $options,
+                $name,
+                $formater->extension()
+            ) && $success;
+        }
+
+        $framesCount = $options->fullAnimation ? $morphShape->framesCount(true) : 1;
+
+        if ($framesCount === 1) {
+            return $this->processMorphShapeFrame($options, $file->path, $name, $morphShape, 0) && $success;
+        }
+
+        if ($options->frames === null) {
+            // Export at multiple ratios (e.g., 10 frames for smooth animation)
+            $steps = min($framesCount, 100); // Cap at 100 frames for morph shapes
+            for ($i = 0; $i < $steps; $i++) {
+                $success = $this->processMorphShapeFrame($options, $file->path, $name, $morphShape, $i, $steps) && $success;
+            }
+            return $success;
+        }
+
+        foreach ($options->frames as $frame) {
+            $success = $this->processMorphShapeFrame($options, $file->path, $name, $morphShape, $frame - 1, max(...$options->frames)) && $success;
+        }
+
+        return $success;
+    }
+
+    /**
+     * @param non-negative-int $frame
+     */
+    private function processMorphShapeFrame(ExtractOptions $options, string $file, string $name, MorphShapeDefinition $morphShape, int $frame, int $totalFrames = 1): bool
+    {
+        $success = true;
+        $ratio = $totalFrames > 1 ? $frame / ($totalFrames - 1) : 0.0;
+
+        foreach ($options->frameFormat as $formater) {
+            $success = $this->writeToOutputDir(
+                $formater->format($morphShape, $frame),
+                $file,
+                $options,
+                $name,
+                $formater->extension(),
+                $totalFrames > 1 ? $frame + 1 : null
+            ) && $success;
+        }
+
+        return $success;
+    }
+
     private function writeToOutputDir(string $content, string $file, ExtractOptions $options, string $name, string $ext, ?int $frame = null): bool
     {
         $outputFile = $options->output . DIRECTORY_SEPARATOR . strtr($options->outputFilename, [
@@ -348,10 +411,10 @@ final readonly class ExtractCommand
             '{dirname}' => basename(dirname($file)),
         ]);
 
-        if (file_exists($outputFile)) {
-            echo "The file $outputFile already exists, skipping", PHP_EOL;
-            return false;
-        }
+        //if (file_exists($outputFile)) {
+        //    echo "The file $outputFile already exists, skipping", PHP_EOL;
+        //    return false;
+        //}
 
         $dir = dirname($outputFile);
 

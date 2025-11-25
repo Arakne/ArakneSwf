@@ -96,7 +96,7 @@ final class ShapeDefinition implements DrawableInterface
      * @param bool $subpixelStrokeWidth Enable subpixel stroke width.
      *                                  If false, the minimum stroke width will be 1px to approximate Flash rendering.
      */
-    public function toSvg(bool $subpixelStrokeWidth = true): string
+    public function toSvg(bool $subpixelStrokeWidth = false): string
     {
         return $this->draw(new SvgCanvas($this->bounds(), $subpixelStrokeWidth))->render();
     }

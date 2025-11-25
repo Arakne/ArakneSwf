@@ -71,7 +71,7 @@ final class SvgBuilder
          * This allows to approximate the flash rendering at native size, but the relative stroke width will not be preserved,
          * so rescaling will not be accurate.
          */
-        public readonly bool $subpixelStrokeWidth = true,
+        public readonly bool $subpixelStrokeWidth = false,
     ) {}
 
     public function addGroup(Rectangle $bounds): SimpleXMLElement

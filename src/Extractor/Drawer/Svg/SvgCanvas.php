@@ -48,7 +48,7 @@ final class SvgCanvas extends AbstractSvgCanvas
          * This allows to approximate the flash rendering at native size, but the relative stroke width will not be preserved,
          * so rescaling will not be accurate.
          */
-        bool $subpixelStrokeWidth = true,
+        bool $subpixelStrokeWidth = false,
     ) {
         $this->root = $root = new SimpleXMLElement('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>');
         $root->addAttribute('width', ($bounds->width() / 20) . 'px');
