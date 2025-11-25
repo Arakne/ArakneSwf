@@ -339,7 +339,6 @@ final class SwfExtractor
         ;
 
         if ($shouldRelease) {
-            var_dump(Memory::usage(), "Releasing resources");
             $this->release();
         }
 

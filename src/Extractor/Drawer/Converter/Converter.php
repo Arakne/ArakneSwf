@@ -282,6 +282,10 @@ final readonly class Converter
             }
 
             $target->addImage($img);
+
+            // Release memory immediately after adding to target
+            $img->clear();
+            $img->destroy();
         }
 
         if ($optionsConfigurator) {
@@ -299,6 +303,9 @@ final readonly class Converter
             assert(!empty($content));
         } finally {
             fclose($out);
+            // Clear target after writing
+            $target->clear();
+            $target->destroy();
         }
 
         return $content;

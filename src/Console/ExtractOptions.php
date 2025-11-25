@@ -149,6 +149,33 @@ final readonly class ExtractOptions
          * @var list<AnimationFormater>
          */
         public array $animationFormat = [],
+
+        /**
+         * Number of parallel workers for processing files.
+         * 0 or 1 means sequential processing.
+         *
+         * @var positive-int
+         */
+        public int $parallel = 1,
+
+        /**
+         * Scale factors to export at (e.g., [1, 2, 3] for x1, x2, x3).
+         * Each scale creates a separate output with _{scale}x suffix.
+         *
+         * @var list<positive-int>
+         */
+        public array $scales = [],
+
+        /**
+         * Skip frames that are identical to the previous frame.
+         * Useful for animations with duplicate or empty frames.
+         */
+        public bool $dedupeFrames = false,
+
+        /**
+         * Skip frames that have no visible content (empty frames).
+         */
+        public bool $skipEmptyFrames = false,
     ) {}
 
     /**
@@ -164,11 +191,11 @@ final readonly class ExtractOptions
          * @phpstan-ignore varTag.nativeType
          */
         $options = getopt(
-            'hc:e:',
+            'hc:e:j:s:',
             [
                 'help', 'character:', 'all-sprites', 'all-exported', 'variables',
                 'timeline', 'exported:', 'output-filename:', 'frames:', 'full-animation',
-                'frame-format:',
+                'frame-format:', 'parallel:', 'scale:', 'dedupe-frames', 'skip-empty-frames',
             ],
             $argsOffset
         );
@@ -208,6 +235,16 @@ final readonly class ExtractOptions
         try {
             [$frameFormat, $animationFormat] = self::parseFormatOption($options, 'frame-format');
 
+            $parallel = (int) ($options['j'] ?? $options['parallel'] ?? 1);
+            if ($parallel < 1) {
+                $parallel = 1;
+            }
+
+            $scales = array_map(
+                fn($s) => max(1, (int) $s),
+                [...(array)($options['s'] ?? []), ...(array)($options['scale'] ?? [])]
+            );
+
             return new self(
                 $cmd,
                 help: isset($options['h']) || isset($options['help']),
@@ -224,6 +261,10 @@ final readonly class ExtractOptions
                 variables: isset($options['variables']),
                 frameFormat: $frameFormat,
                 animationFormat: $animationFormat,
+                parallel: $parallel,
+                scales: $scales,
+                dedupeFrames: isset($options['dedupe-frames']),
+                skipEmptyFrames: isset($options['skip-empty-frames']),
             );
         } catch (InvalidArgumentException $e) {
             return new self($cmd, error: $e->getMessage());

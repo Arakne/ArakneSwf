@@ -29,6 +29,9 @@ use Arakne\Swf\Extractor\MissingCharacter;
 use Arakne\Swf\Extractor\Shape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
+use Arakne\Swf\Extractor\Drawer\Converter\AnimationFormater;
+use Arakne\Swf\Extractor\Drawer\Converter\DrawableFormater;
+use Arakne\Swf\Extractor\Drawer\Converter\ScaleResizer;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\SwfFile;
@@ -37,14 +40,19 @@ use InvalidArgumentException;
 use Throwable;
 
 use function assert;
+use function array_chunk;
 use function basename;
 use function count;
 use function dirname;
 use function file_exists;
 use function file_put_contents;
+use function function_exists;
 use function is_dir;
 use function json_encode;
 use function mkdir;
+use function pcntl_fork;
+use function pcntl_waitpid;
+use function posix_getpid;
 use function printf;
 
 final readonly class ExtractCommand
@@ -63,6 +71,16 @@ final readonly class ExtractCommand
             return 1;
         }
 
+        // Use parallel processing if requested and pcntl is available
+        if ($options->parallel > 1 && function_exists('pcntl_fork')) {
+            return $this->executeParallel($options);
+        }
+
+        return $this->executeSequential($options);
+    }
+
+    private function executeSequential(ExtractOptions $options): int
+    {
         $count = count($options->files);
         $success = true;
 
@@ -88,6 +106,82 @@ final readonly class ExtractCommand
 
         echo 'All files processed successfully.', PHP_EOL;
         return 0;
+    }
+
+    private function executeParallel(ExtractOptions $options): int
+    {
+        $workers = $options->parallel;
+        $files = $options->files;
+        $totalFiles = count($files);
+
+        echo "Starting parallel extraction with $workers workers for $totalFiles files...", PHP_EOL;
+
+        // Split files into chunks for each worker
+        $chunks = array_chunk($files, (int) ceil($totalFiles / $workers));
+        $pids = [];
+        $success = true;
+
+        foreach ($chunks as $workerIndex => $workerFiles) {
+            if (empty($workerFiles)) {
+                continue;
+            }
+
+            $pid = pcntl_fork();
+
+            if ($pid === -1) {
+                // Fork failed, fallback to sequential for remaining
+                echo "Warning: Fork failed, processing remaining files sequentially", PHP_EOL;
+                foreach ($workerFiles as $file) {
+                    $this->processFileWithOutput($options, $file, $workerIndex);
+                }
+            } elseif ($pid === 0) {
+                // Child process
+                $childSuccess = true;
+                foreach ($workerFiles as $file) {
+                    if (!$this->processFileWithOutput($options, $file, $workerIndex)) {
+                        $childSuccess = false;
+                    }
+                }
+                exit($childSuccess ? 0 : 1);
+            } else {
+                // Parent process - store child PID
+                $pids[] = $pid;
+            }
+        }
+
+        // Wait for all children to complete
+        foreach ($pids as $pid) {
+            $status = 0;
+            pcntl_waitpid($pid, $status);
+            if ($status !== 0) {
+                $success = false;
+            }
+        }
+
+        if (!$success) {
+            echo 'Some errors occurred during the extraction process.', PHP_EOL;
+            return 1;
+        }
+
+        echo 'All files processed successfully.', PHP_EOL;
+        return 0;
+    }
+
+    private function processFileWithOutput(ExtractOptions $options, string $file, int $workerIndex): bool
+    {
+        $pid = function_exists('posix_getpid') ? posix_getpid() : $workerIndex;
+        echo "[Worker $pid] Processing: $file ";
+
+        try {
+            if ($this->process($options, $file)) {
+                echo 'done', PHP_EOL;
+                return true;
+            }
+            return false;
+        } catch (Throwable $e) {
+            echo 'error: ', $e->getMessage(), PHP_EOL;
+            return false;
+        }
     }
 
     public function usage(ExtractOptions $options, ?string $error = null): void
@@ -207,8 +301,6 @@ final readonly class ExtractCommand
 
             if ($options->allExported) {
                 foreach ($extractor->exported() as $name => $id) {
-                    var_dump($name, $id);
-
                     $character = $extractor->character($id);
                     $success = $this->processCharacter($options, $swf, (string) $name, $character) && $success;
                     $extractor->releaseIfOutOfMemory();
@@ -268,15 +360,22 @@ final readonly class ExtractCommand
     private function processTimeline(ExtractOptions $options, SwfFile $file, string $name, Timeline $timeline): bool
     {
         $success = true;
+        $scales = $options->scales ?: [1];
 
-        foreach ($options->animationFormat as $formater) {
-            $success = $this->writeToOutputDir(
-                $formater->format($timeline, $file->frameRate(), $options->fullAnimation),
-                $file->path,
-                $options,
-                $name,
-                $formater->extension()
-            ) && $success;
+        foreach ($scales as $scale) {
+            $animationFormatters = $this->getScaledAnimationFormatters($options->animationFormat, $scale);
+
+            foreach ($animationFormatters as $formater) {
+                $success = $this->writeToOutputDir(
+                    $formater->format($timeline, $file->frameRate(), $options->fullAnimation),
+                    $file->path,
+                    $options,
+                    $name,
+                    $formater->extension(),
+                    null,
+                    count($scales) > 1 ? $scale : null
+                ) && $success;
+            }
         }
 
         $framesCount = $timeline->framesCount($options->fullAnimation);
@@ -285,9 +384,24 @@ final readonly class ExtractCommand
             return $this->processTimelineFrame($options, $file->path, $name, $timeline) && $success;
         }
 
+        // Track previous frame content for deduplication
+        $lastFrameHash = null;
+        $outputFrameNumber = 0;
+
         if ($options->frames === null) {
             for ($frame = 0; $frame < $framesCount; $frame++) {
-                $success = $this->processTimelineFrame($options, $file->path, $name, $timeline, $frame) && $success;
+                if ($options->skipEmptyFrames && $this->isEmptyFrame($timeline, $frame)) {
+                    continue; // Skip empty frame
+                }
+                if ($options->dedupeFrames) {
+                    $frameHash = $this->getFrameHash($timeline, $frame);
+                    if ($frameHash === $lastFrameHash) {
+                        continue; // Skip duplicate frame
+                    }
+                    $lastFrameHash = $frameHash;
+                }
+                $outputFrameNumber++;
+                $success = $this->processTimelineFrame($options, $file->path, $name, $timeline, $frame, $outputFrameNumber) && $success;
             }
 
             return $success;
@@ -298,10 +412,42 @@ final readonly class ExtractCommand
                 break;
             }
 
-            $success = $this->processTimelineFrame($options, $file->path, $name, $timeline, $frame - 1) && $success;
+            if ($options->skipEmptyFrames && $this->isEmptyFrame($timeline, $frame - 1)) {
+                continue; // Skip empty frame
+            }
+            if ($options->dedupeFrames) {
+                $frameHash = $this->getFrameHash($timeline, $frame - 1);
+                if ($frameHash === $lastFrameHash) {
+                    continue; // Skip duplicate frame
+                }
+                $lastFrameHash = $frameHash;
+            }
+            $outputFrameNumber++;
+            $success = $this->processTimelineFrame($options, $file->path, $name, $timeline, $frame - 1, $outputFrameNumber) && $success;
         }
 
         return $success;
+    }
+
+    /**
+     * Check if a frame has no visible content.
+     * This renders the frame to SVG and checks if it contains any actual drawing elements.
+     */
+    private function isEmptyFrame(Timeline $timeline, int $frame): bool
+    {
+        $svg = $timeline->draw(new \Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas($timeline->bounds()), $frame)->render();
+        // Check if SVG contains any path, rect, circle, polygon, polyline, ellipse, line, or image elements
+        return preg_match('/<(path|rect|circle|polygon|polyline|ellipse|line|image)\b/', $svg) !== 1;
+    }
+
+    /**
+     * Get a hash of the frame content for deduplication.
+     */
+    private function getFrameHash(Timeline $timeline, int $frame): string
+    {
+        // Use SVG content hash for comparison
+        $svg = $timeline->draw(new \Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas($timeline->bounds()), $frame)->render();
+        return md5($svg);
     }
 
     /**
@@ -309,16 +455,33 @@ final readonly class ExtractCommand
      * @param string $file
      * @param string $name
      * @param Timeline $timeline
-     * @param non-negative-int|null $frame
+     * @param non-negative-int|null $frame The internal frame index (0-based)
+     * @param positive-int|null $outputFrame The output frame number (1-based), used for filename
      *
      * @return bool
      */
-    private function processTimelineFrame(ExtractOptions $options, string $file, string $name, Timeline $timeline, ?int $frame = null): bool
+    private function processTimelineFrame(ExtractOptions $options, string $file, string $name, Timeline $timeline, ?int $frame = null, ?int $outputFrame = null): bool
     {
         $success = true;
+        $scales = $options->scales ?: [1];
 
-        foreach ($options->frameFormat as $formater) {
-            $success = $this->writeToOutputDir($formater->format($timeline, $frame ?? 0), $file, $options, $name, $formater->extension(), $frame !== null ? $frame + 1 : null) && $success;
+        // Use outputFrame for filename if provided, otherwise derive from frame
+        $frameForFilename = $outputFrame ?? ($frame !== null ? $frame + 1 : null);
+
+        foreach ($scales as $scale) {
+            $formatters = $this->getScaledFrameFormatters($options->frameFormat, $scale);
+
+            foreach ($formatters as $formater) {
+                $success = $this->writeToOutputDir(
+                    $formater->format($timeline, $frame ?? 0),
+                    $file,
+                    $options,
+                    $name,
+                    $formater->extension(),
+                    $frameForFilename,
+                    count($scales) > 1 ? $scale : null
+                ) && $success;
+            }
         }
 
         return $success;
@@ -344,16 +507,23 @@ final readonly class ExtractCommand
     private function processMorphShape(ExtractOptions $options, SwfFile $file, string $name, MorphShapeDefinition $morphShape): bool
     {
         $success = true;
+        $scales = $options->scales ?: [1];
 
         // Process animation formats (animated webp/gif)
-        foreach ($options->animationFormat as $formater) {
-            $success = $this->writeToOutputDir(
-                $formater->format($morphShape, $file->frameRate(), $options->fullAnimation),
-                $file->path,
-                $options,
-                $name,
-                $formater->extension()
-            ) && $success;
+        foreach ($scales as $scale) {
+            $animationFormatters = $this->getScaledAnimationFormatters($options->animationFormat, $scale);
+
+            foreach ($animationFormatters as $formater) {
+                $success = $this->writeToOutputDir(
+                    $formater->format($morphShape, $file->frameRate(), $options->fullAnimation),
+                    $file->path,
+                    $options,
+                    $name,
+                    $formater->extension(),
+                    null,
+                    count($scales) > 1 ? $scale : null
+                ) && $success;
+            }
         }
 
         $framesCount = $options->fullAnimation ? $morphShape->framesCount(true) : 1;
@@ -384,23 +554,28 @@ final readonly class ExtractCommand
     private function processMorphShapeFrame(ExtractOptions $options, string $file, string $name, MorphShapeDefinition $morphShape, int $frame, int $totalFrames = 1): bool
     {
         $success = true;
-        $ratio = $totalFrames > 1 ? $frame / ($totalFrames - 1) : 0.0;
+        $scales = $options->scales ?: [1];
 
-        foreach ($options->frameFormat as $formater) {
-            $success = $this->writeToOutputDir(
-                $formater->format($morphShape, $frame),
-                $file,
-                $options,
-                $name,
-                $formater->extension(),
-                $totalFrames > 1 ? $frame + 1 : null
-            ) && $success;
+        foreach ($scales as $scale) {
+            $formatters = $this->getScaledFrameFormatters($options->frameFormat, $scale);
+
+            foreach ($formatters as $formater) {
+                $success = $this->writeToOutputDir(
+                    $formater->format($morphShape, $frame),
+                    $file,
+                    $options,
+                    $name,
+                    $formater->extension(),
+                    $totalFrames > 1 ? $frame + 1 : null,
+                    count($scales) > 1 ? $scale : null
+                ) && $success;
+            }
         }
 
         return $success;
     }
 
-    private function writeToOutputDir(string $content, string $file, ExtractOptions $options, string $name, string $ext, ?int $frame = null): bool
+    private function writeToOutputDir(string $content, string $file, ExtractOptions $options, string $name, string $ext, ?int $frame = null, ?int $scale = null): bool
     {
         $outputFile = $options->output . DIRECTORY_SEPARATOR . strtr($options->outputFilename, [
             '{basename}' => basename($file, '.swf'),
@@ -409,6 +584,9 @@ final readonly class ExtractCommand
             '{frame}' => $frame !== null ? (string) $frame : '',
             '{_frame}' => $frame !== null ? '_' . (string) $frame : '',
             '{dirname}' => basename(dirname($file)),
+            '{scale}' => $scale !== null ? (string) $scale : '1',
+            '{_scale}' => $scale !== null ? '_' . (string) $scale . 'x' : '',
+            '{scale}x' => $scale !== null ? (string) $scale . 'x' : '1x',
         ]);
 
         //if (file_exists($outputFile)) {
@@ -429,5 +607,59 @@ final readonly class ExtractCommand
         }
 
         return true;
+    }
+
+    /**
+     * Get formatters with scale applied.
+     *
+     * @param list<DrawableFormater> $formatters
+     * @param int $scale
+     * @return list<DrawableFormater>
+     */
+    private function getScaledFrameFormatters(array $formatters, int $scale): array
+    {
+        if ($scale === 1) {
+            return $formatters;
+        }
+
+        $resizer = new ScaleResizer($scale);
+        $scaled = [];
+
+        foreach ($formatters as $formatter) {
+            $scaled[] = new DrawableFormater(
+                $formatter->format,
+                $resizer,
+                $formatter->options,
+            );
+        }
+
+        return $scaled;
+    }
+
+    /**
+     * Get animation formatters with scale applied.
+     *
+     * @param list<AnimationFormater> $formatters
+     * @param int $scale
+     * @return list<AnimationFormater>
+     */
+    private function getScaledAnimationFormatters(array $formatters, int $scale): array
+    {
+        if ($scale === 1) {
+            return $formatters;
+        }
+
+        $resizer = new ScaleResizer($scale);
+        $scaled = [];
+
+        foreach ($formatters as $formatter) {
+            $scaled[] = new AnimationFormater(
+                $formatter->format,
+                $resizer,
+                $formatter->options,
+            );
+        }
+
+        return $scaled;
     }
 }
