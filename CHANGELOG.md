@@ -1,3 +1,9 @@
+0.4.0
+-----
+
+- (Extractor) Introduce `CharacterModifierInterface` and `DrawableInterface::modify()` to allow modifying drawable objects after extraction
+- (Extractor) Add `Timeline::withAttachment()` and `SpriteDefinition::withAttachment()` to attach a movie clip to a timeline or sprite
+
 0.3.0
 -----
 

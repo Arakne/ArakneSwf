@@ -240,7 +240,7 @@ final readonly class Frame implements DrawableInterface
         return new self(
             Rectangle::merge(
                 array_map(
-                    static fn(FrameObject $object) => $object->bounds,
+                    static fn (FrameObject $object) => $object->bounds,
                     $this->objects
                 )
             ),

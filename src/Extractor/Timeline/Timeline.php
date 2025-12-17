@@ -138,7 +138,7 @@ final readonly class Timeline implements DrawableInterface
     {
         $bounds = $attachment->bounds();
         $frames = array_map(
-            static fn(Frame $frame) => $frame->addObject(new FrameObject(
+            static fn (Frame $frame) => $frame->addObject(new FrameObject(
                 characterId: 0, // @todo ?
                 depth: $depth,
                 object: $attachment,
@@ -225,14 +225,14 @@ final readonly class Timeline implements DrawableInterface
     {
         $bounds = Rectangle::merge(
             array_map(
-                static fn(Frame $frame) => $frame->bounds,
+                static fn (Frame $frame) => $frame->bounds,
                 $frames
             )
         );
 
         return new self(
             $bounds,
-            ...array_map(static fn(Frame $frame) => $frame->withBounds($bounds), $frames)
+            ...array_map(static fn (Frame $frame) => $frame->withBounds($bounds), $frames)
         );
     }
 }
