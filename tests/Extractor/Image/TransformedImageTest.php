@@ -3,10 +3,14 @@
 namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
+use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\TransformedImage;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
+use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
@@ -176,5 +180,22 @@ class TransformedImageTest extends ImageTestCase
 
         $this->assertSame('matrix(1, 0, 0, 1, 0, 0)', (string) $svg->g['transform']);
         $this->assertSame($image->toBase64Data(), (string) $svg->g->image->attributes('xlink', true)->href);
+    }
+
+    #[Test]
+    public function modify()
+    {
+        $image = TransformedImage::createFromPng(
+            1,
+            new Rectangle(0, self::BASE_IMAGE_WIDTH, 0, self::BASE_IMAGE_HEIGHT),
+            new ColorTransform(redMult: 0),
+            file_get_contents(self::BASE_IMAGE_PNG)
+        );
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $newImage = clone $image;
+
+        $modifier->expects($this->once())->method('applyOnImage')->with($image)->willReturn($newImage);
+
+        $this->assertSame($newImage, $image->modify($modifier));
     }
 }

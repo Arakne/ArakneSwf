@@ -3,8 +3,11 @@
 namespace Arakne\Tests\Swf\Extractor\Sprite;
 
 use Arakne\Swf\Extractor\Error\CircularReferenceException;
+use Arakne\Swf\Extractor\Modifier\AbstractCharacterModifier;
+use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\EndTag;
 use Arakne\Swf\Parser\Structure\Tag\PlaceObjectTag;
@@ -141,5 +144,55 @@ class SpriteDefinitionTest extends TestCase
 
         $svg = $sprite->toSvg(subpixelStrokeWidth: false);
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/../Fixtures/1305/without-subpixel-stroke-width.svg', $svg);
+    }
+
+    #[Test]
+    public function withAttachment()
+    {
+        $sprite = new SwfFile(__DIR__.'/../Fixtures/1305/1305.swf')->assetByName('anim0R');
+        $other = new SwfFile(__DIR__ . '/../Fixtures/1/1.swf')->timeline(false);
+
+        $combined = $sprite->withAttachment($other, depth: 10, name: 'attached');
+        $svg = $combined->toSvg();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/../Fixtures/1305/with-attachment.svg', $svg);
+    }
+
+    #[Test]
+    public function modify()
+    {
+        $sprite = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf')->assetByName('anim0R');
+        $sprite = $sprite->modify(new class extends AbstractCharacterModifier {
+            public function applyOnShape(ShapeDefinition $shape): ShapeDefinition
+            {
+                return $shape->transformColors(
+                    new ColorTransform(
+                        redMult: 0,
+                        greenMult: 0,
+                        blueMult: 0,
+                        alphaMult: 0,
+                        redAdd: $shape->id % 3 === 0 ? 255 : 0,
+                        greenAdd: $shape->id % 3 === 1 ? 255 : 0,
+                        blueAdd: $shape->id % 3 === 2 ? 255 : 0,
+                        alphaAdd: 255,
+                    )
+                );
+            }
+
+            public function applyOnSprite(SpriteDefinition $sprite): SpriteDefinition
+            {
+                if ($sprite->id === 27) {
+                    $sprite = $sprite->withAttachment(
+                        new SwfFile(__DIR__.'/../Fixtures/1435/1435.swf')->assetByName('staticR'),
+                        depth: 100,
+                        name: 'addedSprite',
+                    );
+                }
+
+                return $sprite;
+            }
+        });
+
+        $svg = $sprite->toSvg();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/../Fixtures/1047/modified.svg', $svg);
     }
 }

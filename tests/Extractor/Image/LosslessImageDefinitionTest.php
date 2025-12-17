@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
@@ -212,5 +213,20 @@ class LosslessImageDefinitionTest extends ImageTestCase
 
         $this->assertSame('matrix(1, 0, 0, 1, 0, 0)', (string) $svg->g['transform']);
         $this->assertSame($image->toBase64Data(), (string) $svg->g->image->attributes('xlink', true)->href);
+    }
+
+    #[Test]
+    public function modify()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/maps/0.swf');
+
+        $tag = array_find(iterator_to_array($swf->tags(DefineBitsLosslessTag::TYPE_V2), false), fn (DefineBitsLosslessTag $tag) => $tag->characterId === 654);
+        $image = new LosslessImageDefinition($tag);
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $newImage = clone $image;
+
+        $modifier->expects($this->once())->method('applyOnImage')->with($image)->willReturn($newImage);
+
+        $this->assertSame($newImage, $image->modify($modifier));
     }
 }

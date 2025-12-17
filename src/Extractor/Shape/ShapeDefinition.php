@@ -23,6 +23,7 @@ namespace Arakne\Swf\Extractor\Shape;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\SwfTag;
@@ -88,6 +89,12 @@ final class ShapeDefinition implements DrawableInterface
         $drawer->shape($this->shape());
 
         return $drawer;
+    }
+
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): self
+    {
+        return $modifier->applyOnShape($this);
     }
 
     /**

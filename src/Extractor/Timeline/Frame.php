@@ -22,10 +22,13 @@ namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\Parser\Structure\Tag\DoActionTag;
 use Override;
+
+use function ksort;
 
 /**
  * Represent a single from of a timeline
@@ -51,13 +54,13 @@ final readonly class Frame implements DrawableInterface
          *
          * @var list<DoActionTag>
          */
-        public array $actions,
+        public array $actions = [],
 
         /**
          * The frame label.
          * Can be use by the action go to label to jump to this frame.
          */
-        public ?string $label,
+        public ?string $label = null,
     ) {}
 
     #[Override]
@@ -145,6 +148,71 @@ final readonly class Frame implements DrawableInterface
     }
 
     /**
+     * Get an object by its name
+     *
+     * @param string $name The name of the object
+     * @return FrameObject|null The object if found, null otherwise
+     */
+    public function objectByName(string $name): ?FrameObject
+    {
+        foreach ($this->objects as $object) {
+            if ($object->name === $name) {
+                return $object;
+            }
+        }
+
+        return null;
+    }
+
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): Frame
+    {
+        if ($maxDepth !== 0) {
+            $objects = [];
+
+            $xmin = $this->bounds->xmin;
+            $ymin = $this->bounds->ymin;
+            $xmax = $this->bounds->xmax;
+            $ymax = $this->bounds->ymax;
+
+            foreach ($this->objects as $depth => $object) {
+                $oldObjectBounds = $object->object->bounds();
+                $oldMatrix = $object->matrix->translate(-$oldObjectBounds->xmin, -$oldObjectBounds->ymin);
+
+                $objects[$depth] = $object->with(
+                    object: $newObject = $object->object->modify($modifier, $maxDepth - 1),
+                    bounds: $newBounds = $newObject->bounds()->transform($oldMatrix),
+                    matrix: $oldMatrix->translate($newObject->bounds()->xmin, $newObject->bounds()->ymin),
+                );
+
+                if ($newBounds->xmin < $xmin) {
+                    $xmin = $newBounds->xmin;
+                }
+                if ($newBounds->ymin < $ymin) {
+                    $ymin = $newBounds->ymin;
+                }
+                if ($newBounds->xmax > $xmax) {
+                    $xmax = $newBounds->xmax;
+                }
+                if ($newBounds->ymax > $ymax) {
+                    $ymax = $newBounds->ymax;
+                }
+            }
+
+            $self = new self(
+                new Rectangle($xmin, $xmax, $ymin, $ymax),
+                $objects,
+                $this->actions,
+                $this->label
+            );
+        } else {
+            $self = $this;
+        }
+
+        return $modifier->applyOnFrame($self);
+    }
+
+    /**
      * Modify the bounds of the frame.
      * This method allow to keep the same bounds on all frames on the sprite.
      *
@@ -156,6 +224,51 @@ final readonly class Frame implements DrawableInterface
         return new self(
             $newBounds,
             $this->objects,
+            $this->actions,
+            $this->label
+        );
+    }
+
+    /**
+     * Recompute the bounds of the frame based on its objects
+     * This is useful when you want to extract the frame from a timeline and want to have correct bounds
+     *
+     * @return self
+     */
+    public function compact(): self
+    {
+        return new self(
+            Rectangle::merge(
+                array_map(
+                    static fn(FrameObject $object) => $object->bounds,
+                    $this->objects
+                )
+            ),
+            $this->objects,
+            $this->actions,
+            $this->label
+        );
+    }
+
+    /**
+     * Add a new object to the frame at its depth, and return a new frame with updated bounds
+     * The timeline bounds should be updated accordingly
+     *
+     * Note: If an object already exists at the same depth, it will be replaced silently.
+     *
+     * @param FrameObject $object
+     * @return self The new frame with the added object
+     */
+    public function addObject(FrameObject $object): self
+    {
+        $objects = $this->objects;
+        $objects[$object->depth] = $object;
+        ksort($objects);
+        $bounds = $this->bounds->union($object->bounds);
+
+        return new self(
+            $bounds,
+            $objects,
             $this->actions,
             $this->label
         );

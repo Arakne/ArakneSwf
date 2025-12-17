@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -145,5 +146,20 @@ class ImageBitsDefinitionTest extends ImageTestCase
 
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/../Fixtures/g2/bits-'.$tag->characterId.'.svg', $drawer->render());
         }
+    }
+
+    #[Test]
+    public function modify()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/g2/g2.swf');
+        [$jpegTables, $tag] = iterator_to_array($swf->tags(JPEGTablesTag::TYPE, DefineBitsTag::TYPE), false);
+
+        $image = new ImageBitsDefinition($tag, $jpegTables);
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $newImage = clone $image;
+
+        $modifier->expects($this->once())->method('applyOnImage')->with($image)->willReturn($newImage);
+
+        $this->assertSame($newImage, $image->modify($modifier));
     }
 }

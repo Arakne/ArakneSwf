@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor;
 
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Override;
@@ -59,6 +60,12 @@ final readonly class MissingCharacter implements DrawableInterface
 
     #[Override]
     public function transformColors(ColorTransform $colorTransform): static
+    {
+        return $this;
+    }
+
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): DrawableInterface
     {
         return $this;
     }

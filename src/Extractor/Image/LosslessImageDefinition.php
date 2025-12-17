@@ -22,6 +22,7 @@ namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\Util\GD;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageBitmapType;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
@@ -78,6 +79,12 @@ final class LosslessImageDefinition implements ImageCharacterInterface
     public function transformColors(ColorTransform $colorTransform): ImageCharacterInterface
     {
         return TransformedImage::createFromPng($this->characterId, $this->bounds(), $colorTransform, $this->toPng());
+    }
+
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): ImageCharacterInterface
+    {
+        return $modifier->applyOnImage($this);
     }
 
     #[Override]
