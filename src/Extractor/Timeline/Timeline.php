@@ -110,15 +110,21 @@ final readonly class Timeline implements DrawableInterface
     #[Override]
     public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): self
     {
-        if ($maxDepth !== 0) {
-            $frames = array_map(
-                static fn (Frame $frame) => $frame->modify($modifier, $maxDepth - 1),
-                $this->frames
-            );
+        $self = $this;
 
-            $self = self::create(...$frames);
-        } else {
-            $self = $this;
+        if ($maxDepth !== 0) {
+            $frames = [];
+            $isModified = false;
+
+            foreach ($this->frames as $frame) {
+                $modifiedFrame = $frame->modify($modifier, $maxDepth - 1);
+                $frames[] = $modifiedFrame;
+                $isModified = $isModified || ($modifiedFrame !== $frame);
+            }
+
+            if ($isModified) {
+                $self = self::create(...$frames);
+            }
         }
 
         return $modifier->applyOnTimeline($self);

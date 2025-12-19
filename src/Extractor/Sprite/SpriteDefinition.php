@@ -134,10 +134,13 @@ final class SpriteDefinition implements DrawableInterface
         $self = $this;
 
         if ($maxDepth !== 0) {
-            $timeline = $this->timeline()->modify($modifier, $maxDepth - 1);
+            $oldTimeline = $this->timeline();
+            $timeline = $oldTimeline->modify($modifier, $maxDepth - 1);
 
-            $self = clone $this;
-            $self->timeline = $timeline;
+            if ($timeline !== $oldTimeline) {
+                $self = clone $this;
+                $self->timeline = $timeline;
+            }
         }
 
         return $modifier->applyOnSprite($self);

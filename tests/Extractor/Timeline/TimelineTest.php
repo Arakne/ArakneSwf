@@ -218,4 +218,14 @@ class TimelineTest extends TestCase
         $modified = $timeline->modify($modifier);
         $this->assertSame($newTimeline, $modified);
     }
+
+    #[Test]
+    public function modifyWithoutModificationShouldReturnSameInstance()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $this->assertSame($timeline, $timeline->modify(new class extends AbstractCharacterModifier {}));
+    }
 }

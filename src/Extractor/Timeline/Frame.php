@@ -167,8 +167,11 @@ final readonly class Frame implements DrawableInterface
     #[Override]
     public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): Frame
     {
+        $self = $this;
+
         if ($maxDepth !== 0) {
             $objects = [];
+            $isModified = false;
 
             $xmin = $this->bounds->xmin;
             $ymin = $this->bounds->ymin;
@@ -176,6 +179,14 @@ final readonly class Frame implements DrawableInterface
             $ymax = $this->bounds->ymax;
 
             foreach ($this->objects as $depth => $object) {
+                $newObject = $object->object->modify($modifier, $maxDepth - 1);
+
+                if ($newObject === $object->object) {
+                    $objects[$depth] = $object;
+                    continue;
+                }
+
+                $isModified = true;
                 $oldObjectBounds = $object->object->bounds();
                 $oldMatrix = $object->matrix->translate(-$oldObjectBounds->xmin, -$oldObjectBounds->ymin);
 
@@ -199,14 +210,14 @@ final readonly class Frame implements DrawableInterface
                 }
             }
 
-            $self = new self(
-                new Rectangle($xmin, $xmax, $ymin, $ymax),
-                $objects,
-                $this->actions,
-                $this->label
-            );
-        } else {
-            $self = $this;
+            if ($isModified) {
+                $self = new self(
+                    new Rectangle($xmin, $xmax, $ymin, $ymax),
+                    $objects,
+                    $this->actions,
+                    $this->label
+                );
+            }
         }
 
         return $modifier->applyOnFrame($self);

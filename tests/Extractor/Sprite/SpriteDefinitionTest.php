@@ -195,4 +195,11 @@ class SpriteDefinitionTest extends TestCase
         $svg = $sprite->toSvg();
         $this->assertXmlStringEqualsXmlFile(__DIR__.'/../Fixtures/1047/modified.svg', $svg);
     }
+
+    #[Test]
+    public function modifyWithoutModificationShouldReturnSameInstance()
+    {
+        $sprite = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf')->assetByName('anim0R');
+        $this->assertSame($sprite, $sprite->modify(new class extends AbstractCharacterModifier {}));
+    }
 }

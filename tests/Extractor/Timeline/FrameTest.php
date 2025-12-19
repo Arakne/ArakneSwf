@@ -260,4 +260,15 @@ class FrameTest extends TestCase
             $newFrame->draw(new SvgCanvas($newFrame->bounds()))->render()
         );
     }
+
+    #[Test]
+    public function modifyWithoutModificationShouldReturnSameInstance()
+    {
+
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $frame = $extractor->character(65)->timeline()->frames[0];
+        $this->assertSame($frame, $frame->modify(new class extends AbstractCharacterModifier {}));
+    }
 }
