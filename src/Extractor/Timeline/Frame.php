@@ -191,7 +191,7 @@ final readonly class Frame implements DrawableInterface
                 $oldMatrix = $object->matrix->translate(-$oldObjectBounds->xmin, -$oldObjectBounds->ymin);
 
                 $objects[$depth] = $object->with(
-                    object: $newObject = $object->object->modify($modifier, $maxDepth - 1),
+                    object: $newObject,
                     bounds: $newBounds = $newObject->bounds()->transform($oldMatrix),
                     matrix: $oldMatrix->translate($newObject->bounds()->xmin, $newObject->bounds()->ymin),
                 );
