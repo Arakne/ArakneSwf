@@ -160,4 +160,62 @@ class TimelineTest extends TestCase
         $this->assertNotEquals($timeline->bounds, $modified->bounds);
         $this->assertEquals($timeline->bounds->transform(new Matrix(2.0, 3.0)), $modified->bounds);
     }
+
+    #[Test]
+    public function modifyOnlyCurrent()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = clone $timeline;
+
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $modifier->expects($this->once())->method('applyOnTimeline')->with($timeline)->willReturn($newTimeline);
+        $modifier->expects($this->never())->method('applyOnFrame');
+
+        $modified = $timeline->modify($modifier, 0);
+        $this->assertSame($newTimeline, $modified);
+    }
+
+    #[Test]
+    public function modifyOneDepth()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = clone $timeline;
+
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $modifier->expects($this->once())->method('applyOnTimeline')->with($timeline)->willReturn($newTimeline);
+        $modifier->expects($this->exactly(18))->method('applyOnFrame')->willReturnArgument(0);
+
+        $modified = $timeline->modify($modifier, 1);
+        $this->assertSame($newTimeline, $modified);
+    }
+
+    #[Test]
+    public function modifyAllDepths()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = clone $timeline;
+
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $modifier->expects($this->exactly(325))->method('applyOnTimeline')->willReturnCallback(function (Timeline $param) use ($timeline, $newTimeline) {
+            if ($param == $timeline) {
+                return $newTimeline;
+            }
+            return $param;
+        });
+        $modifier->expects($this->exactly(342))->method('applyOnFrame')->willReturnArgument(0);
+        $modifier->expects($this->exactly(324))->method('applyOnShape')->willReturnArgument(0);
+        $modifier->expects($this->exactly(324))->method('applyOnSprite')->willReturnArgument(0);
+
+        $modified = $timeline->modify($modifier);
+        $this->assertSame($newTimeline, $modified);
+    }
 }
