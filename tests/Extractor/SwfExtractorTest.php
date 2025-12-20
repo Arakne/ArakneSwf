@@ -327,8 +327,8 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertEquals($innerAnim->timeline()->frames[17]->objects[86]->matrix->rotateSkew1, $innerAnim->timeline()->frames[18]->objects[86]->matrix->rotateSkew1);
         $this->assertEqualsWithDelta($innerAnim->timeline()->frames[17]->objects[86]->matrix->translateX, $innerAnim->timeline()->frames[18]->objects[86]->matrix->translateX, 100);
         $this->assertEqualsWithDelta($innerAnim->timeline()->frames[17]->objects[86]->matrix->translateY, $innerAnim->timeline()->frames[18]->objects[86]->matrix->translateY, 100);
-        $this->assertEquals(118, $innerAnim->timeline()->frames[17]->objects[86]->characterId);
-        $this->assertEquals(119, $innerAnim->timeline()->frames[18]->objects[86]->characterId);
+        $this->assertEquals(118, $innerAnim->timeline()->frames[17]->objects[86]->object->id);
+        $this->assertEquals(119, $innerAnim->timeline()->frames[18]->objects[86]->object->id);
     }
 
     #[Test]

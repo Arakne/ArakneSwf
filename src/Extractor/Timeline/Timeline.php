@@ -145,7 +145,6 @@ final readonly class Timeline implements DrawableInterface
         $bounds = $attachment->bounds();
         $frames = array_map(
             static fn (Frame $frame) => $frame->addObject(new FrameObject(
-                characterId: 0, // @todo ?
                 depth: $depth,
                 object: $attachment,
                 bounds: $bounds,

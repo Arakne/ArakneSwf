@@ -142,7 +142,6 @@ class FrameTest extends TestCase
 
         $frame = $extractor->character(65)->timeline()->frames[0];
         $other = new FrameObject(
-            characterId: 0,
             depth: 10,
             object: new EmptyImage(0),
             bounds: new Rectangle(-500, 300, 12, 300),
@@ -194,7 +193,6 @@ class FrameTest extends TestCase
                         new Rectangle(-500, 300, 12, 300),
                         [
                             new FrameObject(
-                                characterId: 0,
                                 depth: 5,
                                 object: new EmptyImage(0),
                                 bounds: new Rectangle(-500, 300, 12, 300),
@@ -238,7 +236,6 @@ class FrameTest extends TestCase
                         new Rectangle(-500, 300, 12, 300),
                         [
                             new FrameObject(
-                                characterId: 0,
                                 depth: 5,
                                 object: new EmptyImage(0),
                                 bounds: new Rectangle(-500, 300, 12, 300),

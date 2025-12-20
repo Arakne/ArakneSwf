@@ -33,19 +33,12 @@ use Arakne\Swf\Parser\Structure\Record\Filter\GradientGlowFilter;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
-use function assert;
-
 /**
  * Single object displayed in a frame
  */
 final readonly class FrameObject
 {
     public function __construct(
-        /**
-         * The character id of the object
-         */
-        public int $characterId,
-
         /**
          * The depth of the object
          * Object with higher depth are drawn after object with lower depth (i.e. on top of them)
@@ -146,7 +139,6 @@ final readonly class FrameObject
     public function transformColors(ColorTransform $colorTransform): self
     {
         return new self(
-            $this->characterId,
             $this->depth,
             $this->object,
             $this->bounds,
@@ -163,7 +155,6 @@ final readonly class FrameObject
     /**
      * Modify the object properties and return a new object
      *
-     * @param int|null $characterId
      * @param DrawableInterface|null $object
      * @param Rectangle|null $bounds
      * @param Matrix|null $matrix
@@ -176,7 +167,6 @@ final readonly class FrameObject
      * @return self
      */
     public function with(
-        ?int $characterId = null,
         ?DrawableInterface $object = null,
         ?Rectangle $bounds = null,
         ?Matrix $matrix = null,
@@ -186,11 +176,7 @@ final readonly class FrameObject
         ?int $clipDepth = null,
         ?string $name = null,
     ): self {
-        // When a new character ID is provided, a new object must be provided too
-        assert($characterId === null || $object !== null);
-
         return new self(
-            $characterId ?? $this->characterId,
             $this->depth,
             $object ?? $this->object,
             $bounds ?? $this->bounds,

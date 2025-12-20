@@ -299,7 +299,6 @@ final readonly class TimelineProcessor
         }
 
         return new FrameObject(
-            $tag->characterId,
             $tag->depth,
             $object,
             $currentObjectBounds,
@@ -331,7 +330,6 @@ final readonly class TimelineProcessor
             $newObjectBounds = $newObject->bounds();
 
             $objectProperties = $objectProperties->with(
-                characterId: $tag->characterId,
                 object: $newObject,
                 bounds: $newObjectBounds->transform($matrix),
                 matrix: $matrix->translate($newObjectBounds->xmin, $newObjectBounds->ymin),
