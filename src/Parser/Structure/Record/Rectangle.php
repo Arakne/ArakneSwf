@@ -147,6 +147,58 @@ final readonly class Rectangle
         return new self($xmin, $xmax, $ymin, $ymax);
     }
 
+    /**
+     * Create a rectangle that is the union of this rectangle and another one
+     *
+     * @param Rectangle $other
+     * @return self
+     */
+    public function union(Rectangle $other): self
+    {
+        return new self(
+            $this->xmin < $other->xmin ? $this->xmin : $other->xmin,
+            $this->xmax > $other->xmax ? $this->xmax : $other->xmax,
+            $this->ymin < $other->ymin ? $this->ymin : $other->ymin,
+            $this->ymax > $other->ymax ? $this->ymax : $other->ymax,
+        );
+    }
+
+    /**
+     * Create a rectangle that encompasses all given rectangles
+     * If no rectangles are given, a rectangle with all coordinates set to 0 will be returned
+     *
+     * @param self[] $rectangles Array of rectangles to merge
+     * @return self
+     */
+    public static function merge(array $rectangles): self
+    {
+        if (!$rectangles) {
+            return new self(0, 0, 0, 0);
+        }
+
+        $xmin = PHP_INT_MAX;
+        $ymin = PHP_INT_MAX;
+        $xmax = PHP_INT_MIN;
+        $ymax = PHP_INT_MIN;
+
+        foreach ($rectangles as $rectangle) {
+            if ($rectangle->xmin < $xmin) {
+                $xmin = $rectangle->xmin;
+            }
+            if ($rectangle->ymin < $ymin) {
+                $ymin = $rectangle->ymin;
+            }
+            if ($rectangle->xmax > $xmax) {
+                $xmax = $rectangle->xmax;
+            }
+            if ($rectangle->ymax > $ymax) {
+                $ymax = $rectangle->ymax;
+            }
+        }
+
+        return new self($xmin, $xmax, $ymin, $ymax);
+    }
+
     public static function read(SwfReader $reader): self
     {
         $nbits = $reader->readUB(5);

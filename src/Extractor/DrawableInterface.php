@@ -22,6 +22,7 @@ namespace Arakne\Swf\Extractor;
 
 use Arakne\Swf\Error\SwfExceptionInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
@@ -71,4 +72,18 @@ interface DrawableInterface
      * @throws SwfExceptionInterface
      */
     public function transformColors(ColorTransform $colorTransform): self;
+
+    /**
+     * Modify the current character and its children recursively using the given modifier.
+     * The current instance of the character will not be modified, a new instance should be returned.
+     *
+     * If children elements are modified, the current character will be updated to fully use the modified children (e.g. update bounds, etc.).
+     * If no modification is applied, the current instance may be returned.
+     *
+     * @param CharacterModifierInterface $modifier
+     * @param int $maxDepth Maximum depth to modify. Use -1 for infinite depth. Use 0 to modify only the current character.
+     *
+     * @return self The modified character
+     */
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): self;
 }

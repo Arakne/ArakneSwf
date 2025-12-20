@@ -23,10 +23,13 @@ namespace Arakne\Swf\Extractor\Timeline;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Override;
 
+use function array_map;
 use function assert;
 use function count;
 use function min;
@@ -104,6 +107,60 @@ final readonly class Timeline implements DrawableInterface
         return new self($this->bounds, ...$frames);
     }
 
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): self
+    {
+        $self = $this;
+
+        if ($maxDepth !== 0) {
+            $frames = [];
+            $isModified = false;
+
+            foreach ($this->frames as $frame) {
+                $modifiedFrame = $frame->modify($modifier, $maxDepth - 1);
+                $frames[] = $modifiedFrame;
+                $isModified = $isModified || ($modifiedFrame !== $frame);
+            }
+
+            if ($isModified) {
+                $self = self::create(...$frames);
+            }
+        }
+
+        return $modifier->applyOnTimeline($self);
+    }
+
+    /**
+     * Attach a new object to the timeline at the specified depth and name, and return a new timeline
+     * This is equivalent to the "Attach Movie" action in SWF files
+     *
+     * @param DrawableInterface $attachment The object to attach
+     * @param int $depth The depth at which to attach the object
+     * @param string|null $name The name of the attached object (will be set on {@see FrameObject::$name})
+     *
+     * @return self
+     */
+    public function withAttachment(DrawableInterface $attachment, int $depth, ?string $name): self
+    {
+        $bounds = $attachment->bounds();
+        $frames = array_map(
+            static fn (Frame $frame) => $frame->addObject(new FrameObject(
+                characterId: 0, // @todo ?
+                depth: $depth,
+                object: $attachment,
+                bounds: $bounds,
+                matrix: new Matrix(
+                    translateX: $bounds->xmin,
+                    translateY: $bounds->ymin,
+                ),
+                name: $name,
+            )),
+            $this->frames,
+        );
+
+        return self::create(...$frames);
+    }
+
     /**
      * Modify the display bounds of the timeline and frames, and return a new timeline
      *
@@ -161,5 +218,27 @@ final readonly class Timeline implements DrawableInterface
     public static function empty(): self
     {
         return new Timeline(new Rectangle(0, 0, 0, 0), new Frame(new Rectangle(0, 0, 0, 0), [], [], null));
+    }
+
+    /**
+     * Create a new timeline from the given frames, with fixed bounds on all frames
+     *
+     * @param Frame ...$frames
+     * @return self
+     * @no-named-arguments
+     */
+    public static function create(Frame ...$frames): self
+    {
+        $bounds = Rectangle::merge(
+            array_map(
+                static fn (Frame $frame) => $frame->bounds,
+                $frames
+            )
+        );
+
+        return new self(
+            $bounds,
+            ...array_map(static fn (Frame $frame) => $frame->withBounds($bounds), $frames)
+        );
     }
 }

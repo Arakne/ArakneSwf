@@ -4,6 +4,7 @@ namespace Arakne\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Image\Util\GD;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -54,6 +55,12 @@ final readonly class EmptyImage implements ImageCharacterInterface
             $colorTransform,
             self::PNG_DATA
         );
+    }
+
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): ImageCharacterInterface
+    {
+        return $modifier->applyOnImage($this);
     }
 
     #[Override]

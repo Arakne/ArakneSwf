@@ -69,4 +69,27 @@ class RectangleTest extends ParserTestCase
         $this->assertSame(0, $rectangle->ymin);
         $this->assertSame(0, $rectangle->ymax);
     }
+
+    #[Test]
+    public function union()
+    {
+        $rectangle = new Rectangle(-5, 10, -3, 7);
+
+        $this->assertEquals($rectangle, $rectangle->union($rectangle));
+        $this->assertEquals($rectangle, $rectangle->union(new Rectangle(0, 0, 0, 0)));
+        $this->assertEquals(new Rectangle(-10, 20, -10, 20), $rectangle->union(new Rectangle(-10, 20, -10, 20)));
+        $this->assertEquals(new Rectangle(-5, 20, -10, 7), $rectangle->union(new Rectangle(0, 20, -10, 0)));
+    }
+
+    #[Test]
+    public function merge()
+    {
+        $this->assertEquals(new Rectangle(0, 0, 0, 0), Rectangle::merge([]));
+        $this->assertEquals(new Rectangle(-5, 10, -3, 7), Rectangle::merge([new Rectangle(-5, 10, -3, 7)]));
+        $this->assertEquals(new Rectangle(-10, 20, -5, 20), Rectangle::merge([
+            new Rectangle(-5, 10, -3, 7),
+            new Rectangle(-10, 15, -5, 10),
+            new Rectangle(0, 20, 0, 20),
+        ]));
+    }
 }

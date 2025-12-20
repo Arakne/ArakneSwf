@@ -25,6 +25,7 @@ use Arakne\Swf\Error\SwfExceptionInterface;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Error\CircularReferenceException;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Extractor\Timeline\TimelineProcessor;
 use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
@@ -125,6 +126,44 @@ final class SpriteDefinition implements DrawableInterface
     public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
         return $this->timeline()->draw($drawer, $frame);
+    }
+
+    #[Override]
+    public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): self
+    {
+        $self = $this;
+
+        if ($maxDepth !== 0) {
+            $oldTimeline = $this->timeline();
+            $timeline = $oldTimeline->modify($modifier, $maxDepth - 1);
+
+            if ($timeline !== $oldTimeline) {
+                $self = clone $this;
+                $self->timeline = $timeline;
+            }
+        }
+
+        return $modifier->applyOnSprite($self);
+    }
+
+    /**
+     * Attach a new object to the timeline at the specified depth and name, and return a new timeline
+     * This is equivalent to the "Attach Movie" action in SWF files
+     *
+     * @param DrawableInterface $attachment The object to attach
+     * @param int $depth The depth at which to attach the object
+     * @param string|null $name The name of the attached object (will be set on {@see FrameObject::$name})
+     *
+     * @return self
+     */
+    public function withAttachment(DrawableInterface $attachment, int $depth, ?string $name): self
+    {
+        $timeline = $this->timeline()->withAttachment($attachment, $depth, $name);
+
+        $self = clone $this;
+        $self->timeline = $timeline;
+
+        return $self;
     }
 
     /**

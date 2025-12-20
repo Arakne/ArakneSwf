@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Extractor\Image;
 
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\EmptyImage;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\ImageDataType;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -73,5 +74,16 @@ class EmptyImageTest extends ImageTestCase
     {
         $svg = new EmptyImage(42)->draw(new SvgCanvas(new Rectangle(0, 20, 0, 20)))->render();
         $this->assertStringContainsString(new EmptyImage(42)->toBase64Data(), $svg);
+    }
+
+    #[Test]
+    public function modify()
+    {
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $image = new EmptyImage(42);
+        $newImage = clone $image;
+        $modifier->expects($this->once())->method('applyOnImage')->with($image)->willReturn($newImage);
+
+        $this->assertSame($newImage, $image->modify($modifier));
     }
 }

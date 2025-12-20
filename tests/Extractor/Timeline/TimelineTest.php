@@ -2,8 +2,13 @@
 
 namespace Arakne\Tests\Swf\Extractor\Timeline;
 
+use Arakne\Swf\Extractor\Modifier\AbstractCharacterModifier;
+use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
 use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Extractor\Timeline\Frame;
+use Arakne\Swf\Extractor\Timeline\Timeline;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
 use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
@@ -103,5 +108,124 @@ class TimelineTest extends TestCase
         foreach ($transformed->toSvgAll() as $f => $svg) {
             $this->assertXmlStringEqualsXmlFile(__DIR__ . '/../Fixtures/1047/65_frames/new-bounds-'.$f.'.svg', $svg);
         }
+    }
+
+    #[Test]
+    public function withAttachment()
+    {
+        $timeline = new SwfFile(__DIR__.'/../Fixtures/1/1.swf')->timeline(false);
+        $other = new SwfFile(__DIR__.'/../Fixtures/62/62.swf')->timeline();
+
+        $combined = $timeline->withAttachment($other, depth: 10, name: 'attached');
+
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/../Fixtures/1/with-attachment.svg', $combined->toSvg());
+        $this->assertEquals(new Rectangle(-565, 11186, -1236, 16118), $combined->bounds());
+
+        foreach ($combined->frames as $frame) {
+            $obj = $frame->objectByName('attached');
+            $this->assertNotNull($obj);
+            $this->assertSame($other, $obj->object);
+        }
+    }
+
+    #[Test]
+    public function modifyFrames()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $modified = $timeline->modify(new class extends AbstractCharacterModifier {
+            public function applyOnTimeline(Timeline $timeline): Timeline
+            {
+                return $timeline->transformColors(new ColorTransform(greenMult: 0));
+            }
+
+            public function applyOnFrame(Frame $frame): Frame
+            {
+                return new Frame(
+                    bounds: $frame->bounds->transform(new Matrix(2.0, 3.0)),
+                    objects: $frame->objects,
+                    actions: $frame->actions,
+                    label: $frame->label,
+                );
+            }
+        }, 1);
+
+        $this->assertXmlStringEqualsXmlFile(
+            __DIR__ . '/../Fixtures/1047/65_frames/modified.svg',
+            $modified->toSvg()
+        );
+
+        $this->assertNotEquals($timeline->bounds, $modified->bounds);
+        $this->assertEquals($timeline->bounds->transform(new Matrix(2.0, 3.0)), $modified->bounds);
+    }
+
+    #[Test]
+    public function modifyOnlyCurrent()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = clone $timeline;
+
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $modifier->expects($this->once())->method('applyOnTimeline')->with($timeline)->willReturn($newTimeline);
+        $modifier->expects($this->never())->method('applyOnFrame');
+
+        $modified = $timeline->modify($modifier, 0);
+        $this->assertSame($newTimeline, $modified);
+    }
+
+    #[Test]
+    public function modifyOneDepth()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = clone $timeline;
+
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $modifier->expects($this->once())->method('applyOnTimeline')->with($timeline)->willReturn($newTimeline);
+        $modifier->expects($this->exactly(18))->method('applyOnFrame')->willReturnArgument(0);
+
+        $modified = $timeline->modify($modifier, 1);
+        $this->assertSame($newTimeline, $modified);
+    }
+
+    #[Test]
+    public function modifyAllDepths()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = clone $timeline;
+
+        $modifier = $this->createMock(CharacterModifierInterface::class);
+        $modifier->expects($this->exactly(325))->method('applyOnTimeline')->willReturnCallback(function (Timeline $param) use ($timeline, $newTimeline) {
+            if ($param == $timeline) {
+                return $newTimeline;
+            }
+            return $param;
+        });
+        $modifier->expects($this->exactly(342))->method('applyOnFrame')->willReturnArgument(0);
+        $modifier->expects($this->exactly(324))->method('applyOnShape')->willReturnArgument(0);
+        $modifier->expects($this->exactly(324))->method('applyOnSprite')->willReturnArgument(0);
+
+        $modified = $timeline->modify($modifier);
+        $this->assertSame($newTimeline, $modified);
+    }
+
+    #[Test]
+    public function modifyWithoutModificationShouldReturnSameInstance()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $this->assertSame($timeline, $timeline->modify(new class extends AbstractCharacterModifier {}));
     }
 }
