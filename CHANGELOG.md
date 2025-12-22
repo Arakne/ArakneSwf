@@ -6,6 +6,8 @@
 - (Extractor) Add `Timeline::keepFrameByLabel()`, `Timeline::keepFrameByNumber()`, and `GotoAndStop` modifier to allow keeping only specific frames in a timeline
 - (Extractor) Add `Timeline::frameByLabel()`
 - (Extractor) Add `Frame::objectsByName()` and `Frame::run()`
+- (Extractor) Handle AS3 `SymbolClassTag` to extract characters from its class name
+- (Extractor) `SwfExtractor::character()` will return the main timeline if 0 is provided as character ID
 
 **BC breaks:**
 - (Extractor) Remove `FrameObject::characterId` property
