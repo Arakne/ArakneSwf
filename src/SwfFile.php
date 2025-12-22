@@ -240,14 +240,14 @@ final class SwfFile
      * which can rely on memory caching.
      *
      * @param string $name The name of the asset to extract.
-     * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @return Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      *
      * @throws InvalidArgumentException When the name is not exported.
      * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::byName()
      */
-    public function assetByName(string $name): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function assetByName(string $name): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $extractor = new SwfExtractor($this);
 
@@ -264,12 +264,12 @@ final class SwfFile
      *
      * @param int $id The character ID of the asset to extract.
      *
-     * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @return Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::character()
      */
-    public function assetById(int $id): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function assetById(int $id): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $extractor = new SwfExtractor($this);
 
@@ -282,7 +282,7 @@ final class SwfFile
      * Note: Due to the way PHP handles array keys, numeric keys will be converted to integers.
      *       So don't forget to cast them to string if you need to use them as strings.
      *
-     * @return array<array-key, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
+     * @return array<array-key, Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
      * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::exported()

@@ -110,6 +110,13 @@ class SwfExtractorTest extends ImageTestCase
     }
 
     #[Test]
+    public function character0()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/complex_sprite.swf'));
+        $this->assertEquals($extractor->timeline(), $extractor->character(0));
+    }
+
+    #[Test]
     public function images()
     {
         $extractor = new SwfExtractor(new SwfFile(__DIR__.'/Fixtures/maps/0.swf'));
@@ -426,5 +433,17 @@ class SwfExtractorTest extends ImageTestCase
             __DIR__ . '/Fixtures/o3/sprite-31.svg',
             $sprite->toSvg()
         );
+    }
+
+    #[Test]
+    public function swf9SymbolClassExport()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/swf9/149.swf');
+        $extractor = new SwfExtractor($swf);
+        $this->assertCount(1, $extractor->exported());
+        $this->assertArrayHasKey('149_fla.MainTimeline', $extractor->exported());
+        $this->assertSame(0, $extractor->exported()['149_fla.MainTimeline']);
+
+        $this->assertEquals($extractor->character(0), $extractor->byName('149_fla.MainTimeline'));
     }
 }

@@ -40,6 +40,7 @@ use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
 use Arakne\Swf\Parser\Structure\Tag\ExportAssetsTag;
 use Arakne\Swf\Parser\Structure\Tag\JPEGTablesTag;
+use Arakne\Swf\Parser\Structure\Tag\SymbolClassTag;
 use Arakne\Swf\SwfFile;
 use Arakne\Swf\Util\Memory;
 use InvalidArgumentException;
@@ -207,11 +208,15 @@ final class SwfExtractor
      *
      * @param int $characterId
      *
-     * @return ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @return Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      * @throws ParserExceptionInterface
      */
-    public function character(int $characterId): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function character(int $characterId): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
+        if ($characterId === 0) {
+            return $this->timeline();
+        }
+
         $this->characters ??= ($this->shapes() + $this->sprites() + $this->images());
 
         return $this->characters[$characterId] ?? new MissingCharacter($characterId);
@@ -225,7 +230,7 @@ final class SwfExtractor
      *
      * @see SwfExtractor::exported() to get the list of exported names.
      */
-    public function byName(string $name): ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function byName(string $name): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $id = $this->exported()[$name] ?? null;
 
@@ -252,10 +257,12 @@ final class SwfExtractor
 
         $exported = [];
 
-        foreach ($this->file->tags(ExportAssetsTag::ID) as $tag) {
-            assert($tag instanceof ExportAssetsTag);
-
-            $exported += array_flip($tag->characters);
+        foreach ($this->file->tags(ExportAssetsTag::ID, SymbolClassTag::TYPE) as $tag) {
+            if ($tag instanceof ExportAssetsTag) {
+                $exported += array_flip($tag->characters);
+            } elseif ($tag instanceof SymbolClassTag) {
+                $exported += array_flip($tag->symbols);
+            }
         }
 
         return $this->exported = $exported;
