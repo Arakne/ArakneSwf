@@ -2,6 +2,8 @@
 
 namespace Arakne\Tests\Swf\Extractor\Timeline;
 
+use Arakne\Swf\Avm\Processor;
+use Arakne\Swf\Avm\State;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\EmptyImage;
 use Arakne\Swf\Extractor\Modifier\AbstractCharacterModifier;
@@ -267,5 +269,50 @@ class FrameTest extends TestCase
 
         $frame = $extractor->character(65)->timeline()->frames[0];
         $this->assertSame($frame, $frame->modify(new class extends AbstractCharacterModifier {}));
+    }
+
+    #[Test]
+    public function objectsByName()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/complex_sprite.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $frame = $extractor->character(13)->timeline()->frames[0];
+
+        $objects = $frame->objectsByName();
+
+        $this->assertCount(3, $objects);
+        $this->assertArrayHasKey('bretelles', $objects);
+        $this->assertArrayHasKey('tunique', $objects);
+        $this->assertArrayHasKey('cheveux', $objects);
+
+        $this->assertSame($frame->objects[2], $objects['bretelles']);
+        $this->assertSame($frame->objects[4], $objects['tunique']);
+        $this->assertSame($frame->objects[6], $objects['cheveux']);
+    }
+
+    #[Test]
+    public function runActions()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/complex_sprite.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $frame = $extractor->character(13)->timeline()->frames[0];
+        $state = new State();
+        $state->variables = $frame->objectsByName();
+        $state->variables['GAC'] = $gac = new class {
+            public array $called = [];
+            public function applyColor($element, $color): void
+            {
+                $this->called[] = [$element, $color];
+            }
+        };
+
+        $this->assertSame($state, $frame->run($state, new Processor(allowFunctionCall: true)));
+        $this->assertSame([
+            [$frame->objectByName('bretelles'), 2],
+            [$frame->objectByName('cheveux'), 3],
+            [$frame->objectByName('tunique'), 1],
+        ], $gac->called);
     }
 }

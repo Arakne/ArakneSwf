@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Timeline;
 
+use Arakne\Swf\Avm\Processor;
+use Arakne\Swf\Avm\State;
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
@@ -162,6 +164,47 @@ final readonly class Frame implements DrawableInterface
         }
 
         return null;
+    }
+
+    /**
+     * Map of objects by their name
+     * Only objects with a name are included in the result
+     *
+     * If multiple objects share the same name, only the last one is kept
+     *
+     * @return array<string, FrameObject>
+     */
+    public function objectsByName(): array
+    {
+        $objects = [];
+
+        foreach ($this->objects as $object) {
+            if ($object->name !== null) {
+                $objects[$object->name] = $object;
+            }
+        }
+
+        return $objects;
+    }
+
+    /**
+     * Execute the frame actions and return the resulting state
+     *
+     * Note: this method will not provide the execution context of the timeline (i.e. this, and objects),
+     *       and also will not execute actions on nested timelines.
+     *
+     * @param State $state
+     * @param Processor $processor
+     *
+     * @return State
+     */
+    public function run(State $state = new State(), Processor $processor = new Processor()): State
+    {
+        foreach ($this->actions as $action) {
+            $processor->run($action->actions, $state);
+        }
+
+        return $state;
     }
 
     #[Override]
