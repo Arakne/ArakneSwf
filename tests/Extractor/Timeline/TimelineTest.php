@@ -228,4 +228,93 @@ class TimelineTest extends TestCase
         $timeline = $extractor->character(65)->timeline();
         $this->assertSame($timeline, $timeline->modify(new class extends AbstractCharacterModifier {}));
     }
+
+    #[Test]
+    public function frameByLabel()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+
+        $this->assertSame($timeline->frames[4], $timeline->frameByLabel('static'));
+        $this->assertSame('static', $timeline->frameByLabel('static')->label);
+
+        $this->assertNull($timeline->frameByLabel('not_found'));
+    }
+
+    #[Test]
+    public function keepFrameByLabelFound()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = $timeline->keepFrameByLabel('static');
+
+        $this->assertCount(1, $newTimeline->frames);
+        $this->assertSame('static', $newTimeline->frames[0]->label);
+        $this->assertSame($timeline->frames[4], $newTimeline->frames[0]);
+        $this->assertSame($timeline->bounds(), $newTimeline->bounds());
+    }
+
+    #[Test]
+    public function keepFrameByLabelNotFound()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = $timeline->keepFrameByLabel('not_found');
+
+        $this->assertCount(1, $newTimeline->frames);
+        $this->assertNull($newTimeline->frames[0]->label);
+        $this->assertSame($timeline->frames[0], $newTimeline->frames[0]);
+        $this->assertSame($timeline->bounds(), $newTimeline->bounds());
+    }
+
+    #[Test]
+    public function keepFrameByNumberFound()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = $timeline->keepFrameByNumber(5);
+
+        $this->assertCount(1, $newTimeline->frames);
+        $this->assertSame('static', $newTimeline->frames[0]->label);
+        $this->assertSame($timeline->frames[4], $newTimeline->frames[0]);
+        $this->assertSame($timeline->bounds(), $newTimeline->bounds());
+    }
+
+    #[Test]
+    public function keepFrameByNumberTooLow()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = $timeline->keepFrameByNumber(0);
+
+        $this->assertCount(1, $newTimeline->frames);
+        $this->assertNull($newTimeline->frames[0]->label);
+        $this->assertSame($timeline->frames[0], $newTimeline->frames[0]);
+        $this->assertSame($timeline->bounds(), $newTimeline->bounds());
+    }
+
+    #[Test]
+    public function keepFrameByNumberTooHigh()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/1047/1047.swf');
+        $extractor = new SwfExtractor($swf);
+
+        $timeline = $extractor->character(65)->timeline();
+        $newTimeline = $timeline->keepFrameByNumber(42);
+
+        $this->assertCount(1, $newTimeline->frames);
+        $this->assertNull($newTimeline->frames[0]->label);
+        $this->assertSame($timeline->frames[17], $newTimeline->frames[0]);
+        $this->assertSame($timeline->bounds(), $newTimeline->bounds());
+    }
 }

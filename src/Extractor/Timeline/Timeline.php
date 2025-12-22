@@ -24,6 +24,7 @@ use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\Drawer\DrawerInterface;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Modifier\CharacterModifierInterface;
+use Arakne\Swf\Extractor\Modifier\GotoAndStop;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -131,6 +132,24 @@ final readonly class Timeline implements DrawableInterface
     }
 
     /**
+     * Find a frame by its label
+     * If the label is not found, null is returned
+     *
+     * @param string $label The label to search for
+     * @return Frame|null The frame with the given label, or null if not found
+     */
+    public function frameByLabel(string $label): ?Frame
+    {
+        foreach ($this->frames as $frame) {
+            if ($frame->label === $label) {
+                return $frame;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Attach a new object to the timeline at the specified depth and name, and return a new timeline
      * This is equivalent to the "Attach Movie" action in SWF files
      *
@@ -158,6 +177,56 @@ final readonly class Timeline implements DrawableInterface
         );
 
         return self::create(...$frames);
+    }
+
+    /**
+     * Keep only the frame with the given label, and return a new timeline
+     * If the label is not found, the first frame will be kept
+     *
+     * Note: this method will not modify child timelines, use {@see GotoAndStop} modifier for that.
+     *
+     * @param string $label
+     * @return self
+     */
+    public function keepFrameByLabel(string $label): self
+    {
+        if (count($this->frames) === 1) {
+            return $this;
+        }
+
+        return new self(
+            $this->bounds,
+            $this->frameByLabel($label) ?? $this->frames[0]
+        );
+    }
+
+    /**
+     * Keep only the frame at the given position.
+     * If this number is higher than the number of frames, the last frame will be used.
+     *
+     *  Note: this method will not modify child timelines, use {@see GotoAndStop} modifier for that.
+     *
+     * @param int $number The frame number to keep (starts at 1)
+     * @return self
+     */
+    public function keepFrameByNumber(int $number): self
+    {
+        $count = count($this->frames);
+
+        if ($count === 1) {
+            return $this;
+        }
+
+        if ($number < 1) {
+            $number = 1;
+        } elseif ($number > $count) {
+            $number = $count;
+        }
+
+        return new self(
+            $this->bounds,
+            $this->frames[$number - 1]
+        );
     }
 
     /**

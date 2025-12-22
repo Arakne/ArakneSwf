@@ -3,6 +3,9 @@
 
 - (Extractor) Introduce `CharacterModifierInterface` and `DrawableInterface::modify()` to allow modifying drawable objects after extraction
 - (Extractor) Add `Timeline::withAttachment()` and `SpriteDefinition::withAttachment()` to attach a movie clip to a timeline or sprite
+- (Extractor) Add `Timeline::keepFrameByLabel()`, `Timeline::keepFrameByNumber()`, and `GotoAndStop` modifier to allow keeping only specific frames in a timeline
+- (Extractor) Add `Timeline::frameByLabel()`
+- (Extractor) Add `Frame::objectsByName()` and `Frame::run()`
 
 **BC breaks:**
 - (Extractor) Remove `FrameObject::characterId` property
