@@ -34,6 +34,7 @@ use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\FillStyle;
+use Arakne\Swf\Parser\Structure\Record\Shape\LineStyle;
 use Arakne\Swf\Parser\Structure\Record\Shape\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
@@ -61,18 +62,25 @@ final readonly class ShapeProcessor
             height: $tag->shapeBounds->height(),
             xOffset: -$tag->shapeBounds->xmin,
             yOffset: -$tag->shapeBounds->ymin,
-            paths: $this->processPaths($tag),
+            paths: $this->processRecords(
+                $tag->shapes->shapeRecords,
+                $tag->shapes->fillStyles,
+                $tag->shapes->lineStyles,
+            ),
         );
     }
 
     /**
+     * Process shape edge records to create paths
+     *
+     * @param list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> $records Shape edge records
+     * @param list<FillStyle> $fillStyles Initial fill styles
+     * @param list<LineStyle> $lineStyles Initial line styles
+     *
      * @return list<Path>
      */
-    private function processPaths(DefineShapeTag|DefineShape4Tag $tag): array
+    public function processRecords(array $records, array $fillStyles, array $lineStyles): array
     {
-        $fillStyles = $tag->shapes->fillStyles;
-        $lineStyles = $tag->shapes->lineStyles;
-
         $x = 0;
         $y = 0;
 
@@ -86,7 +94,7 @@ final readonly class ShapeProcessor
         $builder = new PathsBuilder();
         $edges = [];
 
-        foreach ($tag->shapes->shapeRecords as $shape) {
+        foreach ($records as $shape) {
             switch (true) {
                 case $shape instanceof StyleChangeRecord:
                     $builder->merge(...$edges);
@@ -107,7 +115,7 @@ final readonly class ShapeProcessor
 
                     if ($shape->stateLineStyle) {
                         $style = $lineStyles[$shape->lineStyle - 1] ?? null;
-                        if ($style !== null) {
+                        if ($style !== null && $style->width > 0) {
                             $lineStyle = new PathStyle(
                                 lineColor: $style->color,
                                 lineFill: $style->fillType ? $this->createFillType($style->fillType) : null,
