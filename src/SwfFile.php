@@ -27,6 +27,7 @@ use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
+use Arakne\Swf\Extractor\MorphShape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
@@ -264,12 +265,12 @@ final class SwfFile
      *
      * @param int $id The character ID of the asset to extract.
      *
-     * @return Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @return Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::character()
      */
-    public function assetById(int $id): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function assetById(int $id): Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $extractor = new SwfExtractor($this);
 
@@ -282,7 +283,7 @@ final class SwfFile
      * Note: Due to the way PHP handles array keys, numeric keys will be converted to integers.
      *       So don't forget to cast them to string if you need to use them as strings.
      *
-     * @return array<array-key, Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
+     * @return array<array-key, Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>
      * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::exported()

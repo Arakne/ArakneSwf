@@ -23,6 +23,8 @@ namespace Arakne\Swf\Extractor;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
+use Arakne\Swf\Extractor\MorphShape\MorphShapeDefinition;
+use Arakne\Swf\Extractor\MorphShape\MorphShapeProcessor;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
@@ -35,6 +37,8 @@ use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG3Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsJPEG4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsLosslessTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineBitsTag;
+use Arakne\Swf\Parser\Structure\Tag\DefineMorphShape2Tag;
+use Arakne\Swf\Parser\Structure\Tag\DefineMorphShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShape4Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineShapeTag;
 use Arakne\Swf\Parser\Structure\Tag\DefineSpriteTag;
@@ -55,7 +59,7 @@ use function sprintf;
 final class SwfExtractor
 {
     /**
-     * @var array<int, ShapeDefinition|SpriteDefinition|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>|null
+     * @var array<int, ShapeDefinition|MorphShapeDefinition|SpriteDefinition|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition>|null
      */
     private ?array $characters = null;
 
@@ -63,6 +67,11 @@ final class SwfExtractor
      * @var array<int, ShapeDefinition>|null
      */
     private ?array $shapes = null;
+
+    /**
+     * @var array<int, MorphShapeDefinition>|null
+     */
+    private ?array $morphShapes = null;
 
     /**
      * @var array<int, SpriteDefinition>|null
@@ -131,6 +140,40 @@ final class SwfExtractor
         }
 
         return $this->shapes = $shapes;
+    }
+
+    /**
+     * Extract all morphshapes from the SWF file.
+     *
+     * The result array will be indexed by the character ID (i.e. {@see SwfTag::$id}).
+     *
+     * Note: MorphShape will not be processed immediately, but only when requested.
+     *
+     * @return array<int, MorphShapeDefinition>
+     * @throws ParserExceptionInterface
+     */
+    public function morphShapes(): array
+    {
+        $morphShapes = $this->morphShapes;
+
+        if ($morphShapes !== null) {
+            return $morphShapes;
+        }
+
+        $morphShapes = [];
+        $processor = new MorphShapeProcessor($this);
+
+        foreach ($this->file->tags(DefineMorphShapeTag::TYPE, DefineMorphShape2Tag::TYPE) as $pos => $tag) {
+            assert($tag instanceof DefineMorphShapeTag || $tag instanceof DefineMorphShape2Tag);
+
+            if (($id = $pos->id) === null) {
+                continue;
+            }
+
+            $morphShapes[$id] = new MorphShapeDefinition($id, $tag, $processor);
+        }
+
+        return $this->morphShapes = $morphShapes;
     }
 
     /**
@@ -208,16 +251,16 @@ final class SwfExtractor
      *
      * @param int $characterId
      *
-     * @return Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @return Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      * @throws ParserExceptionInterface
      */
-    public function character(int $characterId): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function character(int $characterId): Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         if ($characterId === 0) {
             return $this->timeline();
         }
 
-        $this->characters ??= ($this->shapes() + $this->sprites() + $this->images());
+        $this->characters ??= ($this->shapes() + $this->sprites() + $this->images() + $this->morphShapes());
 
         return $this->characters[$characterId] ?? new MissingCharacter($characterId);
     }
@@ -230,7 +273,7 @@ final class SwfExtractor
      *
      * @see SwfExtractor::exported() to get the list of exported names.
      */
-    public function byName(string $name): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function byName(string $name): Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $id = $this->exported()[$name] ?? null;
 

@@ -308,6 +308,7 @@ final readonly class TimelineProcessor
             $tag->name ?? null,
             filters: $tag->surfaceFilterList ?? [],
             blendMode: BlendMode::tryFrom($tag->blendMode ?? 1) ?? BlendMode::Normal,
+            ratio: $tag->ratio ?? null,
         );
     }
 
@@ -350,11 +351,12 @@ final readonly class TimelineProcessor
             );
         }
 
-        if ($tag->colorTransform || isset($tag->clipDepth) || isset($tag->name)) {
+        if ($tag->colorTransform || $tag->ratio !== null || isset($tag->clipDepth) || isset($tag->name)) {
             $objectProperties = $objectProperties->with(
                 colorTransform: $tag->colorTransform,
                 clipDepth: $tag->clipDepth ?? null,
                 name: $tag->name ?? null,
+                ratio: $tag->ratio,
             );
         }
 
