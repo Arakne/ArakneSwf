@@ -58,4 +58,14 @@ interface EdgeInterface
      * Draw the current edge on the given drawer
      */
     public function draw(PathDrawerInterface $drawer): void;
+
+    /**
+     * Interpolate the current edge with another edge and return the resulting edge
+     *
+     * @param EdgeInterface $to
+     * @param int<0, 65535> $ratio The interpolation ratio (0 = this edge, 65535 = $to edge)
+     *
+     * @return EdgeInterface The interpolated edge
+     */
+    public function interpolate(EdgeInterface $to, int $ratio): EdgeInterface;
 }

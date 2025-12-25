@@ -21,19 +21,21 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\MorphShape;
 
 use Arakne\Swf\Extractor\RatioDrawableInterface;
-use Arakne\Swf\Extractor\Shape\CurvedEdge;
-use Arakne\Swf\Extractor\Shape\EdgeInterface;
-use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\Shape;
-use Arakne\Swf\Extractor\Shape\StraightEdge;
+use Arakne\Swf\Parser\Structure\Record\Rectangle;
 
 final readonly class MorphShape
 {
     public const int MAX_RATIO = RatioDrawableInterface::MAX_RATIO;
 
     public function __construct(
-        public Shape $startShape,
-        public Shape $endShape,
+        public Rectangle $startBounds,
+        public Rectangle $endBounds,
+
+        /**
+         * @var list<MorphPath>
+         */
+        public array $paths,
     ) {}
 
     /**
@@ -41,93 +43,48 @@ final readonly class MorphShape
      */
     public function interpolate(int $ratio): Shape
     {
-        if ($ratio <= 1) {
-            return $this->startShape;
-        }
-
-        if ($ratio >= self::MAX_RATIO) {
-            return $this->endShape;
-        }
-
+        $bounds = $this->bounds($ratio);
         $paths = [];
 
-        foreach ($this->startShape->paths as $index => $startPath) {
-            $endPath = $this->endShape->paths[$index];
-            $paths[] = $this->interpolatePath($startPath, $endPath, $ratio);
+        foreach ($this->paths as $morphPath) {
+            $paths[] = $morphPath->interpolate($ratio);
         }
 
         return new Shape(
-            $this->interpolateInt($this->startShape->width, $this->endShape->width, $ratio),
-            $this->interpolateInt($this->startShape->height, $this->endShape->height, $ratio),
-            $this->interpolateInt($this->startShape->xOffset, $this->endShape->xOffset, $ratio),
-            $this->interpolateInt($this->startShape->yOffset, $this->endShape->yOffset, $ratio),
+            $bounds->width(),
+            $bounds->height(),
+            -$bounds->xmin,
+            -$bounds->ymin,
             $paths,
         );
     }
 
-    private function interpolateInt(int $start, int $end, int $ratio): int
+    /**
+     * Compute shape bounds at the given ratio
+     *
+     * @param int<0, 65535> $ratio
+     * @return Rectangle
+     */
+    public function bounds(int $ratio): Rectangle
     {
-        // @todo maybe use bitshifting for performance
+        if ($ratio <= 0) {
+            return $this->startBounds;
+        }
+
+        if ($ratio >= self::MAX_RATIO) {
+            return $this->endBounds;
+        }
+
+        return new Rectangle(
+            self::interpolateInt($this->startBounds->xmin, $this->endBounds->xmin, $ratio),
+            self::interpolateInt($this->startBounds->xmax, $this->endBounds->xmax, $ratio),
+            self::interpolateInt($this->startBounds->ymin, $this->endBounds->ymin, $ratio),
+            self::interpolateInt($this->startBounds->ymax, $this->endBounds->ymax, $ratio),
+        );
+    }
+
+    public static function interpolateInt(int $start, int $end, int $ratio): int
+    {
         return (int) (($start * (self::MAX_RATIO - $ratio) + $end * $ratio) / self::MAX_RATIO);
-    }
-
-    private function interpolatePath(Path $start, Path $end, int $ratio): Path
-    {
-        $edges = [];
-
-        foreach ($start as $index => $startEdge) {
-            $endEdge = $end->at($index);
-            $edges[] = $this->interpolateEdge($startEdge, $endEdge, $ratio);
-        }
-
-        return new Path(
-            $edges,
-            $start->style, // @todo interpolate style as well
-        );
-    }
-
-    private function interpolateEdge(EdgeInterface $startEdge, EdgeInterface $endEdge, int $ratio): EdgeInterface
-    {
-        if ($startEdge instanceof StraightEdge) {
-            if ($endEdge instanceof StraightEdge) {
-                return new StraightEdge(
-                    $this->interpolateInt($startEdge->fromX, $endEdge->fromX, $ratio),
-                    $this->interpolateInt($startEdge->fromY, $endEdge->fromY, $ratio),
-                    $this->interpolateInt($startEdge->toX, $endEdge->toX, $ratio),
-                    $this->interpolateInt($startEdge->toY, $endEdge->toY, $ratio),
-                );
-            }
-
-            // @todo toCurvedEdge method
-            $startEdge = new CurvedEdge(
-                $startEdge->fromX,
-                $startEdge->fromY,
-                (int)(($startEdge->fromX + $startEdge->toX) / 2),
-                (int)(($startEdge->fromY + $startEdge->toY) / 2),
-                $startEdge->toX,
-                $startEdge->toY,
-            );
-        }
-
-        if (!$endEdge instanceof CurvedEdge) {
-            // @todo toCurvedEdge method
-            $endEdge = new CurvedEdge(
-                $endEdge->fromX,
-                $endEdge->fromY,
-                (int)(($endEdge->fromX + $endEdge->toX) / 2),
-                (int)(($endEdge->fromY + $endEdge->toY) / 2),
-                $endEdge->toX,
-                $endEdge->toY,
-            );
-        }
-
-        return new CurvedEdge(
-            $this->interpolateInt($startEdge->fromX, $endEdge->fromX, $ratio),
-            $this->interpolateInt($startEdge->fromY, $endEdge->fromY, $ratio),
-            $this->interpolateInt($startEdge->controlX, $endEdge->controlX, $ratio),
-            $this->interpolateInt($startEdge->controlY, $endEdge->controlY, $ratio),
-            $this->interpolateInt($startEdge->toX, $endEdge->toX, $ratio),
-            $this->interpolateInt($startEdge->toY, $endEdge->toY, $ratio),
-        );
     }
 }

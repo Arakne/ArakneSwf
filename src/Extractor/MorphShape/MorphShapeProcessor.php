@@ -22,11 +22,19 @@ namespace Arakne\Swf\Extractor\MorphShape;
 
 use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Extractor\Error\ProcessingInvalidDataException;
-use Arakne\Swf\Extractor\Shape\Shape;
 use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\SwfExtractor;
+use Arakne\Swf\Parser\Structure\Record\Gradient;
+use Arakne\Swf\Parser\Structure\Record\GradientRecord;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphFillStyle;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphGradient;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle;
+use Arakne\Swf\Parser\Structure\Record\MorphShape\MorphLineStyle2;
+use Arakne\Swf\Parser\Structure\Record\Shape\CurvedEdgeRecord;
+use Arakne\Swf\Parser\Structure\Record\Shape\EndShapeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\FillStyle;
 use Arakne\Swf\Parser\Structure\Record\Shape\LineStyle;
+use Arakne\Swf\Parser\Structure\Record\Shape\StraightEdgeRecord;
 use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineMorphShape2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineMorphShapeTag;
@@ -46,6 +54,12 @@ final readonly class MorphShapeProcessor
         $this->shapeProcessor = new ShapeProcessor($extractor);
     }
 
+    /**
+     * Process morph tags to create MorphShape object
+     *
+     * @param DefineMorphShapeTag|DefineMorphShape2Tag $tag
+     * @return MorphShape
+     */
     public function process(DefineMorphShapeTag|DefineMorphShape2Tag $tag): MorphShape
     {
         $startFillStyles = [];
@@ -54,84 +68,135 @@ final readonly class MorphShapeProcessor
         $endLineStyles = [];
 
         foreach ($tag->fillStyles as $morphFillStyle) {
-            $startFillStyles[] = new FillStyle(
-                type: $morphFillStyle->type,
-                color: $morphFillStyle->startColor,
-                matrix: $morphFillStyle->startGradientMatrix,
-                //gradient: $morphFillStyle->gradient?->startGradient, // @todo implement morph gradient
-                bitmapId: $morphFillStyle->bitmapId,
-                bitmapMatrix: $morphFillStyle->startBitmapMatrix,
-            );
-            $endFillStyles[] = new FillStyle(
-                type: $morphFillStyle->type,
-                color: $morphFillStyle->endColor,
-                matrix: $morphFillStyle->endGradientMatrix,
-                //gradient: $morphFillStyle->gradient?->startGradient, // @todo implement morph gradient
-                bitmapId: $morphFillStyle->bitmapId,
-                bitmapMatrix: $morphFillStyle->endBitmapMatrix,
-            );
+            $startFillStyles[] = $this->morphFillStyleToFillStyle($morphFillStyle, true);
+            $endFillStyles[] = $this->morphFillStyleToFillStyle($morphFillStyle, false);
         }
 
         foreach ($tag->lineStyles as $morphLineStyle) {
-            $startLineStyles[] = new LineStyle(
-                width: $morphLineStyle->startWidth,
-                color: $morphLineStyle->startColor,
-                startCapStyle: $morphLineStyle->startCapStyle ?? null,
-                joinStyle: $morphLineStyle->joinStyle ?? null,
-                hasFillFlag: ($morphLineStyle->fillStyle ?? null) !== null, // @todo gérer proprement
-                noHScaleFlag: $morphLineStyle->noHScale ?? null,
-                noVScaleFlag: $morphLineStyle->noVScale ?? null,
-                pixelHintingFlag: $morphLineStyle->pixelHinting ?? null,
-                noClose: $morphLineStyle->noClose ?? null,
-                endCapStyle: $morphLineStyle->endCapStyle ?? null,
-                miterLimitFactor: $morphLineStyle->miterLimitFactor ?? null,
-                fillType: isset($morphLineStyle->fillStyle) ? new FillStyle( // @todo factoriser avec le code plus haut
-                    type: $morphLineStyle->fillStyle->type,
-                    color: $morphLineStyle->fillStyle->startColor,
-                    matrix: $morphLineStyle->fillStyle->startGradientMatrix,
-                    //gradient: $morphLineStyle->fillStyle->gradient?->startGradient, // @todo implement morph gradient
-                    bitmapId: $morphLineStyle->fillStyle->bitmapId,
-                    bitmapMatrix: $morphLineStyle->fillStyle->startBitmapMatrix,
-                ) : null,
-            );
-            $endLineStyles[] = new LineStyle(
-                width: $morphLineStyle->startWidth,
-                color: $morphLineStyle->endColor,
-                startCapStyle: $morphLineStyle->startCapStyle ?? null,
-                joinStyle: $morphLineStyle->joinStyle ?? null,
-                hasFillFlag: ($morphLineStyle->fillStyle ?? null) !== null, // @todo gérer proprement
-                noHScaleFlag: $morphLineStyle->noHScale ?? null,
-                noVScaleFlag: $morphLineStyle->noVScale ?? null,
-                pixelHintingFlag: $morphLineStyle->pixelHinting ?? null,
-                noClose: $morphLineStyle->noClose ?? null,
-                endCapStyle: $morphLineStyle->endCapStyle ?? null,
-                miterLimitFactor: $morphLineStyle->miterLimitFactor ?? null,
-                fillType: isset($morphLineStyle->fillStyle) ? new FillStyle( // @todo factoriser avec le code plus haut
-                    type: $morphLineStyle->fillStyle->type,
-                    color: $morphLineStyle->fillStyle->endColor,
-                    matrix: $morphLineStyle->fillStyle->endGradientMatrix,
-                    //gradient: $morphLineStyle->fillStyle->gradient?->startGradient, // @todo implement morph gradient
-                    bitmapId: $morphLineStyle->fillStyle->bitmapId,
-                    bitmapMatrix: $morphLineStyle->fillStyle->endBitmapMatrix,
-                ) : null,
-            );
+            $startLineStyles[] = $this->morphLineStyleToLineStyle($morphLineStyle, true);
+            $endLineStyles[] = $this->morphLineStyleToLineStyle($morphLineStyle, false);
         }
 
-        $endRecords = [];
+        $startRecords = $tag->startEdges;
+        $endRecords = $this->injectStylesOnEndRecords($startRecords, $tag->endEdges);
+
+        $startPaths = $this->shapeProcessor->processRecords($startRecords, $startFillStyles, $startLineStyles);
+        $endPaths = $this->shapeProcessor->processRecords($endRecords, $endFillStyles, $endLineStyles);
+
+        if (count($startPaths) !== count($endPaths)) {
+            if ($this->extractor->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
+                throw new ProcessingInvalidDataException('The number of start paths does not match the number of end paths in the morph shape');
+            }
+        }
+
+        $morphPaths = [];
+
+        foreach ($startPaths as $index => $startPath) {
+            $endPath = $endPaths[$index];
+            $morphPaths[] = new MorphPath($startPath, $endPath);
+        }
+
+        return new MorphShape(
+            $tag->startBounds,
+            $tag->endBounds,
+            $morphPaths,
+        );
+    }
+
+    /**
+     * Convert a MorphFillStyle to a FillStyle for start or end shape
+     *
+     * @param MorphFillStyle $morphFillStyle
+     * @param bool $start True to get the start fill style, false for the end fill style
+     *
+     * @return FillStyle
+     */
+    private function morphFillStyleToFillStyle(MorphFillStyle $morphFillStyle, bool $start): FillStyle
+    {
+        return new FillStyle(
+            type: $morphFillStyle->type,
+            color: $start ? $morphFillStyle->startColor : $morphFillStyle->endColor,
+            matrix: $start ? $morphFillStyle->startGradientMatrix : $morphFillStyle->endGradientMatrix,
+            gradient: $this->morphGradientToGradient($morphFillStyle->gradient, $start),
+            bitmapId: $morphFillStyle->bitmapId,
+            bitmapMatrix: $start ? $morphFillStyle->startBitmapMatrix : $morphFillStyle->endBitmapMatrix,
+        );
+    }
+
+    /**
+     * Convert a MorphLineStyle or MorphLineStyle2 to a LineStyle for start or end shape
+     *
+     * @param MorphLineStyle|MorphLineStyle2 $style
+     * @param bool $start True to get the start line style, false for the end line style
+     *
+     * @return LineStyle
+     */
+    private function morphLineStyleToLineStyle(MorphLineStyle|MorphLineStyle2 $style, bool $start): LineStyle
+    {
+        return new LineStyle(
+            width: $start ? $style->startWidth : $style->endWidth,
+            color: $start ? $style->startColor : $style->endColor,
+            startCapStyle: $style->startCapStyle ?? null,
+            joinStyle: $style->joinStyle ?? null,
+            hasFillFlag: $style instanceof MorphLineStyle2 ? $style->fillStyle !== null : null,
+            noHScaleFlag: $style->noHScale ?? null,
+            noVScaleFlag: $style->noVScale ?? null,
+            pixelHintingFlag: $style->pixelHinting ?? null,
+            noClose: $style->noClose ?? null,
+            endCapStyle: $style->endCapStyle ?? null,
+            miterLimitFactor: $style->miterLimitFactor ?? null,
+            fillType: isset($style->fillStyle) ? $this->morphFillStyleToFillStyle($style->fillStyle, $start) : null,
+        );
+    }
+
+    private function morphGradientToGradient(?MorphGradient $gradient, bool $start): ?Gradient
+    {
+        if ($gradient === null) {
+            return null;
+        }
+
+        $records = [];
+
+        foreach ($gradient->records as $record) {
+            $records[] = $start
+                ? new GradientRecord($record->startRatio, $record->startColor)
+                : new GradientRecord($record->endRatio, $record->endColor)
+            ;
+        }
+
+        return new Gradient(
+            spreadMode: $gradient->spreadMode,
+            interpolationMode: $gradient->interpolationMode,
+            records: $records,
+        );
+    }
+
+    /**
+     * Inject styles (i.e. from {@see StyleChangeRecord}) from start records into end records
+     * Styles are only defined in start records, so we need to copy them to end records to ensure proper processing
+     *
+     * @param list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> $startRecords
+     * @param list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> $endRecords
+     *
+     * @return list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>
+     */
+    private function injectStylesOnEndRecords(array $startRecords, array $endRecords): array
+    {
+        $result = [];
         $endRecordsIndex = 0;
 
-        foreach ($tag->startEdges as $startRecord) {
-            $endRecord = $tag->endEdges[$endRecordsIndex];
+        foreach ($startRecords as $startRecord) {
+            $endRecord = $endRecords[$endRecordsIndex];
 
             if (!$startRecord instanceof StyleChangeRecord) {
-                $endRecords[] = $endRecord;
+                $result[] = $endRecord;
                 ++$endRecordsIndex;
                 continue;
             }
 
             // Merge style change records
             if ($endRecord instanceof StyleChangeRecord) {
-                $endRecords[] = new StyleChangeRecord(
+                $result[] = new StyleChangeRecord(
                     stateNewStyles: $startRecord->stateNewStyles,
                     stateLineStyle: $startRecord->stateLineStyle,
                     stateFillStyle0: $startRecord->stateFillStyle0,
@@ -149,33 +214,9 @@ final readonly class MorphShapeProcessor
                 continue;
             }
 
-            $endRecords[] = $startRecord;
+            $result[] = $startRecord;
         }
 
-        $startPaths = $this->shapeProcessor->processRecords($tag->startEdges, $startFillStyles, $startLineStyles);
-        $endPaths = $this->shapeProcessor->processRecords($endRecords, $endFillStyles, $endLineStyles);
-
-        if (count($startPaths) !== count($endPaths)) {
-            if ($this->extractor->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
-                throw new ProcessingInvalidDataException('The number of start paths does not match the number of end paths in the morph shape');
-            }
-        }
-
-        return new MorphShape(
-            new Shape(
-                $tag->startBounds->width(),
-                $tag->startBounds->height(),
-                -$tag->startBounds->xmin,
-                -$tag->startBounds->ymin,
-                $startPaths,
-            ),
-            new Shape(
-                $tag->endBounds->width(),
-                $tag->endBounds->height(),
-                -$tag->endBounds->xmin,
-                -$tag->endBounds->ymin,
-                $endPaths,
-            ),
-        );
+        return $result;
     }
 }

@@ -22,8 +22,6 @@ namespace Arakne\Swf\Extractor\Shape;
 
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use IteratorAggregate;
-use Override;
-use Traversable;
 
 use function array_key_first;
 use function spl_object_id;
@@ -35,24 +33,13 @@ use function spl_object_id;
  *
  * @implements IteratorAggregate<int, EdgeInterface>
  */
-final class Path implements IteratorAggregate
+final class Path
 {
     public function __construct(
         /** @var list<EdgeInterface> */
-        private array $edges,
-        public PathStyle $style,
+        public private(set) array $edges,
+        public readonly PathStyle $style,
     ) {}
-
-    public function at(int $index): EdgeInterface
-    {
-        return $this->edges[$index];
-    }
-
-    #[Override]
-    public function getIterator(): Traversable
-    {
-        yield from $this->edges;
-    }
 
     /**
      * Push new edges at the end of the path

@@ -1,5 +1,23 @@
 <?php
 
+/*
+ * This file is part of Arakne-Swf.
+ *
+ * Arakne-Swf is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Arakne-Swf is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License along with Arakne-Swf.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (C) 2025 Vincent Quatrevieux (quatrevieux.vincent@gmail.com)
+ */
+
+declare(strict_types=1);
+
 namespace Arakne\Swf\Extractor\MorphShape;
 
 use Arakne\Swf\Extractor\DrawableInterface;
@@ -61,20 +79,7 @@ final class MorphShapeDefinition implements RatioDrawableInterface
     #[Override]
     public function bounds(): Rectangle
     {
-        $start = $this->tag->startBounds;
-        $end = $this->tag->endBounds;
-
-        return new Rectangle(
-            $this->interpolateInt($start->xmin, $end->xmin, $this->ratio),
-            $this->interpolateInt($start->xmax, $end->xmax, $this->ratio),
-            $this->interpolateInt($start->ymin, $end->ymin, $this->ratio),
-            $this->interpolateInt($start->ymax, $end->ymax, $this->ratio),
-        );
-    }
-
-    private function interpolateInt(int $start, int $end, int $ratio): int
-    {
-        return (int) (($start * (self::MAX_RATIO - $ratio) + $end * $ratio) / self::MAX_RATIO);
+        return $this->morphShape()->bounds($this->ratio);
     }
 
     #[Override]
