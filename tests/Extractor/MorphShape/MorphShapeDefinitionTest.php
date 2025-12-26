@@ -139,4 +139,40 @@ class MorphShapeDefinitionTest extends TestCase
 
         $this->assertSame($transformed, $morphShape->modify($modifier));
     }
+
+    #[Test]
+    public function withGradientFixed()
+    {
+        $swf = new SwfFile(__DIR__ . '/../Fixtures/1615/1615.swf');
+        $morphShape = $swf->assetById(222);
+
+        $this->assertInstanceOf(MorphShapeDefinition::class, $morphShape);
+
+        foreach (range(0, 65536, 16384) as $ratio) {
+            $morphShape = $morphShape->withRatio($ratio);
+            $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render();
+            $this->assertXmlStringEqualsXmlFile(
+                __DIR__ . '/../Fixtures/1615/222/' . $ratio . '.svg',
+                $svg
+            );
+        }
+    }
+
+    #[Test]
+    public function withGradientDynamic()
+    {
+        $swf = new SwfFile(__DIR__ . '/../Fixtures/1520/1520.swf');
+        $morphShape = $swf->assetById(47);
+
+        $this->assertInstanceOf(MorphShapeDefinition::class, $morphShape);
+
+        foreach (range(0, 65536, 16384) as $ratio) {
+            $morphShape = $morphShape->withRatio($ratio);
+            $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render();
+            $this->assertXmlStringEqualsXmlFile(
+                __DIR__ . '/../Fixtures/1520/47/' . $ratio . '.svg',
+                $svg
+            );
+        }
+    }
 }

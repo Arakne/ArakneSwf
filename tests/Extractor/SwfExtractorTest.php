@@ -456,5 +456,7 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertCount(6, $morphshapes);
         $this->assertContainsOnly(MorphShapeDefinition::class, $morphshapes);
         $this->assertSame([55, 57, 63, 67, 69, 72], array_keys($morphshapes));
+
+        $this->assertSame($morphshapes, $extractor->morphShapes());
     }
 }

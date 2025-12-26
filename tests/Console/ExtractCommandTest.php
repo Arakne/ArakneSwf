@@ -383,7 +383,7 @@ class ExtractCommandTest extends ImageTestCase
             output: $this->outputDir,
             outputFilename: '{name}_{frame}.{ext}',
             characters: [1],
-            frames: [1, 8193, 45057, 65536]
+            frames: [1, 8193, 45057, 65536, 100000]
         ));
 
         $this->assertStringContainsString(

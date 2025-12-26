@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\MorphShape;
 
-use Arakne\Swf\Error\Errors;
-use Arakne\Swf\Extractor\Error\ProcessingInvalidDataException;
 use Arakne\Swf\Extractor\Shape\ShapeProcessor;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
@@ -39,8 +37,6 @@ use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineMorphShape2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineMorphShapeTag;
 
-use function count;
-
 /**
  * Process define morph shape action tags to create morph shape objects
  */
@@ -48,9 +44,8 @@ final readonly class MorphShapeProcessor
 {
     private ShapeProcessor $shapeProcessor;
 
-    public function __construct(
-        private SwfExtractor $extractor,
-    ) {
+    public function __construct(SwfExtractor $extractor)
+    {
         $this->shapeProcessor = new ShapeProcessor($extractor);
     }
 
@@ -83,16 +78,10 @@ final readonly class MorphShapeProcessor
         $startPaths = $this->shapeProcessor->processRecords($startRecords, $startFillStyles, $startLineStyles);
         $endPaths = $this->shapeProcessor->processRecords($endRecords, $endFillStyles, $endLineStyles);
 
-        if (count($startPaths) !== count($endPaths)) {
-            if ($this->extractor->errorEnabled(Errors::UNPROCESSABLE_DATA)) {
-                throw new ProcessingInvalidDataException('The number of start paths does not match the number of end paths in the morph shape');
-            }
-        }
-
         $morphPaths = [];
 
         foreach ($startPaths as $index => $startPath) {
-            $endPath = $endPaths[$index];
+            $endPath = $endPaths[$index] ?? $startPaths;
             $morphPaths[] = new MorphPath($startPath, $endPath);
         }
 
@@ -186,7 +175,7 @@ final readonly class MorphShapeProcessor
         $endRecordsIndex = 0;
 
         foreach ($startRecords as $startRecord) {
-            $endRecord = $endRecords[$endRecordsIndex];
+            $endRecord = $endRecords[$endRecordsIndex] ?? $startRecord;
 
             if (!$startRecord instanceof StyleChangeRecord) {
                 $result[] = $endRecord;
