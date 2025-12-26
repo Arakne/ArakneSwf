@@ -22,7 +22,14 @@ namespace Arakne\Swf\Extractor\MorphShape;
 
 use Arakne\Swf\Extractor\RatioDrawableInterface;
 use Arakne\Swf\Extractor\Shape\Shape;
+use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\Gradient;
+use Arakne\Swf\Parser\Structure\Record\GradientRecord;
+use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
+
+use function assert;
+use function count;
 
 final readonly class MorphShape
 {
@@ -39,6 +46,8 @@ final readonly class MorphShape
     ) {}
 
     /**
+     * Get the interpolated shape at the given ratio
+     *
      * @param int<0, 65535> $ratio
      */
     public function interpolate(int $ratio): Shape
@@ -75,16 +84,125 @@ final readonly class MorphShape
             return $this->endBounds;
         }
 
-        return new Rectangle(
-            self::interpolateInt($this->startBounds->xmin, $this->endBounds->xmin, $ratio),
-            self::interpolateInt($this->startBounds->xmax, $this->endBounds->xmax, $ratio),
-            self::interpolateInt($this->startBounds->ymin, $this->endBounds->ymin, $ratio),
-            self::interpolateInt($this->startBounds->ymax, $this->endBounds->ymax, $ratio),
-        );
+        return self::interpolateRectangle($this->startBounds, $this->endBounds, $ratio);
     }
 
+    /**
+     * Interpolate between two integers
+     *
+     * @param int $start
+     * @param int $end
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = start, 65535 = end
+     *
+     * @return int
+     */
     public static function interpolateInt(int $start, int $end, int $ratio): int
     {
         return (int) (($start * (self::MAX_RATIO - $ratio) + $end * $ratio) / self::MAX_RATIO);
+    }
+
+    /**
+     * Interpolate between two floats
+     *
+     * @param float $start
+     * @param float $end
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = start, 65535 = end
+     *
+     * @return float
+     */
+    public static function interpolateFloat(float $start, float $end, int $ratio): float
+    {
+        return ($start * (self::MAX_RATIO - $ratio) + $end * $ratio) / self::MAX_RATIO;
+    }
+
+    /**
+     * Interpolate between two rectangles
+     *
+     * @param Rectangle $start
+     * @param Rectangle $end
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = start, 65535 = end
+     *
+     * @return Rectangle
+     */
+    public static function interpolateRectangle(Rectangle $start, Rectangle $end, int $ratio): Rectangle
+    {
+        return new Rectangle(
+            self::interpolateInt($start->xmin, $end->xmin, $ratio),
+            self::interpolateInt($start->xmax, $end->xmax, $ratio),
+            self::interpolateInt($start->ymin, $end->ymin, $ratio),
+            self::interpolateInt($start->ymax, $end->ymax, $ratio),
+        );
+    }
+
+    /**
+     * Interpolate between two colors
+     *
+     * @param Color $start
+     * @param Color $end
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = start, 65535 = end
+     *
+     * @return Color
+     */
+    public static function interpolateColor(Color $start, Color $end, int $ratio): Color
+    {
+        return new Color(
+            self::interpolateInt($start->red, $end->red, $ratio),
+            self::interpolateInt($start->green, $end->green, $ratio),
+            self::interpolateInt($start->blue, $end->blue, $ratio),
+            self::interpolateInt($start->alpha ?? 255, $end->alpha ?? 255, $ratio),
+        );
+    }
+
+    /**
+     * Interpolate between two matrices
+     *
+     * @param Matrix $start
+     * @param Matrix $end
+     * @param int<0, 65535> $ratio
+     *
+     * @return Matrix
+     */
+    public static function interpolateMatrix(Matrix $start, Matrix $end, int $ratio): Matrix
+    {
+        return new Matrix(
+            self::interpolateFloat($start->scaleX, $end->scaleX, $ratio),
+            self::interpolateFloat($start->scaleY, $end->scaleY, $ratio),
+            self::interpolateFloat($start->rotateSkew0, $end->rotateSkew0, $ratio),
+            self::interpolateFloat($start->rotateSkew1, $end->rotateSkew1, $ratio),
+            self::interpolateInt($start->translateX, $end->translateX, $ratio),
+            self::interpolateInt($start->translateY, $end->translateY, $ratio),
+        );
+    }
+
+    /**
+     * Interpolate between two gradients
+     *
+     * @param Gradient $start
+     * @param Gradient $end
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = start, 65535 = end
+     *
+     * @return Gradient
+     */
+    public static function interpolateGradient(Gradient $start, Gradient $end, int $ratio): Gradient
+    {
+        assert(count($start->records) === count($end->records));
+
+        $records = [];
+
+        foreach ($start->records as $index => $startRecord) {
+            $endRecord = $end->records[$index];
+
+            $records[] = new GradientRecord(
+                self::interpolateInt($startRecord->ratio, $endRecord->ratio, $ratio),
+                self::interpolateColor($startRecord->color, $endRecord->color, $ratio),
+            );
+        }
+
+        return new Gradient(
+            $start->spreadMode,
+            $start->interpolationMode,
+            $records,
+            $start->focalPoint !== null && $end->focalPoint !== null ? self::interpolateFloat($start->focalPoint, $end->focalPoint, $ratio) : null,
+        );
     }
 }

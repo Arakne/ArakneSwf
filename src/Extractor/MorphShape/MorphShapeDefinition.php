@@ -52,6 +52,9 @@ final class MorphShapeDefinition implements RatioDrawableInterface
     private int $ratio = 0;
 
     public function __construct(
+        /**
+         * The character ID
+         */
         public readonly int $id,
         public readonly DefineMorphShapeTag|DefineMorphShape2Tag $tag,
         private MorphShapeProcessor $processor,
@@ -91,6 +94,7 @@ final class MorphShapeDefinition implements RatioDrawableInterface
     #[Override]
     public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
+        // @todo cache shape
         $drawer->shape($this->morphShape()->interpolate($this->ratio));
 
         return $drawer;

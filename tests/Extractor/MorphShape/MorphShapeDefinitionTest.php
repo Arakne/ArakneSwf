@@ -8,6 +8,8 @@ use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function range;
+
 class MorphShapeDefinitionTest extends TestCase
 {
     #[Test]
@@ -71,5 +73,23 @@ class MorphShapeDefinitionTest extends TestCase
             __DIR__ . '/../Fixtures/homestuck/morphshape_63_last_frame.svg',
             $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render()
         );
+    }
+
+    #[Test]
+    public function morphShapeWithMorphStyle()
+    {
+        $swf = new SwfFile(__DIR__ . '/../Fixtures/morphshape/morphshape.swf');
+        $morphShape = $swf->assetById(1);
+
+        $this->assertInstanceOf(MorphShapeDefinition::class, $morphShape);
+
+        foreach (range(0, 65536, 4096) as $ratio) {
+            $morphShape = $morphShape->withRatio($ratio);
+            $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render();
+            $this->assertXmlStringEqualsXmlFile(
+                __DIR__ . '/../Fixtures/morphshape/morphshape_frame' . $ratio . '.svg',
+                $svg
+            );
+        }
     }
 }
