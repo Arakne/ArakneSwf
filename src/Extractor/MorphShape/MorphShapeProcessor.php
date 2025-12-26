@@ -81,7 +81,7 @@ final readonly class MorphShapeProcessor
         $morphPaths = [];
 
         foreach ($startPaths as $index => $startPath) {
-            $endPath = $endPaths[$index] ?? $startPaths;
+            $endPath = $endPaths[$index] ?? $startPath;
             $morphPaths[] = new MorphPath($startPath, $endPath);
         }
 
