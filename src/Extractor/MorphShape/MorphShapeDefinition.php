@@ -94,7 +94,6 @@ final class MorphShapeDefinition implements RatioDrawableInterface
     #[Override]
     public function draw(DrawerInterface $drawer, int $frame = 0): DrawerInterface
     {
-        // @todo cache shape
         $drawer->shape($this->morphShape()->interpolate($this->ratio));
 
         return $drawer;
@@ -103,14 +102,15 @@ final class MorphShapeDefinition implements RatioDrawableInterface
     #[Override]
     public function transformColors(ColorTransform $colorTransform): DrawableInterface
     {
-        // @todo Implement transformColors() method.
-        return $this;
+        $self = clone $this;
+        $self->morphShape = $this->morphShape()->transformColors($colorTransform);
+
+        return $self;
     }
 
     #[Override]
     public function modify(CharacterModifierInterface $modifier, int $maxDepth = -1): DrawableInterface
     {
-        // @todo Implement modify() method.
-        return $this;
+        return $modifier->applyOnMorphShape($this);
     }
 }

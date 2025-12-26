@@ -19,6 +19,7 @@
 namespace Arakne\Swf\Extractor\Modifier;
 
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
+use Arakne\Swf\Extractor\MorphShape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\Timeline\Frame;
@@ -36,5 +37,6 @@ interface CharacterModifierInterface
     public function applyOnTimeline(Timeline $timeline): Timeline;
     public function applyOnFrame(Frame $frame): Frame;
     public function applyOnShape(ShapeDefinition $shape): ShapeDefinition;
+    public function applyOnMorphShape(MorphShapeDefinition $morphShape): MorphShapeDefinition;
     public function applyOnImage(ImageCharacterInterface $image): ImageCharacterInterface;
 }

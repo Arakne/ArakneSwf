@@ -27,6 +27,7 @@ use Arakne\Swf\Extractor\Shape\FillType\RadialGradient;
 use Arakne\Swf\Extractor\Shape\FillType\Solid;
 use Arakne\Swf\Extractor\Shape\Path;
 use Arakne\Swf\Extractor\Shape\PathStyle;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 
 use function assert;
 use function count;
@@ -70,6 +71,14 @@ final readonly class MorphPath
         return new Path(
             $edges,
             $this->interpolateStyle($this->start->style, $this->end->style, $ratio),
+        );
+    }
+
+    public function transformColors(ColorTransform $colorTransform): self
+    {
+        return new self(
+            $this->start->transformColors($colorTransform),
+            $this->end->transformColors($colorTransform),
         );
     }
 

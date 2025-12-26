@@ -23,6 +23,7 @@ namespace Arakne\Swf\Extractor\MorphShape;
 use Arakne\Swf\Extractor\RatioDrawableInterface;
 use Arakne\Swf\Extractor\Shape\Shape;
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\GradientRecord;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
@@ -85,6 +86,28 @@ final readonly class MorphShape
         }
 
         return self::interpolateRectangle($this->startBounds, $this->endBounds, $ratio);
+    }
+
+    /**
+     * Apply a color transform to all paths styles in the morph shape
+     * and return a new morph shape
+     *
+     * @param ColorTransform $colorTransform
+     * @return self The new morph shape instance with transformed colors
+     */
+    public function transformColors(ColorTransform $colorTransform): self
+    {
+        $newPaths = [];
+
+        foreach ($this->paths as $path) {
+            $newPaths[] = $path->transformColors($colorTransform);
+        }
+
+        return new self(
+            $this->startBounds,
+            $this->endBounds,
+            $newPaths,
+        );
     }
 
     /**
