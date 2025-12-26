@@ -1,3 +1,19 @@
+0.5.0
+-----
+
+- (Extractor) Handle morph shapes:
+  - Add `MorphShapeDefinition` class and all its dependencies
+  - Add `SwfExtractor::morphShapes()` method to extract morph shapes from SWF
+  - Update `SwfFile` and `SwfExtractor` to handle `MorphShapeDefinition` return types
+  - Handle morph shapes on `ExtractCommand`
+  - Introduce `interpolate()` methods on fill types and edge implementations to support morphing
+  - Add `ratio` property to `FrameObject`
+  - Add `RatioDrawableInterface` for drawables that support ratio
+
+**BC breaks:**
+- (Parser) `MorphLineStyle2::miterLimitFactor` is now an int (UI16) instead of float (fixed 8.8)
+- (Extractor) Add `CharacterModifierInterface::applyOnMorphShape()` method to modify morph shapes after extraction
+
 0.4.0
 -----
 
