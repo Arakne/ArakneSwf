@@ -7,6 +7,7 @@ use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
+use Arakne\Swf\Extractor\MorphShape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
@@ -17,7 +18,6 @@ use PHPUnit\Framework\Attributes\Test;
 use ReflectionProperty;
 
 use function array_keys;
-use function file_put_contents;
 
 class SwfExtractorTest extends ImageTestCase
 {
@@ -256,7 +256,6 @@ class SwfExtractorTest extends ImageTestCase
         $extractor = new SwfExtractor(new SwfFile(__DIR__ . '/Fixtures/homestuck/00004.swf'));
         $timeline = $extractor->timeline();
 
-        // Note: morphsphape are not supported yet, so some frames are invalid
         foreach ($timeline->toSvgAll() as $f => $svg) {
             $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/homestuck/timeline/frame_'.$f.'.svg', $svg);
         }
@@ -445,5 +444,19 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertSame(0, $extractor->exported()['149_fla.MainTimeline']);
 
         $this->assertEquals($extractor->character(0), $extractor->byName('149_fla.MainTimeline'));
+    }
+
+    #[Test]
+    public function morphShapes()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/homestuck/00004.swf');
+        $extractor = new SwfExtractor($swf);
+        $morphshapes = $extractor->morphShapes();
+
+        $this->assertCount(6, $morphshapes);
+        $this->assertContainsOnly(MorphShapeDefinition::class, $morphshapes);
+        $this->assertSame([55, 57, 63, 67, 69, 72], array_keys($morphshapes));
+
+        $this->assertSame($morphshapes, $extractor->morphShapes());
     }
 }

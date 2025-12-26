@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
+use Arakne\Swf\Extractor\RatioDrawableInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
@@ -94,6 +96,15 @@ final readonly class FrameObject
         public BlendMode $blendMode = BlendMode::Normal,
 
         /**
+         * The ratio for morphing objects.
+         * This value will be between 0 and 65535, where 0 means the start shape, and 65535 the end shape.
+         *
+         * @var int<0, 65535>|null
+         * @see MorphShape::MAX_RATIO
+         */
+        public ?int $ratio = null,
+
+        /**
          * Color transformations to apply to the object
          *
          * This property is fill by the `transformColors()` method,
@@ -127,6 +138,10 @@ final readonly class FrameObject
             $object = $object->transformColors($transform);
         }
 
+        if ($this->ratio !== null && $object instanceof RatioDrawableInterface) {
+            $object = $object->withRatio($this->ratio);
+        }
+
         return $object;
     }
 
@@ -148,6 +163,7 @@ final readonly class FrameObject
             $this->name,
             $this->filters,
             $this->blendMode,
+            $this->ratio,
             [...$this->colorTransforms, $colorTransform],
         );
     }
@@ -163,6 +179,7 @@ final readonly class FrameObject
      * @param BlendMode|null $blendMode
      * @param int|null $clipDepth
      * @param string|null $name
+     * @param int<0, 65535>|null $ratio
      *
      * @return self
      */
@@ -175,6 +192,7 @@ final readonly class FrameObject
         ?BlendMode $blendMode = null,
         ?int $clipDepth = null,
         ?string $name = null,
+        ?int $ratio = null,
     ): self {
         return new self(
             $this->depth,
@@ -186,6 +204,7 @@ final readonly class FrameObject
             $name ?? $this->name,
             $filters ?? $this->filters,
             $blendMode ?? $this->blendMode,
+            $ratio ?? $this->ratio,
             $this->colorTransforms,
         );
     }

@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
 use Override;
+
+use function assert;
 
 /**
  * Edge type for lines
@@ -44,5 +47,35 @@ final readonly class StraightEdge implements EdgeInterface
     public function draw(PathDrawerInterface $drawer): void
     {
         $drawer->line($this->toX, $this->toY);
+    }
+
+    /**
+     * Transform the straight edge into an equivalent curved edge
+     */
+    public function toCurvedEdge(): CurvedEdge
+    {
+        return new CurvedEdge(
+            $this->fromX,
+            $this->fromY,
+            (int)(($this->fromX + $this->toX) / 2),
+            (int)(($this->fromY + $this->toY) / 2),
+            $this->toX,
+            $this->toY,
+        );
+    }
+
+    #[Override]
+    public function interpolate(EdgeInterface $to, int $ratio): EdgeInterface
+    {
+        if ($to instanceof StraightEdge) {
+            return new StraightEdge(
+                MorphShape::interpolateInt($this->fromX, $to->fromX, $ratio),
+                MorphShape::interpolateInt($this->fromY, $to->fromY, $ratio),
+                MorphShape::interpolateInt($this->toX, $to->toX, $ratio),
+                MorphShape::interpolateInt($this->toY, $to->toY, $ratio),
+            );
+        }
+
+        return $this->toCurvedEdge()->interpolate($to, $ratio);
     }
 }

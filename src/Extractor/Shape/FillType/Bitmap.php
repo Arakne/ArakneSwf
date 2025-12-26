@@ -22,6 +22,7 @@ namespace Arakne\Swf\Extractor\Shape\FillType;
 
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Image\TransformedImage;
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Override;
@@ -53,6 +54,25 @@ final readonly class Bitmap implements FillTypeInterface
         return new self(
             $this->bitmap->transformColors($colorTransform),
             $this->matrix,
+        );
+    }
+
+    /**
+     * Interpolates this style to another one
+     * Only the matrix is interpolated
+     *
+     * @param Bitmap $other
+     * @param int<0, 65535> $ratio
+     *
+     * @return Bitmap
+     */
+    public function interpolate(Bitmap $other, int $ratio): Bitmap
+    {
+        return new Bitmap(
+            $this->bitmap,
+            MorphShape::interpolateMatrix($this->matrix, $other->matrix, $ratio),
+            $this->smoothed,
+            $this->repeat,
         );
     }
 

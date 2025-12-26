@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Arakne\Swf\Parser\Structure\Record\MorphShape;
 
 use Arakne\Swf\Parser\Structure\Record\Color;
+use Arakne\Swf\Parser\Structure\Record\Shape\LineStyle;
 use Arakne\Swf\Parser\SwfReader;
 
 final readonly class MorphLineStyle2
@@ -45,8 +46,10 @@ final readonly class MorphLineStyle2
         /**
          * Only used if joinStyle is JOIN_MITER
          * The value is a fixed 8.8 number
+         *
+         * Use int to be compatible with {@see LineStyle::$miterLimitFactor}
          */
-        public ?float $miterLimitFactor,
+        public ?int $miterLimitFactor,
         public ?Color $startColor,
         public ?Color $endColor,
         public ?MorphFillStyle $fillStyle,
@@ -95,7 +98,7 @@ final readonly class MorphLineStyle2
                 pixelHinting: $pixelHinting,
                 noClose: $noClose,
                 endCapStyle: $endCapStyle,
-                miterLimitFactor: ($joinStyle === self::JOIN_MITER) ? $reader->readFixed8() : null,
+                miterLimitFactor: ($joinStyle === self::JOIN_MITER) ? $reader->readUI16() : null,
                 startColor: !$hasFill ? Color::readRgba($reader) : null,
                 endColor: !$hasFill ? Color::readRgba($reader) : null,
                 fillStyle: $hasFill ? MorphFillStyle::read($reader) : null,

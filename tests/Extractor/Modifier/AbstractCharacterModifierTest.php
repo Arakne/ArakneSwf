@@ -32,5 +32,9 @@ class AbstractCharacterModifierTest extends TestCase
 
         $image = $extractor->character(1);
         $this->assertSame($image, $modifier->applyOnImage($image));
+
+        $swf = new SwfFile(__DIR__.'/../Fixtures/morphshape/morphshape.swf');
+        $morphShape = $swf->assetById(1);
+        $this->assertSame($morphShape, $modifier->applyOnMorphShape($morphShape));
     }
 }

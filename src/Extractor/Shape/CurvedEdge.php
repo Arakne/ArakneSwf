@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
 use Override;
+
+use function assert;
 
 /**
  * Edge type for curves
@@ -46,5 +49,24 @@ final readonly class CurvedEdge implements EdgeInterface
     public function draw(PathDrawerInterface $drawer): void
     {
         $drawer->curve($this->controlX, $this->controlY, $this->toX, $this->toY);
+    }
+
+    #[Override]
+    public function interpolate(EdgeInterface $to, int $ratio): EdgeInterface
+    {
+        if ($to instanceof StraightEdge) {
+            $to = $to->toCurvedEdge();
+        }
+
+        assert($to instanceof CurvedEdge);
+
+        return new CurvedEdge(
+            MorphShape::interpolateInt($this->fromX, $to->fromX, $ratio),
+            MorphShape::interpolateInt($this->fromY, $to->fromY, $ratio),
+            MorphShape::interpolateInt($this->controlX, $to->controlX, $ratio),
+            MorphShape::interpolateInt($this->controlY, $to->controlY, $ratio),
+            MorphShape::interpolateInt($this->toX, $to->toX, $ratio),
+            MorphShape::interpolateInt($this->toY, $to->toY, $ratio),
+        );
     }
 }

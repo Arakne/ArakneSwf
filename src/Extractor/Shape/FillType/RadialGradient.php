@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape\FillType;
 
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Gradient;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
@@ -49,5 +50,21 @@ final readonly class RadialGradient implements FillTypeInterface
     {
         // @phpstan-ignore argument.type
         return 'R' . hash('xxh128', json_encode($this));
+    }
+
+    /**
+     * Interpolates this gradient to another one
+     *
+     * @param self $other
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = this gradient, 65535 = other gradient
+     *
+     * @return self
+     */
+    public function interpolate(self $other, int $ratio): self
+    {
+        return new self(
+            MorphShape::interpolateMatrix($this->matrix, $other->matrix, $ratio),
+            MorphShape::interpolateGradient($this->gradient, $other->gradient, $ratio),
+        );
     }
 }

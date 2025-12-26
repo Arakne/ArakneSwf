@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape\FillType;
 
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
 use Arakne\Swf\Parser\Structure\Record\Color;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Override;
@@ -42,5 +43,18 @@ final readonly class Solid implements FillTypeInterface
         $color = $this->color;
 
         return 'S'.(($color->red << 24) | ($color->green << 16) | ($color->blue << 8) | ($color->alpha ?? 255));
+    }
+
+    /**
+     * Interpolates this style to another one
+     *
+     * @param Solid $other
+     * @param int<0, 65535> $ratio The interpolation ratio. 0 = this color, 65535 = other color
+     *
+     * @return Solid
+     */
+    public function interpolate(Solid $other, int $ratio): Solid
+    {
+        return new self(MorphShape::interpolateColor($this->color, $other->color, $ratio));
     }
 }

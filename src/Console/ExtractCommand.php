@@ -21,11 +21,14 @@ declare(strict_types=1);
 namespace Arakne\Swf\Console;
 
 use Arakne\Swf\Error\Errors;
+use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\ImageCharacterInterface;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
+use Arakne\Swf\Extractor\MorphShape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
 use Arakne\Swf\Extractor\SwfExtractor;
@@ -45,6 +48,7 @@ use function is_dir;
 use function json_encode;
 use function mkdir;
 use function printf;
+use function var_dump;
 
 final readonly class ExtractCommand
 {
@@ -228,7 +232,7 @@ final readonly class ExtractCommand
         return $success;
     }
 
-    private function processCharacter(ExtractOptions $options, SwfFile $file, string $name, ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
+    private function processCharacter(ExtractOptions $options, SwfFile $file, string $name, ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition|Timeline $character): bool
     {
         try {
             return match (true) {
@@ -236,6 +240,7 @@ final readonly class ExtractCommand
                 $character instanceof SpriteDefinition => $this->processSprite($options, $file, $name, $character),
                 $character instanceof ImageCharacterInterface => $this->processImage($options, $file->path, $name, $character),
                 $character instanceof ShapeDefinition => $this->processShape($options, $file->path, $name, $character),
+                $character instanceof MorphShapeDefinition => $this->processMorphShape($options, $file->path, $name, $character),
                 $character instanceof MissingCharacter => printf('The character %s is missing in the SWF file or unsupported' . PHP_EOL, $name) && false,
             };
         } catch (Exception $e) {
@@ -335,6 +340,25 @@ final readonly class ExtractCommand
     private function processShape(ExtractOptions $options, string $file, string $name, ShapeDefinition $shape): bool
     {
         return $this->writeToOutputDir($shape->toSvg(), $file, $options, $name, 'svg');
+    }
+
+    private function processMorphShape(ExtractOptions $options, string $file, string $name, MorphShapeDefinition $morphShape): bool
+    {
+        $success = true;
+
+        foreach ($options->frames ?? [1] as $frame) {
+            if ($frame - 1 > MorphShape::MAX_RATIO) {
+                continue;
+            }
+
+            $withRatio = $morphShape->withRatio($frame - 1);
+            $renderer = new SvgCanvas($withRatio->bounds());
+            $withRatio->draw($renderer);
+
+            $success = $this->writeToOutputDir($renderer->render(), $file, $options, $name, 'svg', $frame) && $success;
+        }
+
+        return $success;
     }
 
     private function writeToOutputDir(string $content, string $file, ExtractOptions $options, string $name, string $ext, ?int $frame = null): bool

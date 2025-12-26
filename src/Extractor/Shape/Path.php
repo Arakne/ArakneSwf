@@ -34,8 +34,8 @@ final class Path
 {
     public function __construct(
         /** @var list<EdgeInterface> */
-        private array $edges,
-        public PathStyle $style,
+        public private(set) array $edges,
+        public readonly PathStyle $style,
     ) {}
 
     /**
