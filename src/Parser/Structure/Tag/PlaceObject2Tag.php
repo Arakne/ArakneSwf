@@ -36,6 +36,10 @@ final readonly class PlaceObject2Tag
         public ?int $characterId,
         public ?Matrix $matrix,
         public ?ColorTransform $colorTransform,
+
+        /**
+         * @var int<0, 65535>|null
+         */
         public ?int $ratio,
         public ?string $name,
         public ?int $clipDepth,

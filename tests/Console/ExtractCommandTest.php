@@ -346,6 +346,64 @@ class ExtractCommandTest extends ImageTestCase
         ], glob($this->outputDir.'/*.svg'));
     }
 
+    #[Test]
+    public function morphShapeWithoutFrame()
+    {
+        $output = $this->exec(new ExtractOptions(
+            files: [
+                __DIR__ . '/../Extractor/Fixtures/morphshape/morphshape.swf',
+            ],
+            output: $this->outputDir,
+            outputFilename: '{name}_{frame}.{ext}',
+            characters: [1]
+        ));
+
+        $this->assertStringContainsString(
+            '[1/1] Processing file: ' .__DIR__ . '/../Extractor/Fixtures/morphshape/morphshape.swf' . ' done',
+            $output
+        );
+
+        $this->assertEquals([
+            $this->outputDir.'/1_1.svg',
+        ], glob($this->outputDir.'/*.svg'));
+
+        $this->assertXmlFileEqualsXmlFile(
+            __DIR__ . '/../Extractor/Fixtures/morphshape/morphshape_frame0.svg',
+            $this->outputDir.'/1_1.svg'
+        );
+    }
+
+    #[Test]
+    public function morphShapeWithFrame()
+    {
+        $output = $this->exec(new ExtractOptions(
+            files: [
+                __DIR__ . '/../Extractor/Fixtures/morphshape/morphshape.swf',
+            ],
+            output: $this->outputDir,
+            outputFilename: '{name}_{frame}.{ext}',
+            characters: [1],
+            frames: [1, 8193, 45057, 65536]
+        ));
+
+        $this->assertStringContainsString(
+            '[1/1] Processing file: ' .__DIR__ . '/../Extractor/Fixtures/morphshape/morphshape.swf' . ' done',
+            $output
+        );
+
+        $this->assertEquals([
+            $this->outputDir.'/1_1.svg',
+            $this->outputDir.'/1_45057.svg',
+            $this->outputDir.'/1_65536.svg',
+            $this->outputDir.'/1_8193.svg',
+        ], glob($this->outputDir.'/*.svg'));
+
+        $this->assertXmlFileEqualsXmlFile(__DIR__ . '/../Extractor/Fixtures/morphshape/morphshape_frame0.svg', $this->outputDir.'/1_1.svg');
+        $this->assertXmlFileEqualsXmlFile(__DIR__ . '/../Extractor/Fixtures/morphshape/morphshape_frame8192.svg', $this->outputDir.'/1_8193.svg');
+        $this->assertXmlFileEqualsXmlFile(__DIR__ . '/../Extractor/Fixtures/morphshape/morphshape_frame45056.svg', $this->outputDir.'/1_45057.svg');
+        $this->assertXmlFileEqualsXmlFile(__DIR__ . '/../Extractor/Fixtures/morphshape/morphshape_frame65536.svg', $this->outputDir.'/1_65536.svg');
+    }
+
     private function exec(ExtractOptions $options): string
     {
         ob_start();

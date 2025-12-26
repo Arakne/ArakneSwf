@@ -77,6 +77,7 @@ final readonly class PlaceObject3Tag
 
         /**
          * @see PlaceObject2Tag::$ratio
+         * @var int<0, 65535>|null
          */
         public ?int $ratio,
 

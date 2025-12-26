@@ -241,14 +241,14 @@ final class SwfFile
      * which can rely on memory caching.
      *
      * @param string $name The name of the asset to extract.
-     * @return Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+     * @return Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
      *
      * @throws InvalidArgumentException When the name is not exported.
      * @throws ParserExceptionInterface
      *
      * @see SwfExtractor::byName()
      */
-    public function assetByName(string $name): Timeline|ShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
+    public function assetByName(string $name): Timeline|ShapeDefinition|MorphShapeDefinition|SpriteDefinition|MissingCharacter|ImageBitsDefinition|JpegImageDefinition|LosslessImageDefinition
     {
         $extractor = new SwfExtractor($this);
 

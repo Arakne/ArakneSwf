@@ -179,7 +179,7 @@ final readonly class FrameObject
      * @param BlendMode|null $blendMode
      * @param int|null $clipDepth
      * @param string|null $name
-     * @param non-negative-int|null $ratio
+     * @param int<0, 65535>|null $ratio
      *
      * @return self
      */

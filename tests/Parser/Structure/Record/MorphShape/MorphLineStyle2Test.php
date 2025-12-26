@@ -68,7 +68,7 @@ class MorphLineStyle2Test extends ParserTestCase
             pixelHinting: true,
             noClose: false,
             endCapStyle: MorphLineStyle2::CAP_SQUARE,
-            miterLimitFactor: 3.5,
+            miterLimitFactor: 896, // 3.5 in float
             startColor: null,
             endColor: null,
             fillStyle: new MorphFillStyle(
