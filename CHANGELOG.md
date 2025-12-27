@@ -10,6 +10,7 @@
   - Add `ratio` property to `FrameObject`
   - Add `RatioDrawableInterface` for drawables that support ratio
 - PHP 8.5 support
+- (Drawer) Add `ScaleResizer` to resize images with a scale factor
 
 **BC breaks:**
 - (Parser) `MorphLineStyle2::miterLimitFactor` is now an int (UI16) instead of float (fixed 8.8)
