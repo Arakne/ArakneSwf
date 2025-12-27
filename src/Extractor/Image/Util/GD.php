@@ -284,11 +284,6 @@ final class GD
         return $content;
     }
 
-    public function __destruct()
-    {
-        imagedestroy($this->image);
-    }
-
     public function __clone(): void
     {
         $width = $this->width;

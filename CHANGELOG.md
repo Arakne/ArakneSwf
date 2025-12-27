@@ -9,6 +9,7 @@
   - Introduce `interpolate()` methods on fill types and edge implementations to support morphing
   - Add `ratio` property to `FrameObject`
   - Add `RatioDrawableInterface` for drawables that support ratio
+- PHP 8.5 support
 
 **BC breaks:**
 - (Parser) `MorphLineStyle2::miterLimitFactor` is now an int (UI16) instead of float (fixed 8.8)

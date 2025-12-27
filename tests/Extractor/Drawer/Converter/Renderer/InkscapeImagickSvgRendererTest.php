@@ -129,7 +129,7 @@ class InkscapeImagickSvgRendererTest extends ImageTestCase
     public function invalidSvg()
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Svg conversion failed: Entity: line 1: parser error');
+        $this->expectExceptionMessageMatches('/Svg conversion failed:.*Entity: line 1: parser error/s');
 
         $svg = 'not a valid svg';
 
