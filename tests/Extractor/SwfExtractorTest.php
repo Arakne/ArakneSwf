@@ -262,6 +262,19 @@ class SwfExtractorTest extends ImageTestCase
     }
 
     #[Test]
+    public function timelineWithMorphShapes()
+    {
+        $extractor = new SwfExtractor(new SwfFile(__DIR__ . '/Fixtures/1001/1001.swf'));
+        $timeline = $extractor->timeline(false);
+        $frames = $timeline->framesCount(true);
+
+        for ($f = 0; $f < $frames; ++$f) {
+            $svg = $timeline->toSvg($f);
+            $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/1001/frame_'.$f.'.svg', $svg);
+        }
+    }
+
+    #[Test]
     public function perfIssueApplyColorTransformLazily()
     {
         $extractor = new SwfExtractor(new SwfFile(__DIR__ . '/Fixtures/1305/1305.swf'));

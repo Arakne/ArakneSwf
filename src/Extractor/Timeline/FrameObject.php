@@ -22,7 +22,6 @@ namespace Arakne\Swf\Extractor\Timeline;
 
 use Arakne\Swf\Extractor\DrawableInterface;
 use Arakne\Swf\Extractor\MorphShape\MorphShape;
-use Arakne\Swf\Extractor\RatioDrawableInterface;
 use Arakne\Swf\Parser\Structure\Record\ColorTransform;
 use Arakne\Swf\Parser\Structure\Record\Filter\BevelFilter;
 use Arakne\Swf\Parser\Structure\Record\Filter\BlurFilter;
@@ -136,10 +135,6 @@ final readonly class FrameObject
         // because of clamping values to [0-255] after each transformation
         foreach ($this->colorTransforms as $transform) {
             $object = $object->transformColors($transform);
-        }
-
-        if ($this->ratio !== null && $object instanceof RatioDrawableInterface) {
-            $object = $object->withRatio($this->ratio);
         }
 
         return $object;

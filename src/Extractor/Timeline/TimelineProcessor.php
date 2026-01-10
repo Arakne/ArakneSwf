@@ -23,6 +23,7 @@ namespace Arakne\Swf\Extractor\Timeline;
 use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Error\SwfExceptionInterface;
 use Arakne\Swf\Extractor\Error\ProcessingInvalidDataException;
+use Arakne\Swf\Extractor\RatioDrawableInterface;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\Parser\Structure\Record\Matrix;
 use Arakne\Swf\Parser\Structure\Record\Rectangle;
@@ -284,6 +285,11 @@ final readonly class TimelineProcessor
     {
         assert($tag->characterId !== null);
         $object = $this->extractor->character($tag->characterId);
+
+        if (isset($tag->ratio) && $object instanceof RatioDrawableInterface) {
+            $object = $object->withRatio($tag->ratio);
+        }
+
         $currentObjectBounds = $object->bounds();
 
         if ($tag->matrix) {
@@ -351,11 +357,26 @@ final readonly class TimelineProcessor
             );
         }
 
-        if ($tag->colorTransform || $tag->ratio !== null || isset($tag->clipDepth) || isset($tag->name)) {
+        if ($tag->colorTransform || isset($tag->clipDepth) || isset($tag->name)) {
             $objectProperties = $objectProperties->with(
                 colorTransform: $tag->colorTransform,
                 clipDepth: $tag->clipDepth ?? null,
                 name: $tag->name ?? null,
+                ratio: $tag->ratio,
+            );
+        }
+
+        if ($tag->ratio !== null && $objectProperties->object instanceof RatioDrawableInterface) {
+            $oldObjectBounds = $objectProperties->object->bounds();
+            $matrix = $tag->matrix ?? $objectProperties->matrix->translate(-$oldObjectBounds->xmin, -$oldObjectBounds->ymin);
+
+            $newObject = $objectProperties->object->withRatio($tag->ratio);
+            $currentObjectBounds = $newObject->bounds();
+
+            $objectProperties = $objectProperties->with(
+                object: $newObject,
+                bounds: $currentObjectBounds->transform($matrix),
+                matrix: $matrix->translate($currentObjectBounds->xmin, $currentObjectBounds->ymin),
                 ratio: $tag->ratio,
             );
         }

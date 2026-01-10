@@ -1,3 +1,8 @@
+0.5.1
+-----
+
+- (Extractor) Fix `TimelineProcessor` handling of morphshapes with variable bounds.
+
 0.5.0
 -----
 
