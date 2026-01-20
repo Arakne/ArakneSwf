@@ -1,3 +1,9 @@
+0.5.2
+-----
+
+- (Extractor) Fix `MorphShapeProcessor` matching of start and end records
+- (Extractor) Change `ShapeProcessor` style matching: use indexes instead of hashes
+
 0.5.1
 -----
 
