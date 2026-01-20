@@ -10,12 +10,8 @@ use Arakne\Swf\Extractor\Drawer\Converter\ImageFormat;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
-use PHPUnit\Framework\TestCase;
-
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-
-use Vtiful\Kernel\Format;
 
 use function array_diff;
 use function array_values;
@@ -25,7 +21,6 @@ use function is_dir;
 use function natsort;
 use function ob_start;
 use function scandir;
-use function var_dump;
 
 class ExtractCommandTest extends ImageTestCase
 {

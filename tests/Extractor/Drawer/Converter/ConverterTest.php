@@ -8,7 +8,6 @@ use Arakne\Swf\Extractor\Drawer\Converter\ImageResizerInterface;
 use Arakne\Swf\Extractor\SwfExtractor;
 use Arakne\Swf\SwfFile;
 use Arakne\Tests\Swf\Extractor\ImageTestCase;
-use Imagick;
 use PHPUnit\Framework\Attributes\Test;
 use SimpleXMLElement;
 
@@ -24,7 +23,6 @@ use function stream_get_contents;
 use function strlen;
 use function strtolower;
 use function trim;
-use function var_dump;
 
 class ConverterTest extends ImageTestCase
 {

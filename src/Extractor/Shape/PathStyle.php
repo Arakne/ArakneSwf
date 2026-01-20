@@ -72,8 +72,14 @@ final readonly class PathStyle
          * Note: this value is not used in the hash code, and its applied only on path building
          */
         public bool $reverse = false,
+
+        /**
+         * The identifier of the style.
+         * Will be used as grouping key when building paths.
+         */
+        ?string $id = null,
     ) {
-        $this->hash = $this->fill?->hash() . $this->lineFill?->hash() . '-' . self::colorHash($this->lineColor) . '-' . $this->lineWidth;
+        $this->hash = $id ?? ($this->fill?->hash() . $this->lineFill?->hash() . '-' . self::colorHash($this->lineColor) . '-' . $this->lineWidth);
     }
 
     /**

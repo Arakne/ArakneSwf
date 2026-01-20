@@ -11,7 +11,6 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function array_slice;
-use function file_put_contents;
 
 class MorphShapeProcessorTest extends TestCase
 {
@@ -36,7 +35,7 @@ class MorphShapeProcessorTest extends TestCase
         $shape = $morphShape->interpolate(32768);
 
         $this->assertCount(1, $shape->paths);
-        $this->assertCount(14, $shape->paths[0]->edges);
+        $this->assertCount(9, $shape->paths[0]->edges);
 
         $renderer = new SvgCanvas($tag->startBounds);
         $renderer->shape($shape);

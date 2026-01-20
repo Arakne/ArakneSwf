@@ -91,6 +91,9 @@ final readonly class ShapeProcessor
         /** @var PathStyle|null $lineStyle */
         $lineStyle = null;
 
+        // Style group counter to create unique style IDs when styles are changed
+        $styleGroup = 0;
+
         $builder = new PathsBuilder();
         $edges = [];
 
@@ -111,6 +114,7 @@ final readonly class ShapeProcessor
 
                         $fillStyles = $shape->fillStyles;
                         $lineStyles = $shape->lineStyles;
+                        ++$styleGroup;
                     }
 
                     if ($shape->stateLineStyle) {
@@ -120,6 +124,7 @@ final readonly class ShapeProcessor
                                 lineColor: $style->color,
                                 lineFill: $style->fillType ? $this->createFillType($style->fillType) : null,
                                 lineWidth: $style->width,
+                                id: 'L-' . $styleGroup . '-' . $shape->lineStyle,
                             );
                         } else {
                             $lineStyle = null;
@@ -129,7 +134,11 @@ final readonly class ShapeProcessor
                     if ($shape->stateFillStyle0) {
                         $style = $fillStyles[$shape->fillStyle0 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle0 = new PathStyle(fill: $this->createFillType($style), reverse: true);
+                            $fillStyle0 = new PathStyle(
+                                fill: $this->createFillType($style),
+                                reverse: true,
+                                id: 'F-' . $styleGroup . '-' . $shape->fillStyle0,
+                            );
                         } else {
                             $fillStyle0 = null;
                         }
@@ -138,7 +147,10 @@ final readonly class ShapeProcessor
                     if ($shape->stateFillStyle1) {
                         $style = $fillStyles[$shape->fillStyle1 - 1] ?? null;
                         if ($style !== null) {
-                            $fillStyle1 = new PathStyle(fill: $this->createFillType($style));
+                            $fillStyle1 = new PathStyle(
+                                fill: $this->createFillType($style),
+                                id: 'F-' . $styleGroup . '-' . $shape->fillStyle1,
+                            );
                         } else {
                             $fillStyle1 = null;
                         }

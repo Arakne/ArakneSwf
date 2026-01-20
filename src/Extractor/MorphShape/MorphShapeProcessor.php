@@ -37,6 +37,9 @@ use Arakne\Swf\Parser\Structure\Record\Shape\StyleChangeRecord;
 use Arakne\Swf\Parser\Structure\Tag\DefineMorphShape2Tag;
 use Arakne\Swf\Parser\Structure\Tag\DefineMorphShapeTag;
 
+use function assert;
+use function count;
+
 /**
  * Process define morph shape action tags to create morph shape objects
  */
@@ -72,16 +75,17 @@ final readonly class MorphShapeProcessor
             $endLineStyles[] = $this->morphLineStyleToLineStyle($morphLineStyle, false);
         }
 
-        $startRecords = $tag->startEdges;
-        $endRecords = $this->injectStylesOnEndRecords($startRecords, $tag->endEdges);
+        [$startRecords, $endRecords] = $this->injectStylesOnEndRecords($tag->startEdges, $tag->endEdges);
 
         $startPaths = $this->shapeProcessor->processRecords($startRecords, $startFillStyles, $startLineStyles);
         $endPaths = $this->shapeProcessor->processRecords($endRecords, $endFillStyles, $endLineStyles);
 
+        assert(count($startPaths) === count($endPaths));
+
         $morphPaths = [];
 
         foreach ($startPaths as $index => $startPath) {
-            $endPath = $endPaths[$index] ?? $startPath;
+            $endPath = $endPaths[$index];
             $morphPaths[] = new MorphPath($startPath, $endPath);
         }
 
@@ -164,28 +168,56 @@ final readonly class MorphShapeProcessor
      * Inject styles (i.e. from {@see StyleChangeRecord}) from start records into end records
      * Styles are only defined in start records, so we need to copy them to end records to ensure proper processing
      *
+     * The result is two lists of records with same length.
+     *
      * @param list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> $startRecords
      * @param list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> $endRecords
      *
-     * @return list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>
+     * @return list<list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord>>
      */
     private function injectStylesOnEndRecords(array $startRecords, array $endRecords): array
     {
-        $result = [];
+        $resultEndRecords = [];
+        $resultStartRecords = [];
+
         $endRecordsIndex = 0;
+        $startRecordsIndex = 0;
 
-        foreach ($startRecords as $startRecord) {
-            $endRecord = $endRecords[$endRecordsIndex] ?? $startRecord;
+        $startRecordsCount = count($startRecords);
+        $endRecordsCount = count($endRecords);
 
-            if (!$startRecord instanceof StyleChangeRecord) {
-                $result[] = $endRecord;
+        // We need to track the position of start records to properly inject moveTo commands
+        $startX = 0;
+        $startY = 0;
+
+        while ($startRecordsIndex < $startRecordsCount && $endRecordsIndex < $endRecordsCount) {
+            $startRecord = $startRecords[$startRecordsIndex];
+            $endRecord = $endRecords[$endRecordsIndex];
+
+            // Both are edge records
+            if (!$startRecord instanceof StyleChangeRecord && !$endRecord instanceof StyleChangeRecord) {
+                $resultStartRecords[] = $startRecord;
+                ++$startRecordsIndex;
+
+                $resultEndRecords[] = $endRecord;
                 ++$endRecordsIndex;
+
+                if ($startRecord instanceof StraightEdgeRecord) {
+                    $startX += $startRecord->deltaX;
+                    $startY += $startRecord->deltaY;
+                } elseif ($startRecord instanceof CurvedEdgeRecord) {
+                    $startX += $startRecord->controlDeltaX + $startRecord->anchorDeltaX;
+                    $startY += $startRecord->controlDeltaY + $startRecord->anchorDeltaY;
+                }
                 continue;
             }
 
             // Merge style change records
-            if ($endRecord instanceof StyleChangeRecord) {
-                $result[] = new StyleChangeRecord(
+            if ($startRecord instanceof StyleChangeRecord && $endRecord instanceof StyleChangeRecord) {
+                $resultStartRecords[] = $startRecord;
+                ++$startRecordsIndex;
+
+                $resultEndRecords[] = new StyleChangeRecord(
                     stateNewStyles: $startRecord->stateNewStyles,
                     stateLineStyle: $startRecord->stateLineStyle,
                     stateFillStyle0: $startRecord->stateFillStyle0,
@@ -196,16 +228,70 @@ final readonly class MorphShapeProcessor
                     fillStyle0: $startRecord->fillStyle0,
                     fillStyle1: $startRecord->fillStyle1,
                     lineStyle: $startRecord->lineStyle,
-                    fillStyles: $endRecord->fillStyles,
-                    lineStyles: $endRecord->lineStyles,
+                    fillStyles: $startRecord->fillStyles,
+                    lineStyles: $startRecord->lineStyles,
                 );
                 ++$endRecordsIndex;
+
+                if ($startRecord->stateMoveTo) {
+                    $startX = $startRecord->moveDeltaX;
+                    $startY = $startRecord->moveDeltaY;
+                }
                 continue;
             }
 
-            $result[] = $startRecord;
+            // In this case, only the start record is a style change record
+            // So we inject the style without moving the end records cursor
+            if ($startRecord instanceof StyleChangeRecord) {
+                $resultStartRecords[] = $startRecord;
+                ++$startRecordsIndex;
+
+                $resultEndRecords[] = $startRecord;
+
+                if ($startRecord->stateMoveTo) {
+                    $startX = $startRecord->moveDeltaX;
+                    $startY = $startRecord->moveDeltaY;
+                }
+                continue;
+            }
+
+            assert($endRecord instanceof StyleChangeRecord);
+
+            // End record is a style change record, but not start record
+            // This is used when there is a moveTo on the end shape only
+            // So inject a "fake" move to style change record in start records
+            $resultStartRecords[] = new StyleChangeRecord(
+                stateNewStyles: $endRecord->stateNewStyles,
+                stateLineStyle: $endRecord->stateLineStyle,
+                stateFillStyle0: $endRecord->stateFillStyle0,
+                stateFillStyle1: $endRecord->stateFillStyle1,
+                stateMoveTo: $endRecord->stateMoveTo,
+                moveDeltaX: $startX,
+                moveDeltaY: $startY,
+                fillStyle0: $endRecord->fillStyle0,
+                fillStyle1: $endRecord->fillStyle1,
+                lineStyle: $endRecord->lineStyle,
+                fillStyles: $endRecord->fillStyles,
+                lineStyles: $endRecord->lineStyles,
+            );
+
+            $resultEndRecords[] = $endRecord;
+            ++$endRecordsIndex;
         }
 
-        return $result;
+        $startSize = count($resultStartRecords);
+        $endSize = count($resultStartRecords);
+
+        if (!$resultStartRecords[$startSize - 1] instanceof EndShapeRecord) {
+            $resultStartRecords[] = new EndShapeRecord();
+        }
+
+        if (!$resultEndRecords[$endSize - 1] instanceof EndShapeRecord) {
+            $resultEndRecords[] = new EndShapeRecord();
+        }
+
+        assert(count($resultStartRecords) === count($resultEndRecords));
+
+        return [$resultStartRecords, $resultEndRecords];
     }
 }

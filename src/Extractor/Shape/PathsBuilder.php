@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Extractor\Shape;
 
-use function array_map;
 use function array_reverse;
 
 /**

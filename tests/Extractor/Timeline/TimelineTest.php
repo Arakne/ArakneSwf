@@ -14,8 +14,6 @@ use Arakne\Swf\SwfFile;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-use function file_put_contents;
-
 class TimelineTest extends TestCase
 {
     #[Test]

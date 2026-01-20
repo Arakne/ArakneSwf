@@ -2,6 +2,7 @@
 
 namespace Arakne\Tests\Swf\Extractor;
 
+use Arakne\Swf\Error\Errors;
 use Arakne\Swf\Extractor\Drawer\Svg\SvgCanvas;
 use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
@@ -18,6 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use ReflectionProperty;
 
 use function array_keys;
+use function range;
 
 class SwfExtractorTest extends ImageTestCase
 {
@@ -471,5 +473,50 @@ class SwfExtractorTest extends ImageTestCase
         $this->assertSame([55, 57, 63, 67, 69, 72], array_keys($morphshapes));
 
         $this->assertSame($morphshapes, $extractor->morphShapes());
+    }
+
+    #[Test]
+    public function morphshapeCorrupted()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/1008/1008.swf', Errors::NONE);
+        $extractor = new SwfExtractor($swf);
+
+        $morphShape = $extractor->character(43);
+
+        $this->assertInstanceOf(MorphShapeDefinition::class, $morphShape);
+        $morphShape = $morphShape->withRatio(12000);
+        $this->assertXmlStringEqualsXmlString(
+            <<<'XML'
+            <?xml version="1.0"?>
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="0px" height="0px"><g transform="matrix(1, 0, 0, 1, 0, 0)"/></svg>
+            XML,
+            $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render()
+        );
+
+        $morphShape = $extractor->character(32);
+        foreach (range(0, 65536, 8192) as $ratio) {
+            $morphShape = $morphShape->withRatio($ratio);
+            $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render();
+
+            $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1008/32/' . $ratio . '.svg', $svg);
+        }
+
+        $morphShape = $extractor->character(59);
+        foreach (range(0, 65536, 8192) as $ratio) {
+            $morphShape = $morphShape->withRatio($ratio);
+            $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds()))->render();
+
+            $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1008/59/' . $ratio . '.svg', $svg);
+        }
+
+        $sprite = $extractor->character(64);
+        foreach ($sprite->timeline()->toSvgAll() as $frame => $svg) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1008/64/' . $frame . '.svg', $svg);
+        }
+
+        $sprite = $extractor->character(90);
+        foreach ($sprite->timeline()->toSvgAll() as $frame => $svg) {
+            $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1008/90/' . $frame . '.svg', $svg);
+        }
     }
 }

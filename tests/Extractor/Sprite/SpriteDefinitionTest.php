@@ -17,8 +17,6 @@ use Arakne\Tests\Swf\SwfBuilder;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-use function file_put_contents;
-
 class SpriteDefinitionTest extends TestCase
 {
     private SwfBuilder $builder;
