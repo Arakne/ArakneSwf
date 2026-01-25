@@ -77,8 +77,9 @@ final readonly class MorphShapeProcessor
 
         [$startRecords, $endRecords] = $this->injectStylesOnEndRecords($tag->startEdges, $tag->endEdges);
 
-        $startPaths = $this->shapeProcessor->processRecords($startRecords, $startFillStyles, $startLineStyles);
-        $endPaths = $this->shapeProcessor->processRecords($endRecords, $endFillStyles, $endLineStyles);
+        // Do not ignore zero width lines in morph shapes to ensure proper morphing from 0 width to non-zero width lines
+        $startPaths = $this->shapeProcessor->processRecords($startRecords, $startFillStyles, $startLineStyles, ignoreZeroWithLine: false);
+        $endPaths = $this->shapeProcessor->processRecords($endRecords, $endFillStyles, $endLineStyles, ignoreZeroWithLine: false);
 
         assert(count($startPaths) === count($endPaths));
 

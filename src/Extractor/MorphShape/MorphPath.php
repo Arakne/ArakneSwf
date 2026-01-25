@@ -91,11 +91,14 @@ final readonly class MorphPath
      */
     private function interpolateStyle(PathStyle $start, PathStyle $end, int $ratio): PathStyle
     {
+        $lineWidth = MorphShape::interpolateInt($start->lineWidth, $end->lineWidth, $ratio);
+        assert($lineWidth >= 0);
+
         return new PathStyle(
             fill: $this->interpolateFillStyle($start->fill, $end->fill, $ratio),
             lineColor: $start->lineColor !== null && $end->lineColor !== null ? MorphShape::interpolateColor($start->lineColor, $end->lineColor, $ratio) : null,
             lineFill: $this->interpolateFillStyle($start->lineFill, $end->lineFill, $ratio),
-            lineWidth: MorphShape::interpolateInt($start->lineWidth, $end->lineWidth, $ratio),
+            lineWidth: $lineWidth,
         );
     }
 

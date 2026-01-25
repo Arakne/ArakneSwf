@@ -37,6 +37,10 @@ final readonly class ClipPathBuilder implements DrawerInterface
         foreach ($shape->paths as $path) {
             $element = $this->builder->addPath($this->clipPath, $path);
 
+            if (!$element) {
+                continue;
+            }
+
             $transforms = [];
 
             foreach ($this->transform as $matrix) {

@@ -132,7 +132,7 @@ final class PathsBuilder
         foreach ($this->closedPaths as $path) {
             $fixedPath = $path->fix();
 
-            if ($fixedPath->style->lineWidth > 0) {
+            if ($fixedPath->style->isLineStyle()) {
                 $linePaths[] = $fixedPath;
             } else {
                 $fillPaths[] = $fixedPath;

@@ -34,8 +34,9 @@ class MorphShapeProcessorTest extends TestCase
         $morphShape = $processor->process($corruptedTag);
         $shape = $morphShape->interpolate(32768);
 
-        $this->assertCount(1, $shape->paths);
+        $this->assertCount(2, $shape->paths);
         $this->assertCount(9, $shape->paths[0]->edges);
+        $this->assertCount(9, $shape->paths[1]->edges);
 
         $renderer = new SvgCanvas($tag->startBounds);
         $renderer->shape($shape);

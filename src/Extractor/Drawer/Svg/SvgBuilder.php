@@ -94,8 +94,16 @@ final class SvgBuilder
         return $g;
     }
 
-    public function addPath(SimpleXMLElement $g, Path $path): SimpleXMLElement
+    /**
+     * @return SimpleXMLElement|null The created path element, or null if the style cannot draw anything
+     */
+    public function addPath(SimpleXMLElement $g, Path $path): ?SimpleXMLElement
     {
+        if ($path->style->isEmpty()) {
+            // Nothing to draw
+            return null;
+        }
+
         $pathElement = $g->addChild('path');
 
         $this->applyFillStyle($pathElement, $path->style->fill, 'fill');

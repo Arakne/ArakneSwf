@@ -62,6 +62,8 @@ final readonly class PathStyle
          *
          * This value should be divided by 20 to get the width in pixels
          * This value should be set only if the lineColor or lineFill is set
+         *
+         * @var non-negative-int
          */
         public int $lineWidth = 0,
 
@@ -88,6 +90,22 @@ final readonly class PathStyle
     public function hash(): string
     {
         return $this->hash;
+    }
+
+    /**
+     * Check if the current style is a line/stroke style
+     */
+    public function isLineStyle(): bool
+    {
+        return $this->lineColor !== null || $this->lineFill !== null;
+    }
+
+    /**
+     * Check if the current style is empty (i.e. do not draw anything)
+     */
+    public function isEmpty(): bool
+    {
+        return $this->fill === null && $this->lineWidth === 0;
     }
 
     private static function colorHash(Color|null $color): int

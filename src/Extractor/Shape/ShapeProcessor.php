@@ -76,10 +76,11 @@ final readonly class ShapeProcessor
      * @param list<StraightEdgeRecord|CurvedEdgeRecord|StyleChangeRecord|EndShapeRecord> $records Shape edge records
      * @param list<FillStyle> $fillStyles Initial fill styles
      * @param list<LineStyle> $lineStyles Initial line styles
+     * @param bool $ignoreZeroWithLine Ignore line styles with zero width when processing line styles
      *
      * @return list<Path>
      */
-    public function processRecords(array $records, array $fillStyles, array $lineStyles): array
+    public function processRecords(array $records, array $fillStyles, array $lineStyles, bool $ignoreZeroWithLine = true): array
     {
         $x = 0;
         $y = 0;
@@ -119,7 +120,7 @@ final readonly class ShapeProcessor
 
                     if ($shape->stateLineStyle) {
                         $style = $lineStyles[$shape->lineStyle - 1] ?? null;
-                        if ($style !== null && $style->width > 0) {
+                        if ($style !== null && ($style->width >= 1 || !$ignoreZeroWithLine)) {
                             $lineStyle = new PathStyle(
                                 lineColor: $style->color,
                                 lineFill: $style->fillType ? $this->createFillType($style->fillType) : null,

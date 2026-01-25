@@ -26,6 +26,9 @@ use Arakne\Swf\Parser\SwfReader;
 final readonly class LineStyle
 {
     public function __construct(
+        /**
+         * @var non-negative-int
+         */
         public int $width,
         public ?Color $color = null,
         public ?int $startCapStyle = null,
