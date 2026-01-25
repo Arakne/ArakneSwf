@@ -26,7 +26,14 @@ use Arakne\Swf\Parser\SwfReader;
 final readonly class MorphLineStyle
 {
     public function __construct(
+        /**
+         * @var non-negative-int
+         */
         public int $startWidth,
+
+        /**
+         * @var non-negative-int
+         */
         public int $endWidth,
         public Color $startColor,
         public Color $endColor,

@@ -34,7 +34,14 @@ final readonly class MorphLineStyle2
     public const int JOIN_MITER = 2;
 
     public function __construct(
+        /**
+         * @var non-negative-int
+         */
         public int $startWidth,
+
+        /**
+         * @var non-negative-int
+         */
         public int $endWidth,
         public int $startCapStyle,
         public int $joinStyle,
