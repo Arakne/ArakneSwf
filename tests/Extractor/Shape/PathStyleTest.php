@@ -30,4 +30,20 @@ class PathStyleTest extends TestCase
         $this->assertNotSame(new PathStyle(null, new Color(125, 14, 0, 25), null, 5)->hash(), new PathStyle(null, new Color(125, 14, 0, 24), null, 5)->hash());
         $this->assertNotSame(new PathStyle(null, null, new Solid(new Color(124, 15, 0)), 5)->hash(), new PathStyle(null, null, new Solid(new Color(124, 14, 0)), 5)->hash());
     }
+
+    #[Test]
+    public function isLineStyle()
+    {
+        $this->assertTrue(new PathStyle(null, new Color(125, 14, 0), null, 5)->isLineStyle());
+        $this->assertTrue(new PathStyle(null, null, new Solid(new Color(125, 14, 0)), 5)->isLineStyle());
+        $this->assertFalse(new PathStyle(new Solid(new Color(125, 14, 0)), null, null, 0)->isLineStyle());
+    }
+
+    #[Test]
+    public function isEmptyStyle()
+    {
+        $this->assertFalse(new PathStyle(null, new Color(125, 14, 0), null, 5)->isEmpty());
+        $this->assertFalse(new PathStyle(new Solid(new Color(125, 14, 0)), null, null, 0)->isEmpty());
+        $this->assertTrue(new PathStyle(null, new Color(125, 14, 0), null, 0)->isEmpty());
+    }
 }

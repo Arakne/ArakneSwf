@@ -8,6 +8,7 @@ use Arakne\Swf\Extractor\Image\ImageBitsDefinition;
 use Arakne\Swf\Extractor\Image\JpegImageDefinition;
 use Arakne\Swf\Extractor\Image\LosslessImageDefinition;
 use Arakne\Swf\Extractor\MissingCharacter;
+use Arakne\Swf\Extractor\MorphShape\MorphShape;
 use Arakne\Swf\Extractor\MorphShape\MorphShapeDefinition;
 use Arakne\Swf\Extractor\Shape\ShapeDefinition;
 use Arakne\Swf\Extractor\Sprite\SpriteDefinition;
@@ -518,5 +519,23 @@ class SwfExtractorTest extends ImageTestCase
         foreach ($sprite->timeline()->toSvgAll() as $frame => $svg) {
             $this->assertXmlStringEqualsXmlFile(__DIR__ . '/Fixtures/1008/90/' . $frame . '.svg', $svg);
         }
+    }
+
+    #[Test]
+    public function morphshapeWithZeroWidthLineStart()
+    {
+        $swf = new SwfFile(__DIR__.'/Fixtures/morphshape/a3.swf', Errors::NONE);
+        $extractor = new SwfExtractor($swf);
+
+        $morphShape = $extractor->character(569);
+        $this->assertInstanceOf(MorphShapeDefinition::class, $morphShape);
+
+        $morphShape = $morphShape->withRatio(42000);
+        $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds(), subpixelStrokeWidth: false))->render();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/morphshape/a3/569-42000.svg', $svg);
+
+        $morphShape = $morphShape->withRatio(MorphShape::MAX_RATIO);
+        $svg = $morphShape->draw(new SvgCanvas($morphShape->bounds(), subpixelStrokeWidth: false))->render();
+        $this->assertXmlStringEqualsXmlFile(__DIR__.'/Fixtures/morphshape/a3/569-65535.svg', $svg);
     }
 }

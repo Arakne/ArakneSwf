@@ -1,3 +1,9 @@
+0.5.3
+-----
+
+- (Extractor) Add option on `ShapeProcessor::processRecords()` to keep stroke style with zero width, to allow using it on morph shapes
+- (Renderer) Ignore zero with strokes path on `SvgBuilder`
+
 0.5.2
 -----
 
