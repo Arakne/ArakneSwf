@@ -89,4 +89,24 @@ class ClipPathBuilderTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString($expected, $actual);
     }
+
+    #[Test]
+    public function shouldIgnoreZeroWithStroke()
+    {
+        $swf = new SwfFile(__DIR__.'/../../Fixtures/morphshape/a3.swf');
+        $extractor = new SwfExtractor($swf);
+        $extractor->character(569)->draw($this->builder); // MorphShape
+
+        $actual = $this->root->asXML();
+        $expected = <<<'XML'
+        <?xml version="1.0"?>
+        <svg xmlns="http://www.w3.org/2000/svg">
+            <clipPath>
+                <path d="M-63.9 15.75L-60.6 16.85L-56.25 17.75L-44.35 19L-35.35 19.35L-32.15 19.4L-23.35 19.4L-13.4 19.3L-7 19.1L0.6 18.75L3.05 18.65L12.2 18Q30.05 16.65 41.65 14.35L55.75 11.1Q61.3 9.6 65.75 7.95Q68.3 7 69.35 5.9Q72.25 2.9 63.6 -1.25Q59.95 -2.65 57.9 -4.65Q56.85 -5.65 56.25 -6.8Q52.95 -13.05 48.7 -18.4Q44.1 -24.15 38.4 -28.95Q34.75 -32.05 30.6 -34.7Q26.45 -37.4 22.15 -39.4Q9.25 -45.4 -5.1 -45.55L-14.05 -45.1Q-27.5 -43.6 -37.95 -36.7Q-44.6 -32.35 -48.5 -23.75Q-51.55 -17 -52.85 -7.65L-53.6 -0.3Q-54.65 3.1 -60.15 5.85L-64.35 8.5Q-67.65 11.05 -66.85 13.15Q-66.3 14.55 -63.9 15.75" fill="#d6fff6" fill-opacity="0.10196078431373" fill-rule="evenodd" stroke="none" transform="translate(67,45.55)" />
+            </clipPath>
+        </svg>
+        XML;
+
+        $this->assertXmlStringEqualsXmlString($expected, $actual);
+    }
 }
