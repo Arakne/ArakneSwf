@@ -3,6 +3,7 @@
 namespace Arakne\Tests\Swf\Avm\Api;
 
 use Arakne\Swf\Avm\Api\ScriptArray;
+use Arakne\Swf\Avm\Api\ScriptObject;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -122,5 +123,32 @@ class ScriptArrayTest extends TestCase
         unset($a[42]);
         $this->assertSame(1, $a->length);
         $this->assertSame('{"42":null}', json_encode($a));
+    }
+
+    #[Test]
+    public function castToString()
+    {
+        $this->assertSame('', (string) new ScriptArray());
+        $this->assertSame('1,2,3', (string) new ScriptArray(1, 2, 3));
+        $this->assertSame('foo,1.5', (string) new ScriptArray('foo', 1.5));
+        $this->assertSame(',,', (string) new ScriptArray(3));
+        $this->assertSame('1,2,3', (string) new ScriptArray(1, new ScriptArray(2, 3)));
+        $this->assertSame('1,[object Object]', (string) new ScriptArray(1, new ScriptObject()));
+    }
+
+    #[Test]
+    public function castToStringShouldIgnoreNonIndexedProperties()
+    {
+        $a = new ScriptArray(1, 2);
+        $a['foo'] = 'bar';
+        $a->length = 4;
+
+        $this->assertSame('1,2,,', (string) $a);
+    }
+
+    #[Test]
+    public function castToStringWithBooleans()
+    {
+        $this->assertSame('true,false', (string) new ScriptArray(true, false));
     }
 }

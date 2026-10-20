@@ -719,7 +719,6 @@ final class SwfReader
      */
     public function readUI16(): int
     {
-        // @phpstan-ignore return.type
         return ord($this->readChar()) | (ord($this->readChar()) << 8);
     }
 
@@ -743,7 +742,6 @@ final class SwfReader
             return 0;
         }
 
-        // @phpstan-ignore return.type
         return ord($this->data[$offset]) | (ord($this->data[$offset + 1]) << 8);
     }
 

@@ -94,7 +94,6 @@ final class JpegImageDefinition implements ImageCharacterInterface
     {
         /**
          * @var WeakMap<TransformedImage, ColorTransform> $cache
-         * @phpstan-ignore assign.propertyType
          */
         $cache = $this->colorTransformCache ??= new WeakMap();
 

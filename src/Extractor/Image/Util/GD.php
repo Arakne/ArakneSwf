@@ -298,7 +298,6 @@ final class GD
         imagesavealpha($newImage, true);
         imagecopy($newImage, $this->image, 0, 0, 0, 0, $width, $height);
 
-        // @phpstan-ignore property.readOnlyAssignNotInConstructor
         $this->image = $newImage;
     }
 

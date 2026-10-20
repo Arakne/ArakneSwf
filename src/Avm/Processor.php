@@ -105,6 +105,10 @@ final readonly class Processor
             Opcode::ActionToString => $this->toString($state),
             Opcode::ActionToNumber => $this->toNumber($state),
             Opcode::ActionCallFunction => $this->callFunction($state),
+            Opcode::ActionAdd => $this->add($state),
+            Opcode::ActionAdd2 => $this->add2($state),
+            Opcode::ActionStringAdd => $this->stringAdd($state),
+            Opcode::ActionSubtract => $this->subtract($state),
             Opcode::Null => null,
             //default => null,
             default => throw new \Exception('Unknown action: '.$action->opcode->name.' '.json_encode($action).' Stack: '.json_encode($state->stack)),
@@ -150,7 +154,6 @@ final readonly class Processor
         $varName = $state->stack[$index];
         assert(is_string($varName) || is_integer($varName));
 
-        // @phpstan-ignore assign.propertyType
         $state->stack[$index] = $state->variables[$varName] ?? null;
     }
 
@@ -316,5 +319,83 @@ final readonly class Processor
         }
 
         return $function(...$args);
+    }
+
+    /**
+     * Perform legacy ActionAdd
+     * This operator only works on numeric values, so operands will be cast to numeric before performing the add
+     *
+     * @param State $state
+     * @return void
+     */
+    private function add(State $state): void
+    {
+        $b = array_pop($state->stack);
+        $a = array_pop($state->stack);
+
+        if (!is_int($a) && !is_float($a)) {
+            $a = (float) $a;
+        }
+
+        if (!is_int($b) && !is_float($b)) {
+            $b = (float) $b;
+        }
+
+        $state->stack[] = $a + $b;
+    }
+
+    /**
+     * Perform ActionAdd2 following ECMA-262
+     * The performed operation differ depending on the operand types
+     *
+     * @param State $state
+     * @return void
+     *
+     * @see https://262.ecma-international.org/6.0/#sec-addition-operator-plus
+     */
+    private function add2(State $state): void
+    {
+        $b = TypeUtils::toPrimitive(array_pop($state->stack));
+        $a = TypeUtils::toPrimitive(array_pop($state->stack));
+
+        if (is_string($a) || is_string($b)) {
+            $state->stack[] = TypeUtils::toString($a) . TypeUtils::toString($b);
+        } elseif ($a === null || $b === null) {
+            $state->stack[] = NAN;
+        } else {
+            $state->stack[] = $a + $b;
+        }
+    }
+
+    /**
+     * Perform legacy ActionStringAdd
+     *
+     * @param State $state
+     * @return void
+     *
+     * @see https://open-flash.github.io/documentation/avm1/actions/string-add/
+     */
+    private function stringAdd(State $state): void
+    {
+        $b = TypeUtils::toString(array_pop($state->stack));
+        $a = TypeUtils::toString(array_pop($state->stack));
+
+        $state->stack[] = $a . $b;
+    }
+
+    /**
+     * Perform ActionSubtract
+     *
+     * @param State $state
+     * @return void
+     *
+     * @see https://open-flash.github.io/documentation/avm1/actions/subtract/
+     */
+    private function subtract(State $state): void
+    {
+        $b = TypeUtils::toNumeric(array_pop($state->stack));
+        $a = TypeUtils::toNumeric(array_pop($state->stack));
+
+        $state->stack[] = $a - $b;
     }
 }
