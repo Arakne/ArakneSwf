@@ -32,6 +32,7 @@ use function count;
 use function is_callable;
 use function is_int;
 use function is_string;
+use function sprintf;
 
 /**
  * Base object class for ActionScript objects.
@@ -56,6 +57,12 @@ class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate, 
          * @var array<array-key, Closure(mixed):void>
          */
         protected array $setters = [],
+
+        /**
+         * The object class name.
+         * On AVM1 user defined classes are always Object
+         */
+        protected string $className = 'Object',
     ) {}
 
     /**
@@ -148,6 +155,17 @@ class ScriptObject implements ArrayAccess, JsonSerializable, IteratorAggregate, 
     public function __isset(string $name): bool
     {
         return isset($this->properties[$name]) || isset($this->getters[$name]);
+    }
+
+    public function __toString(): string
+    {
+        $toString = $this->properties['toString'] ?? null;
+
+        if ($toString instanceof Closure) {
+            return $toString();
+        }
+
+        return sprintf('[object %s]', $this->className);
     }
 
     #[Override]

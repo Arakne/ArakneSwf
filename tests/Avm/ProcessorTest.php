@@ -11,6 +11,7 @@ use Arakne\Swf\Parser\Structure\Action\Opcode;
 use Arakne\Swf\Parser\Structure\Action\Type;
 use Arakne\Swf\Parser\Structure\Action\Value;
 use Arakne\Swf\SwfFile;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -266,5 +267,328 @@ class ProcessorTest extends TestCase
         $processor = new Processor();
 
         $processor->execute($state, new ActionRecord(0, Opcode::ActionPreviousFrame, 0, null));
+    }
+
+    public static function provideAdd(): array
+    {
+        return [
+            'integers' => [new Value(Type::Integer, 3), new Value(Type::Integer, 4), 7],
+            'float and integer' => [new Value(Type::Double, 1.5), new Value(Type::Integer, 2), 3.5],
+            'numeric strings' => [new Value(Type::String, '3'), new Value(Type::String, '4.5'), 7.5],
+            'non numeric string' => [new Value(Type::String, 'abc'), new Value(Type::Integer, 5), 5.0],
+            'boolean and null' => [new Value(Type::Boolean, true), new Value(Type::Null, null), 1.0],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('provideAdd')]
+    public function add(Value $a, Value $b, mixed $expected)
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [$a, $b]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd, 0, null));
+
+        $this->assertSame([$expected], $state->stack);
+    }
+
+    public static function provideAdd2(): array
+    {
+        return [
+            'integers' => [new Value(Type::Integer, 3), new Value(Type::Integer, 4), 7],
+            'float and integer' => [new Value(Type::Double, 1.5), new Value(Type::Integer, 2), 3.5],
+            'strings' => [new Value(Type::String, 'foo'), new Value(Type::String, 'bar'), 'foobar'],
+            'numeric string and number' => [new Value(Type::String, '3'), new Value(Type::Integer, 4), '34'],
+            'number and numeric string' => [new Value(Type::Integer, 4), new Value(Type::String, '3'), '43'],
+            'float and string' => [new Value(Type::Double, 1.5), new Value(Type::String, 'x'), '1.5x'],
+            'boolean and number' => [new Value(Type::Boolean, true), new Value(Type::Integer, 1), 2],
+            'null and string' => [new Value(Type::Null, null), new Value(Type::String, 'a'), 'nulla'],
+            'boolean and string' => [new Value(Type::Boolean, true), new Value(Type::String, 'a'), 'truea'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('provideAdd2')]
+    public function add2(Value $a, Value $b, mixed $expected)
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [$a, $b]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd2, 0, null));
+
+        $this->assertSame([$expected], $state->stack);
+    }
+
+    public static function provideAdd2NaN(): array
+    {
+        return [
+            'null and number' => [new Value(Type::Null, null), new Value(Type::Integer, 1)],
+            'number and null' => [new Value(Type::Integer, 1), new Value(Type::Null, null)],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('provideAdd2NaN')]
+    public function add2NaN(Value $a, Value $b)
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [$a, $b]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd2, 0, null));
+
+        $this->assertCount(1, $state->stack);
+        $this->assertNan($state->stack[0]);
+    }
+
+    #[Test]
+    public function add2WithObject()
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 0)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionInitObject, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 1)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd2, 0, null)); // {} + 1
+
+        $this->assertSame(['[object Object]1'], $state->stack);
+    }
+
+    #[Test]
+    public function add2WithInlineArray()
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 2), new Value(Type::Integer, 1), new Value(Type::Integer, 2)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionInitArray, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 3), new Value(Type::Integer, 1)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionInitArray, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd2, 0, null)); // [1, 2] + [3]
+
+        $this->assertSame(['1,23'], $state->stack);
+    }
+
+    #[Test]
+    public function add2WithScriptArray()
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 3), new Value(Type::Integer, 2), new Value(Type::Integer, 1), new Value(Type::Integer, 3), new Value(Type::String, 'Array')]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionNewObject, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::String, '')]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd2, 0, null)); // new Array(1, 2, 3) + ''
+
+        $this->assertSame(['1,2,3'], $state->stack);
+    }
+
+    #[Test]
+    public function add2WithCustomToString()
+    {
+        $state = new State();
+        $processor = new Processor();
+        $state->variables['obj'] = new ScriptObject(['toString' => fn () => 'foo']);
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::String, 'obj')]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionGetVariable, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::String, '!')]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionAdd2, 0, null)); // obj + '!'
+
+        $this->assertSame(['foo!'], $state->stack);
+    }
+
+    public static function provideStringAdd(): array
+    {
+        return [
+            'strings' => [new Value(Type::String, 'foo'), new Value(Type::String, 'bar'), 'foobar'],
+            'integer and string' => [new Value(Type::Integer, 12), new Value(Type::String, 'a'), '12a'],
+            'string and float' => [new Value(Type::String, 'x'), new Value(Type::Double, 1.5), 'x1.5'],
+            'integers' => [new Value(Type::Integer, 3), new Value(Type::Integer, 4), '34'],
+            'booleans' => [new Value(Type::Boolean, true), new Value(Type::Boolean, false), 'truefalse'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('provideStringAdd')]
+    public function stringAdd(Value $a, Value $b, string $expected)
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [$a, $b]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionStringAdd, 0, null));
+
+        $this->assertSame([$expected], $state->stack);
+    }
+
+    #[Test]
+    public function stringAddWithObjectAndArray()
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 0)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionInitObject, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 2), new Value(Type::Integer, 1), new Value(Type::Integer, 2)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionInitArray, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionStringAdd, 0, null)); // {} add [1, 2]
+
+        $this->assertSame(['[object Object]1,2'], $state->stack);
+    }
+
+    public static function provideSubtract(): array
+    {
+        return [
+            'integers' => [new Value(Type::Integer, 10), new Value(Type::Integer, 3), 7],
+            'operand order' => [new Value(Type::Integer, 3), new Value(Type::Integer, 10), -7],
+            'float and integer' => [new Value(Type::Double, 3.5), new Value(Type::Integer, 1), 2.5],
+            'numeric strings' => [new Value(Type::String, '10'), new Value(Type::String, '4.5'), 5.5],
+            'numeric string and integer' => [new Value(Type::String, '10'), new Value(Type::Integer, 3), 7.0],
+            'boolean and integer' => [new Value(Type::Boolean, true), new Value(Type::Integer, 1), 0],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('provideSubtract')]
+    public function subtract(Value $a, Value $b, mixed $expected)
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [$a, $b]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionSubtract, 0, null));
+
+        $this->assertSame([$expected], $state->stack);
+    }
+
+    public static function provideSubtractNaN(): array
+    {
+        return [
+            'non numeric string' => [new Value(Type::String, 'abc'), new Value(Type::Integer, 5)],
+            'integer and non numeric string' => [new Value(Type::Integer, 5), new Value(Type::String, 'abc')],
+            'null and integer' => [new Value(Type::Null, null), new Value(Type::Integer, 1)],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('provideSubtractNaN')]
+    public function subtractNaN(Value $a, Value $b)
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [$a, $b]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionSubtract, 0, null));
+
+        $this->assertCount(1, $state->stack);
+        $this->assertNan($state->stack[0]);
+    }
+
+    #[Test]
+    public function subtractWithInlineArray()
+    {
+        $state = new State();
+        $processor = new Processor();
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 5), new Value(Type::Integer, 1)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionInitArray, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 1)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionSubtract, 0, null)); // [5] - 1
+
+        $this->assertSame([4.0], $state->stack);
+    }
+
+    #[Test]
+    public function subtractWithCustomToString()
+    {
+        $state = new State();
+        $processor = new Processor();
+        $state->variables['obj'] = new ScriptObject(['toString' => fn () => '10']);
+
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::String, 'obj')]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionGetVariable, 0, null));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionPush, 0, [new Value(Type::Integer, 3)]));
+        $processor->execute($state, new ActionRecord(0, Opcode::ActionSubtract, 0, null)); // obj - 3
+
+        $this->assertSame([7.0], $state->stack);
+    }
+
+    #[Test]
+    public function add2FromSwf()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/add2.swf');
+        $processor = new Processor();
+        $state = new State();
+
+        foreach ($swf->tags(12) as $tag) {
+            $processor->run($tag->actions, $state);
+        }
+
+        $this->assertSame(7, $state->variables['integers']);
+        $this->assertSame(3.5, $state->variables['float_and_integer']);
+        $this->assertSame('foobar', $state->variables['strings']);
+        $this->assertSame('34', $state->variables['numeric_string_and_number']);
+        $this->assertSame('43', $state->variables['number_and_numeric_string']);
+        $this->assertSame('1.5x', $state->variables['float_and_string']);
+        $this->assertSame(2, $state->variables['boolean_and_number']);
+        $this->assertNan($state->variables['null_and_number']);
+        $this->assertSame('nulla', $state->variables['null_and_string']);
+        $this->assertSame('truea', $state->variables['boolean_and_string']);
+        $this->assertSame('33', $state->variables['chained']);
+        $this->assertSame('[object Object]1', $state->variables['object_and_number']);
+        $this->assertSame('1,23', $state->variables['inline_arrays']);
+        $this->assertSame('1,2,3', $state->variables['array_and_string']);
+    }
+
+    #[Test]
+    public function addAndStringAddFromSwf4()
+    {
+        // SWF 4 compiler push all literals as strings, and use ActionAdd for "+" and ActionStringAdd for "&"
+        $swf = new SwfFile(__DIR__.'/../Fixtures/swf4_add.swf');
+        $processor = new Processor();
+        $state = new State();
+
+        foreach ($swf->tags(12) as $tag) {
+            $processor->run($tag->actions, $state);
+        }
+
+        $this->assertSame([
+            'add_integers' => 7.0,
+            'add_float_and_integer' => 3.5,
+            'add_numeric_strings' => 7.5,
+            'add_non_numeric_string' => 5.0,
+            'string_add_strings' => 'foobar',
+            'string_add_integers' => '34',
+            'string_add_float' => 'x1.5',
+        ], $state->variables);
+    }
+
+    #[Test]
+    public function subtractFromSwf()
+    {
+        $swf = new SwfFile(__DIR__.'/../Fixtures/subtract.swf');
+        $processor = new Processor();
+        $state = new State();
+
+        foreach ($swf->tags(12) as $tag) {
+            $processor->run($tag->actions, $state);
+        }
+
+        $this->assertSame(7, $state->variables['integers']);
+        $this->assertSame(-7, $state->variables['operand_order']);
+        $this->assertSame(2.5, $state->variables['float_and_integer']);
+        $this->assertSame(5.5, $state->variables['numeric_strings']);
+        $this->assertSame(7.0, $state->variables['numeric_string_and_integer']);
+        $this->assertNan($state->variables['non_numeric_string']);
+        $this->assertSame(0, $state->variables['boolean_and_integer']);
+        $this->assertNan($state->variables['null_and_integer']);
+        $this->assertSame(5, $state->variables['chained']);
+        $this->assertSame(9.0, $state->variables['concat_then_subtract']);
+        $this->assertSame(4.0, $state->variables['array_and_integer']);
+        $this->assertNan($state->variables['object_and_integer']);
     }
 }

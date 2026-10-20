@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace Arakne\Swf\Avm\Api;
 
+use Arakne\Swf\Avm\TypeUtils;
 use Override;
 use Traversable;
 
 use function array_fill;
+use function array_map;
 use function count;
 use function is_float;
 use function is_int;
@@ -107,6 +109,24 @@ class ScriptArray extends ScriptObject
     public function getIterator(): Traversable
     {
         yield from $this->values;
+    }
+
+    #[Override]
+    public function __toString(): string
+    {
+        $out = '';
+
+        foreach ($this->values as $index => $value) {
+            if ($index > 0) {
+                $out .= ',';
+            }
+
+            if ($value !== null) {
+                $out .= TypeUtils::toString($value);
+            }
+        }
+
+        return $out;
     }
 
     private function setLength(int $length): void

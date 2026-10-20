@@ -4,6 +4,7 @@ namespace Arakne\Tests\Swf\Avm\Api;
 
 use Arakne\Swf\Avm\Api\ScriptObject;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 class ScriptObjectTest extends TestCase
@@ -90,5 +91,33 @@ class ScriptObjectTest extends TestCase
         $o[21] = 'hello';
 
         $this->assertEquals('{"foo":123,"21":"hello","bar":42}', json_encode($o));
+    }
+
+    #[Test]
+    public function castToStringDefault()
+    {
+        $this->assertSame('[object Object]', (string) new ScriptObject());
+        $this->assertSame('[object Foo]', (string) new ScriptObject(className: 'Foo'));
+    }
+
+    #[Test]
+    public function castToStringWithCustomFunction()
+    {
+        $o = new ScriptObject();
+        $o->toString = fn () => 'foo';
+
+        $this->assertSame('foo', (string) $o);
+    }
+
+    #[Test]
+    #[TestWith([123])]
+    #[TestWith(['not a function'])]
+    #[TestWith(['phpversion'])] // PHP callable string must not be called
+    public function castToStringPropertyNotAFunction(mixed $toString)
+    {
+        $o = new ScriptObject();
+        $o->toString = $toString;
+
+        $this->assertSame('[object Object]', (string) $o);
     }
 }
